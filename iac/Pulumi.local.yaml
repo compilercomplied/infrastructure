@@ -1,0 +1,6 @@
+encryptionsalt: v1:gFbe59y3EbM=:v1:RcobEOtbAHIsdsUF:CuTxqQb9PPqcL12/kgQVPKb4//2W5A==
+config:
+  infrastructure:ghcrUsername: compilercomplied
+  infrastructure:ghcrPassword:
+    secure: v1:DSJ8OPl8g563r/a3:21MU3hJ0PDOJS8LX0MO3CRY+MLtGU9szPH76sgO/ehSfShHYXvgepdVRg30PftX5jkZa4OO/csE=
+  infrastructure:ghcrEmail: 8614035+compilercomplied@users.noreply.github.com
