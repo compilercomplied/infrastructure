@@ -17,7 +17,7 @@ const config = new GithubConfiguration(
 );
 
 
-export function configureDocker() {
+export function configureDocker(namespace: pulumi.Input<string>) {
   const dockerConfig = pulumi.all([config.username, config.password])
     .apply(([username, password]) => {
       return JSON.stringify({
@@ -32,10 +32,19 @@ export function configureDocker() {
       });
     });
 
-  new k8s.core.v1.Secret("ghcr-secret", {
+  const secret = new k8s.core.v1.Secret("ghcr-secret", {
+    metadata: { namespace },
     type: "kubernetes.io/dockerconfigjson",
     data: {
       ".dockerconfigjson": dockerConfig.apply(c => Buffer.from(c).toString("base64")),
     },
+  });
+
+  new k8s.core.v1.ServiceAccountPatch("patch-default-service-account", {
+    metadata: {
+      name: "default",
+      namespace: namespace,
+    },
+    imagePullSecrets: [{ name: secret.metadata.name }],
   });
 }
