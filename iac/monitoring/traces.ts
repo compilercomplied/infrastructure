@@ -20,6 +20,12 @@ export function configureTraces(namespace: pulumi.Input<string>) {
           },
         },
       },
+      compactor: {
+        compaction: {
+          // 90 days
+          block_retention: "2160h",
+        },
+      },
       persistence: {
         enabled: true,
         size: "10Gi",
@@ -39,7 +45,16 @@ export function configureTraces(namespace: pulumi.Input<string>) {
         },
       },
     },
-  }, { providers: { kubernetes: new k8s.Provider("tempo-provider", { namespace: namespace }) } });
+  }, {
+    providers:
+    {
+      kubernetes: new k8s.Provider("tempo-provider",
+        {
+          namespace: namespace
+        }
+      )
+    }
+  });
 
   return tempo;
 }

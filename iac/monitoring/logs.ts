@@ -14,19 +14,37 @@ export function configureLogs(namespace: pulumi.Input<string>) {
           enabled: true,
           size: "10Gi",
         },
+        config: {
+          limits_config: {
+            // 90 days.
+            retention_period: "2160h",
+          },
+          compactor: {
+            working_directory: "/data/loki/boltdb-shipper-compactor",
+            shared_store: "filesystem",
+            retention_enabled: true,
+          },
+        },
       },
       promtail: {
         enabled: true,
       },
-      // Disable bundled Grafana and Prometheus as they are already provided by kube-prometheus-stack
-      grafana: {
-        enabled: false,
-      },
-      prometheus: {
-        enabled: false,
-      },
+      // Disable bundled Grafana and Prometheus as they are already provided
+      // by kube-prometheus-stack.
+      grafana: { enabled: false },
+      prometheus: { enabled: false },
     },
-  }, { providers: { kubernetes: new k8s.Provider("loki-k8s-provider", { namespace: namespace }) } });
+  },
+    {
+      providers:
+      {
+        kubernetes: new k8s.Provider("loki-k8s-provider",
+          {
+            namespace: namespace
+          }
+        )
+      }
+    });
 
   const eventExporter = new k8s.helm.v3.Chart("event-exporter", {
     namespace: namespace,
@@ -48,7 +66,17 @@ export function configureLogs(namespace: pulumi.Input<string>) {
         },
       },
     },
-  }, { providers: { kubernetes: new k8s.Provider("event-exporter-provider", { namespace: namespace }) } });
+  },
+    {
+      providers:
+      {
+        kubernetes: new k8s.Provider("event-exporter-provider",
+          {
+            namespace: namespace
+          }
+        )
+      }
+    });
 
   return { loki, eventExporter };
 }

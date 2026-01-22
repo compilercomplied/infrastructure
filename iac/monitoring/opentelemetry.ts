@@ -10,6 +10,9 @@ export function configureOpenTelemetry(namespace: pulumi.Input<string>) {
     },
     values: {
       mode: "deployment",
+      image: {
+        repository: "otel/opentelemetry-collector-contrib",
+      },
       config: {
         receivers: {
           otlp: {
@@ -23,16 +26,16 @@ export function configureOpenTelemetry(namespace: pulumi.Input<string>) {
           batch: {},
         },
         exporters: {
-          otlp: { // Export traces to Tempo
+          otlp: {
             endpoint: "tempo.monitoring.svc.cluster.local:4317",
             tls: {
               insecure: true,
             },
           },
-          loki: { // Export logs to Loki
+          loki: {
             endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push",
           },
-          prometheusremotewrite: { // Export metrics to Prometheus
+          prometheusremotewrite: {
             endpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write",
           },
         },
@@ -57,7 +60,18 @@ export function configureOpenTelemetry(namespace: pulumi.Input<string>) {
         },
       },
     },
-  }, { providers: { kubernetes: new k8s.Provider("otel-collector-provider", { namespace: namespace }) } });
+  },
+    {
+      providers:
+      {
+        kubernetes: new k8s.Provider("otel-collector-provider",
+          {
+            namespace: namespace
+          }
+        )
+      }
+    }
+  );
 
   return opentelemetryCollector;
 }

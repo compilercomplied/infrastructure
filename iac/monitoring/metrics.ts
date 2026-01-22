@@ -11,8 +11,10 @@ export function configureMetrics(namespace: pulumi.Input<string>) {
     values: {
       prometheus: {
         prometheusSpec: {
-          // This ensures Prometheus scrapes any ServiceMonitor in the cluster, not just its own.
+          // This ensures Prometheus scrapes any ServiceMonitor in the cluster,
+					// not just its own.
           serviceMonitorSelectorNilUsesHelmValues: false,
+          retention: "90d",
         },
       },
       grafana: {
