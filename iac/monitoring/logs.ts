@@ -46,37 +46,49 @@ export function configureLogs(namespace: pulumi.Input<string>) {
       }
     });
 
-  const eventExporter = new k8s.helm.v3.Chart("event-exporter", {
-    namespace: namespace,
-    chart: "kubernetes-event-exporter",
-    fetchOpts: {
-      repo: "https://charts.bitnami.com/bitnami",
-    },
-    values: {
-      config: {
-        // Configure it to dump events to stdout so Promtail can pick them up
-        receivers: [{
-          name: "stdout",
-          stdout: {},
-        }],
-        route: {
-          routes: [{
-            match: [{ receiver: "stdout" }],
-          }],
-        },
+    const eventExporter = new k8s.helm.v3.Chart("event-exporter", {
+
+      namespace: namespace,
+
+      chart: "kubernetes-event-exporter",
+
+      fetchOpts: {
+
+        repo: "https://charts.resmo.com",
+
       },
-    },
-  },
-    {
-      providers:
-      {
-        kubernetes: new k8s.Provider("event-exporter-provider",
-          {
-            namespace: namespace
-          }
-        )
-      }
-    });
+
+      values: {
+
+        config: {
+
+          // Configure it to dump events to stdout so Promtail can pick them up
+
+          receivers: [{
+
+            name: "stdout",
+
+            stdout: {},
+
+          }],
+
+          route: {
+
+            routes: [{
+
+              match: [{ receiver: "stdout" }],
+
+            }],
+
+          },
+
+        },
+
+      },
+
+    }, { providers: { kubernetes: new k8s.Provider("event-exporter-provider", { namespace: namespace }) } });
+
+  
 
   return { loki, eventExporter };
 }

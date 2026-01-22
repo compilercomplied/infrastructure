@@ -8,4 +8,3 @@ const agentsNamespace = new k8s.core.v1.Namespace("agents", {
 
 configureDocker(agentsNamespace.metadata.name);
 configureMonitoring();
-

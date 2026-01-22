@@ -3,6 +3,7 @@ import { configureMetrics } from "./metrics";
 import { configureLogs } from "./logs";
 import { configureTraces } from "./traces";
 import { configureOpenTelemetry } from "./opentelemetry";
+import { installPrometheusCRDs } from "./crds";
 
 export function configureMonitoring() {
   const monitoringNamespace = new k8s.core.v1.Namespace("monitoring", {
@@ -11,7 +12,9 @@ export function configureMonitoring() {
 
   const namespaceName = monitoringNamespace.metadata.name;
 
-  const metrics = configureMetrics(namespaceName);
+  const prometheusCRDs = installPrometheusCRDs();
+
+  const metrics = configureMetrics(namespaceName, prometheusCRDs);
   const logs = configureLogs(namespaceName);
   const traces = configureTraces(namespaceName);
   const opentelemetry = configureOpenTelemetry(namespaceName);
@@ -21,6 +24,7 @@ export function configureMonitoring() {
     ...metrics,
     ...logs,
     traces,
-    opentelemetry
+    opentelemetry,
+    prometheusCRDs
   };
 }
