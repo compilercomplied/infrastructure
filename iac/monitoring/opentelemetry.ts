@@ -12,13 +12,18 @@ export function configureOpenTelemetry(namespace: pulumi.Input<string>) {
       mode: "deployment",
       image: {
         repository: "otel/opentelemetry-collector-contrib",
+        tag: "0.110.0",
       },
       config: {
         receivers: {
           otlp: {
             protocols: {
-              grpc: {},
-              http: {},
+              grpc: {
+                endpoint: "0.0.0.0:4317",
+              },
+              http: {
+                endpoint: "0.0.0.0:4318",
+              },
             },
           },
         },
@@ -27,16 +32,16 @@ export function configureOpenTelemetry(namespace: pulumi.Input<string>) {
         },
         exporters: {
           otlp: {
-            endpoint: "tempo.monitoring.svc.cluster.local:4317",
+            endpoint: "tempo:4317",
             tls: {
               insecure: true,
             },
           },
           loki: {
-            endpoint: "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push",
+            endpoint: "http://loki:3100/loki/api/v1/push",
           },
           prometheusremotewrite: {
-            endpoint: "http://kube-prometheus-stack-prometheus.monitoring.svc.cluster.local:9090/api/v1/write",
+            endpoint: "http://kube-prometheus-stack-prometheus:9090/api/v1/write",
           },
         },
         service: {

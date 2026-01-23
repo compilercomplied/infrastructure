@@ -2,7 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
 export function configureMetrics(
-	namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []
+  namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []
 ) {
   const kubePrometheusStack = new k8s.helm.v3.Chart("kube-prometheus-stack", {
     namespace: namespace,
@@ -11,18 +11,16 @@ export function configureMetrics(
     fetchOpts: {
       repo: "https://prometheus-community.github.io/helm-charts",
     },
-    // We skip CRD installation here because we manage them explicitly to
-		// avoid race conditions.
-    // skipCrds: true, // Not supported in this version's type definition
     values: {
-      // Try to disable CRDs via values since skipCrds is missing in types
+      // We skip CRD installation here because we manage them explicitly to
+      // avoid race conditions.
       crds: {
         enabled: false,
       },
       prometheus: {
         prometheusSpec: {
           // This ensures Prometheus scrapes any ServiceMonitor in the cluster,
-					// not just its own.
+          // not just its own.
           serviceMonitorSelectorNilUsesHelmValues: false,
           retention: "90d",
         },

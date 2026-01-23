@@ -46,49 +46,45 @@ export function configureLogs(namespace: pulumi.Input<string>) {
       }
     });
 
-    const eventExporter = new k8s.helm.v3.Chart("event-exporter", {
 
-      namespace: namespace,
-
-      chart: "kubernetes-event-exporter",
-
-      fetchOpts: {
-
-        repo: "https://charts.resmo.com",
-
-      },
-
-      values: {
-
-        config: {
-
-          // Configure it to dump events to stdout so Promtail can pick them up
-
-          receivers: [{
-
-            name: "stdout",
-
-            stdout: {},
-
-          }],
-
-          route: {
-
-            routes: [{
-
-              match: [{ receiver: "stdout" }],
-
-            }],
-
-          },
-
+  // The event exporter was super annoying to setup. The bitnami chart is
+  // documented but instead of this one we should be using the one maintained
+	// by linkedin. This could end up being the source of some issues in the
+	// future.
+  const eventExporter = new k8s.helm.v3.Release("event-exporter", {
+    namespace: namespace,
+    chart: "kubernetes-event-exporter",
+    version: "3.6.3",
+    repositoryOpts: {
+      repo: "https://charts.bitnami.com/bitnami",
+    },
+    values: {
+      global: {
+        security: {
+          allowInsecureImages: true,
         },
-
       },
+      image: {
+        registry: "public.ecr.aws",
+        repository: "bitnami/kubernetes-event-exporter",
+        tag: "1.7.0-debian-12-r46",
+      },
+      config: {
+        // Configure it to dump events to stdout so Promtail can pick them up
+        receivers: [{
+          name: "stdout",
+          stdout: {},
+        }],
+        route: {
+          routes: [{
+            match: [{ receiver: "stdout" }],
+          }],
+        },
+      },
+    },
+  }, { provider: new k8s.Provider("event-exporter-provider", { namespace: namespace }) });
 
-    }, { providers: { kubernetes: new k8s.Provider("event-exporter-provider", { namespace: namespace }) } });
 
-  
 
   return { loki, eventExporter };
 }

@@ -22,8 +22,7 @@ export function configureTraces(namespace: pulumi.Input<string>) {
       },
       compactor: {
         compaction: {
-          // 90 days
-          block_retention: "2160h",
+          block_retention: "2160h", // 90 days
         },
       },
       persistence: {

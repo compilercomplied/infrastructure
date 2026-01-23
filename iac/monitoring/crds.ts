@@ -33,15 +33,15 @@ import * as fs from "fs";
  * Version: v0.88.0
  */
 export function installPrometheusCRDs() {
-    const crdDir = path.join(__dirname, "crds");
-    const crdFiles = fs.readdirSync(crdDir).filter(file => file.endsWith(".yaml"));
+  const crdDir = path.join(__dirname, "crds");
+  const crdFiles = fs.readdirSync(crdDir).filter(file => file.endsWith(".yaml"));
 
-    const resources = crdFiles.map(filename => {
-        const name = filename.replace(".yaml", "");
-        return new k8s.yaml.ConfigFile(`crd-${name}`, {
-            file: path.join(crdDir, filename),
-        });
+  const resources = crdFiles.map(filename => {
+    const name = filename.replace(".yaml", "");
+    return new k8s.yaml.ConfigFile(`crd-${name}`, {
+      file: path.join(crdDir, filename),
     });
+  });
 
-    return resources;
+  return resources;
 }
