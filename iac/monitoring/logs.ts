@@ -10,6 +10,10 @@ export function configureLogs(namespace: pulumi.Input<string>) {
     },
     values: {
       loki: {
+        // We set isDefault to false because kube-prometheus-stack already
+        // provides Prometheus as the default datasource. Grafana only
+        // supports one default datasource per organization.
+        isDefault: false,
         persistence: {
           enabled: true,
           size: "10Gi",

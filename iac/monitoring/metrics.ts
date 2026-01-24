@@ -26,14 +26,10 @@ export function configureMetrics(
         },
       },
       grafana: {
+        // Prometheus and Loki are auto-configured by their respective charts
+        // via sidecar discovery. Tempo is added here manually because its
+        // chart doesn't provide auto-registration in this setup.
         additionalDataSources: [
-          {
-            name: "Loki",
-            type: "loki",
-            uid: "loki",
-            url: "http://loki.monitoring.svc.cluster.local:3100",
-            access: "proxy",
-          },
           {
             name: "Tempo",
             type: "tempo",
