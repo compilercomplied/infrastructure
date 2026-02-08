@@ -4,3 +4,6 @@ config:
   infrastructure:ghcrPassword:
     secure: v1:DSJ8OPl8g563r/a3:21MU3hJ0PDOJS8LX0MO3CRY+MLtGU9szPH76sgO/ehSfShHYXvgepdVRg30PftX5jkZa4OO/csE=
   infrastructure:ghcrEmail: 8614035+compilercomplied@users.noreply.github.com
+  tailscale:clientId: k3DUmg4Dak11CNTRL
+  tailscale:clientSecret:
+    secure: v1:JS5SWGHDZgiwgnTI:MrfZqsKypDQVmvNQalWhIdTy9PkAztnirDhGf9dCtjOLIecbo9jM9uaw4/ys9o5eoe0S6wiMb1K8rxIhmdu4JqUUOvA89pEZo/X5o/YP0nc=

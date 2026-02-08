@@ -26,6 +26,16 @@ export function configureMetrics(
         },
       },
       grafana: {
+        service: {
+          annotations: {
+            "tailscale.com/expose": "true",
+            // This sets the hostname in your tailnet (e.g., grafana.your-tailnet.ts.net)
+            "tailscale.com/hostname": "grafana",
+            // This tag must match one configured in your Tailscale Admin Console
+            // and allowed by your ACLs for the OAuth client.
+            "tailscale.com/tags": "tag:kubernetes",
+          },
+        },
         // Prometheus and Loki are auto-configured by their respective charts
         // via sidecar discovery. Tempo is added here manually because its
         // chart doesn't provide auto-registration in this setup.
