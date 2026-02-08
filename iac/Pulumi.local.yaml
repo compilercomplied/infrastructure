@@ -1,11 +1,11 @@
-encryptionsalt: v1:gFbe59y3EbM=:v1:RcobEOtbAHIsdsUF:CuTxqQb9PPqcL12/kgQVPKb4//2W5A==
+encryptionsalt: v1:HClLMcS4IHw=:v1:XmismE5iopZCqRkA:oml9+bqTFygOOVLsQW1xrAzsTNTZmA==
 config:
   infrastructure:ghcrUsername: compilercomplied
   infrastructure:ghcrPassword:
-    secure: v1:DSJ8OPl8g563r/a3:21MU3hJ0PDOJS8LX0MO3CRY+MLtGU9szPH76sgO/ehSfShHYXvgepdVRg30PftX5jkZa4OO/csE=
+    secure: v1:SAp7iElx5SqRR/gF:fmlTqp3FAhzi99LXDrNXKCywQjxI8viXWoCmN4K0yRvF9vSvfo4Qa7GswZR5H+Q5TV025XKJ5bM=
   infrastructure:ghcrEmail: 8614035+compilercomplied@users.noreply.github.com
   tailscale:clientId: k3DUmg4Dak11CNTRL
   tailscale:clientSecret:
-    secure: v1:JS5SWGHDZgiwgnTI:MrfZqsKypDQVmvNQalWhIdTy9PkAztnirDhGf9dCtjOLIecbo9jM9uaw4/ys9o5eoe0S6wiMb1K8rxIhmdu4JqUUOvA89pEZo/X5o/YP0nc=
+    secure: v1:ffrJIArvFbpI9zQN:Ln/YJ1irgfKWQ563Fnq766nR/XQ7/UYTbFZ3MJjopTc0kJCL02pUSiI7WGxQXjq1uOAS/ss4aW2bDf0VuYmHkujv7BTME7IckodmiHD2pMA=
   infrastructure:grafanaAdminPassword:
-    secure: v1:3X8e7YWAvsKTcaa7:GzcZIP2JlNrfxtDKuG/hiZUIB56x+KDWopJSV3SSiyJ/11YZLChyGQ6DPaiYs5/Upit6eUdZANc=
+    secure: v1:QaCZfqJc6EYwAyrU:pGOOHK7FU/Ysq2NSk3gRuxhO0o0DJAn4HBiMzaaXnVtKKRytAUgNh5mhy4iofmbQL+0Z2pM2cZk=
