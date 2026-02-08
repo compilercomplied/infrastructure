@@ -2,11 +2,10 @@ import * as k8s from "@pulumi/kubernetes";
 import { configureDocker } from "./modules/docker";
 import { configureMonitoring } from "./monitoring";
 import { configureTailscale } from "./modules/tailscale";
+import { configureAgents } from "./modules/agents";
 
-const agentsNamespace = new k8s.core.v1.Namespace("agents", {
-    metadata: { name: "agents" }
-});
+const { namespace } = configureAgents();
 
-configureDocker(agentsNamespace.metadata.name);
+configureDocker(namespace);
 configureMonitoring();
 configureTailscale();

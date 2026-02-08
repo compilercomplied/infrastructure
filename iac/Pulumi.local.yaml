@@ -9,3 +9,9 @@ config:
     secure: v1:ffrJIArvFbpI9zQN:Ln/YJ1irgfKWQ563Fnq766nR/XQ7/UYTbFZ3MJjopTc0kJCL02pUSiI7WGxQXjq1uOAS/ss4aW2bDf0VuYmHkujv7BTME7IckodmiHD2pMA=
   infrastructure:grafanaAdminPassword:
     secure: v1:QaCZfqJc6EYwAyrU:pGOOHK7FU/Ysq2NSk3gRuxhO0o0DJAn4HBiMzaaXnVtKKRytAUgNh5mhy4iofmbQL+0Z2pM2cZk=
+  agents:anthropicApiKey:
+    secure: v1:UKapJWSDlLoDBNp8:7IoSRywJNbnTlf1gVLzG7YnTpv6fpbMeszLbiEX841fRkqGWSSLe4DrS37k7hapVjL11xjrcZUcqYr+cNOz2K2C/mQSb72ChbDK+EO7f1n3DfvFyGdLAM2oQkVwvJHvgRqi50BNuT6gVBWy6qh1NKhCEXiAY81VqNvGMXg==
+  agents:githubToken:
+    secure: v1:jG10p484aW1CvqM4:xXY4od6SBuzMkg1P7a0OcwcVFqVRgYqaU2xOh0JLKp99VVVlM+yUPnggS3cKi/K1TTsDybnPZGw=
+  agents:pulumiPassphrase:
+    secure: v1:Yy0DVLhnpI+nX3MD:Ri1z1tAo8t5PZVhq5ZJ0GAOqNJaiyOhrfFaFbOcDaS7HOv61+vOIY2MWnI9jb0yKlQiSq4n/dTI/CTtuqRoi98ertQ==
