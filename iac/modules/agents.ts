@@ -18,9 +18,9 @@ export function configureAgents() {
             namespace: namespace.metadata.name,
         },
         stringData: {
-            "anthropic-api-key": anthropicApiKey,
-            "github-token": githubToken,
-            "pulumi-passphrase": pulumiPassphrase,
+            "ANTHROPIC_API_KEY": anthropicApiKey,
+            "GITHUB_TOKEN": githubToken,
+            "PULUMI_CONFIG_PASSPHRASE": pulumiPassphrase,
         },
     }, { dependsOn: namespace });
 
