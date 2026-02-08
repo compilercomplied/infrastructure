@@ -4,6 +4,9 @@ import * as pulumi from "@pulumi/pulumi";
 export function configureMetrics(
   namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []
 ) {
+  const config = new pulumi.Config();
+  const adminPassword = config.requireSecret("grafanaAdminPassword");
+
   const kubePrometheusStack = new k8s.helm.v3.Chart("kube-prometheus-stack", {
     namespace: namespace,
     chart: "kube-prometheus-stack",
@@ -26,6 +29,11 @@ export function configureMetrics(
         },
       },
       grafana: {
+        adminPassword: adminPassword,
+        persistence: {
+          enabled: true,
+          size: "10Gi",
+        },
         service: {
           annotations: {
             "tailscale.com/expose": "true",

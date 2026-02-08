@@ -7,3 +7,5 @@ config:
   tailscale:clientId: k3DUmg4Dak11CNTRL
   tailscale:clientSecret:
     secure: v1:JS5SWGHDZgiwgnTI:MrfZqsKypDQVmvNQalWhIdTy9PkAztnirDhGf9dCtjOLIecbo9jM9uaw4/ys9o5eoe0S6wiMb1K8rxIhmdu4JqUUOvA89pEZo/X5o/YP0nc=
+  infrastructure:grafanaAdminPassword:
+    secure: v1:3X8e7YWAvsKTcaa7:GzcZIP2JlNrfxtDKuG/hiZUIB56x+KDWopJSV3SSiyJ/11YZLChyGQ6DPaiYs5/Upit6eUdZANc=
