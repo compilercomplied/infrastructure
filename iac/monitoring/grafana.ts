@@ -21,6 +21,17 @@ export function configureGrafana(
     values: {
       adminPassword: adminPassword,
       persistence: { enabled: true, size: "10Gi" },
+      
+      plugins: [
+        "grafana-lokiexplore-app"
+      ],
+
+      "grafana.ini": {
+        plugins: {
+          enable_alpha: true
+        }
+      },
+
       service: {
         annotations: {
           "tailscale.com/expose": "true",
@@ -28,26 +39,27 @@ export function configureGrafana(
           "tailscale.com/tags": "tag:kubernetes",
         },
       },
-      "datasources.yaml": {
-        apiVersion: 1,
-        datasources: [
-          {
-            name: "Prometheus",
-            type: "prometheus",
-            uid: "prometheus",
-            url: "http://kube-prometheus-stack-prometheus:9090",
-            access: "proxy",
-            isDefault: true,
-            jsonData: { httpMethod: "POST", timeInterval: "30s" },
-          },
-          {
-            name: "Loki",
-            type: "loki",
-            uid: "loki",
-            url: "http://loki:3100",
-            access: "proxy",
-          },
-        ],
+      datasources: {
+        "datasources.yaml": {
+          apiVersion: 1,
+          datasources: [
+            {
+              name: "Prometheus",
+              type: "prometheus",
+              uid: "prometheus",
+              url: "http://kube-prometheus-stack-prometheus:9090",
+              access: "proxy",
+              isDefault: true,
+              jsonData: { httpMethod: "POST", timeInterval: "30s" },
+            },
+            {
+              name: "Loki",
+              type: "loki",
+              uid: "loki",
+              url: "http://loki:3100",
+              access: "proxy",
+            },          ],
+        },
       },
       sidecar: {
         dashboards: { enabled: true, label: "grafana_dashboard", labelValue: "1", searchNamespace: "ALL" },
