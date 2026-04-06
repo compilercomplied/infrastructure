@@ -28,7 +28,8 @@ export function configureGrafana(
 
       "grafana.ini": {
         plugins: {
-          enable_alpha: true
+          enable_alpha: true,
+          allow_loading_unsigned_plugins: "grafana-lokiexplore-app"
         }
       },
 
@@ -58,6 +59,9 @@ export function configureGrafana(
               uid: "loki",
               url: "http://loki:3100",
               access: "proxy",
+              jsonData: {
+                maxLines: 1000,
+              },
             },          ],
         },
       },

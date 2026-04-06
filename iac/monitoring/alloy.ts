@@ -9,27 +9,13 @@ export function configureAlloy(
   lokiService: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = []
 ) {
-  const alloyConfig = `
+  const alloyConfig = pulumi.interpolate`
 discovery.kubernetes "pods" {
   role = "pod"
 }
 
 discovery.relabel "pod_logs" {
   targets = discovery.kubernetes.pods.targets
-
-  // Correct path for standard K8s: /var/log/pods/<namespace>_<pod_name>_<pod_uid>/<container_name>/*.log
-  rule {
-    source_labels = [
-      "__meta_kubernetes_namespace",
-      "__meta_kubernetes_pod_name",
-      "__meta_kubernetes_pod_uid",
-      "__meta_kubernetes_pod_container_name",
-    ]
-    separator     = "_"
-    action        = "replace"
-    replacement   = "/var/log/pods/\${1}_\${2}_\${3}/\${4}/*.log"
-    target_label  = "__path__"
-  }
 
   // 1:1 Metadata Mapping
   rule {
@@ -52,6 +38,7 @@ discovery.relabel "pod_logs" {
     target_label  = "node_name"
   }
 
+  // App/Service Identification (with fallbacks)
   rule {
     source_labels = ["__meta_kubernetes_pod_label_app"]
     target_label  = "app"
@@ -59,6 +46,14 @@ discovery.relabel "pod_logs" {
 
   rule {
     source_labels = ["__meta_kubernetes_pod_label_app_kubernetes_io_name"]
+    target_label  = "app"
+  }
+
+  // If app is still missing, fallback to container name
+  rule {
+    source_labels = ["app", "__meta_kubernetes_pod_container_name"]
+    regex         = ";(.+)"
+    replacement   = "$1"
     target_label  = "app"
   }
 
@@ -73,14 +68,15 @@ discovery.relabel "pod_logs" {
   }
 }
 
-loki.source.file "pod_logs" {
+// loki.source.kubernetes reads logs via the K8s API — no host mount or path construction needed.
+loki.source.kubernetes "pod_logs" {
   targets    = discovery.relabel.pod_logs.output
   forward_to = [loki.write.local.receiver]
 }
 
 loki.write "local" {
   endpoint {
-    url = "http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push"
+    url = "http://${lokiService}.${namespace}.svc.cluster.local:3100/loki/api/v1/push"
   }
 }
 `;
@@ -94,21 +90,9 @@ loki.write "local" {
     },
     values: {
       alloy: {
-        config: alloyConfig,
-        // CRITICAL: Move these to the 'alloy' block for this chart version
-        extraVolumes: [
-          {
-            name: "varlog",
-            hostPath: { path: "/var/log" },
-          },
-        ],
-        extraVolumeMounts: [
-          {
-            name: "varlog",
-            mountPath: "/var/log",
-            readOnly: true,
-          },
-        ],
+        configMap: {
+          content: alloyConfig,
+        },
       },
       rbac: {
         create: true,
