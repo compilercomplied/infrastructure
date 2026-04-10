@@ -67,9 +67,6 @@ export function configurePrometheus(
     },
   },
     {
-      providers: {
-        kubernetes: new k8s.Provider("k8s-prometheus-provider", { namespace: namespace })
-      },
       dependsOn: dependencies,
     });
 

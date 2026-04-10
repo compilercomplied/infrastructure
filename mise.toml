@@ -3,19 +3,25 @@ pulumi = "latest"
 
 [tasks.check]
 description = "Perform a Pulumi dry-run (preview)"
-run = "pulumi preview --stack local"
+run = """
+pulumi login file://$(pwd)/.pulumi-state
+pulumi preview --stack local
+"""
 dir = "iac"
 
 [tasks.setup]
 description = "Initialize local Pulumi state and stack"
 run = """
 pulumi install
-pulumi login --local
-pulumi stack select local --create
+pulumi login file://$(pwd)/.pulumi-state
+pulumi stack select local
 """
 dir = "iac"
 
 [tasks.deploy]
 description = "Apply Pulumi changes using local stack"
-run = "pulumi up --stack local"
+run = """
+pulumi login file://$(pwd)/.pulumi-state
+pulumi up --stack local
+"""
 dir = "iac"

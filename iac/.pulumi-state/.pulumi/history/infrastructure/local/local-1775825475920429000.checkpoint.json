@@ -1,0 +1,252 @@
+{
+    "version": 3,
+    "checkpoint": {
+        "stack": "organization/infrastructure/local",
+        "latest": {
+            "manifest": {
+                "time": "2026-04-10T14:51:15.918172+02:00",
+                "magic": "d356bec6413f613372e5158db9b9441f6f60fd81ed9a5e4980d2b8af2faf06fd",
+                "version": "v3.228.0"
+            },
+            "secrets_providers": {
+                "type": "passphrase",
+                "state": {
+                    "salt": "v1:HClLMcS4IHw=:v1:XmismE5iopZCqRkA:oml9+bqTFygOOVLsQW1xrAzsTNTZmA=="
+                }
+            },
+            "resources": [
+                {
+                    "urn": "urn:pulumi:local::infrastructure::pulumi:pulumi:Stack::infrastructure-local",
+                    "custom": false,
+                    "type": "pulumi:pulumi:Stack",
+                    "created": "2026-04-10T12:14:05.787312Z",
+                    "modified": "2026-04-10T12:14:05.787312Z"
+                },
+                {
+                    "urn": "urn:pulumi:local::infrastructure::pulumi:providers:kubernetes::default_4_24_1",
+                    "custom": true,
+                    "id": "d4c6f7df-da07-4ed7-8192-b93c5b34d15e",
+                    "type": "pulumi:providers:kubernetes",
+                    "inputs": {
+                        "__internal": {},
+                        "version": "4.24.1"
+                    },
+                    "outputs": {
+                        "version": "4.24.1"
+                    },
+                    "created": "2026-04-10T12:14:05.823003Z",
+                    "modified": "2026-04-10T12:14:05.823003Z"
+                },
+                {
+                    "urn": "urn:pulumi:local::infrastructure::kubernetes:core/v1:Namespace::agents",
+                    "custom": true,
+                    "id": "agents",
+                    "type": "kubernetes:core/v1:Namespace",
+                    "inputs": {
+                        "apiVersion": "v1",
+                        "kind": "Namespace",
+                        "metadata": {
+                            "labels": {
+                                "kubernetes.io/metadata.name": "agents"
+                            },
+                            "name": "agents"
+                        },
+                        "spec": {
+                            "finalizers": [
+                                "kubernetes"
+                            ]
+                        }
+                    },
+                    "outputs": {
+                        "__fieldManager": "pulumi-kubernetes-169f02bb",
+                        "__initialApiVersion": "v1",
+                        "__inputs": {
+                            "apiVersion": "v1",
+                            "kind": "Namespace",
+                            "metadata": {
+                                "labels": {
+                                    "kubernetes.io/metadata.name": "agents"
+                                },
+                                "name": "agents"
+                            },
+                            "spec": {
+                                "finalizers": [
+                                    "kubernetes"
+                                ]
+                            }
+                        },
+                        "apiVersion": "v1",
+                        "kind": "Namespace",
+                        "metadata": {
+                            "creationTimestamp": "2026-02-08T21:01:19Z",
+                            "labels": {
+                                "kubernetes.io/metadata.name": "agents"
+                            },
+                            "managedFields": [
+                                {
+                                    "apiVersion": "v1",
+                                    "fieldsType": "FieldsV1",
+                                    "fieldsV1": {
+                                        "f:metadata": {
+                                            "f:labels": {
+                                                ".": {},
+                                                "f:kubernetes.io/metadata.name": {}
+                                            }
+                                        },
+                                        "f:spec": {
+                                            "f:finalizers": {}
+                                        }
+                                    },
+                                    "manager": "before-first-apply",
+                                    "operation": "Update",
+                                    "time": "2026-04-05T16:55:55Z"
+                                }
+                            ],
+                            "name": "agents",
+                            "resourceVersion": "3059074",
+                            "uid": "4cd99b39-a660-4349-a1ae-496b3676aea6"
+                        },
+                        "spec": {
+                            "finalizers": [
+                                "kubernetes"
+                            ]
+                        },
+                        "status": {
+                            "phase": "Active"
+                        }
+                    },
+                    "parent": "urn:pulumi:local::infrastructure::pulumi:pulumi:Stack::infrastructure-local",
+                    "protect": true,
+                    "provider": "urn:pulumi:local::infrastructure::pulumi:providers:kubernetes::default_4_24_1::d4c6f7df-da07-4ed7-8192-b93c5b34d15e",
+                    "created": "2026-04-10T12:14:06.602015Z",
+                    "modified": "2026-04-10T12:14:06.602015Z"
+                },
+                {
+                    "urn": "urn:pulumi:local::infrastructure::kubernetes:core/v1:Namespace::agents-control-plane",
+                    "custom": true,
+                    "id": "agents-control-plane",
+                    "type": "kubernetes:core/v1:Namespace",
+                    "inputs": {
+                        "apiVersion": "v1",
+                        "kind": "Namespace",
+                        "metadata": {
+                            "labels": {
+                                "kubernetes.io/metadata.name": "agents-control-plane"
+                            },
+                            "name": "agents-control-plane"
+                        },
+                        "spec": {
+                            "finalizers": [
+                                "kubernetes"
+                            ]
+                        }
+                    },
+                    "outputs": {
+                        "__fieldManager": "pulumi-kubernetes-169f02bb",
+                        "__initialApiVersion": "v1",
+                        "__inputs": {
+                            "apiVersion": "v1",
+                            "kind": "Namespace",
+                            "metadata": {
+                                "labels": {
+                                    "kubernetes.io/metadata.name": "agents-control-plane"
+                                },
+                                "name": "agents-control-plane"
+                            },
+                            "spec": {
+                                "finalizers": [
+                                    "kubernetes"
+                                ]
+                            }
+                        },
+                        "apiVersion": "v1",
+                        "kind": "Namespace",
+                        "metadata": {
+                            "creationTimestamp": "2026-01-25T20:45:00Z",
+                            "labels": {
+                                "kubernetes.io/metadata.name": "agents-control-plane"
+                            },
+                            "managedFields": [
+                                {
+                                    "apiVersion": "v1",
+                                    "fieldsType": "FieldsV1",
+                                    "fieldsV1": {
+                                        "f:metadata": {
+                                            "f:labels": {
+                                                ".": {},
+                                                "f:kubernetes.io/metadata.name": {}
+                                            }
+                                        },
+                                        "f:spec": {
+                                            "f:finalizers": {}
+                                        }
+                                    },
+                                    "manager": "before-first-apply",
+                                    "operation": "Update",
+                                    "time": "2026-02-08T16:51:44Z"
+                                }
+                            ],
+                            "name": "agents-control-plane",
+                            "resourceVersion": "1585597",
+                            "uid": "e09d81e8-b3fa-411f-9ee5-673c893c100f"
+                        },
+                        "spec": {
+                            "finalizers": [
+                                "kubernetes"
+                            ]
+                        },
+                        "status": {
+                            "phase": "Active"
+                        }
+                    },
+                    "parent": "urn:pulumi:local::infrastructure::pulumi:pulumi:Stack::infrastructure-local",
+                    "protect": true,
+                    "provider": "urn:pulumi:local::infrastructure::pulumi:providers:kubernetes::default_4_24_1::d4c6f7df-da07-4ed7-8192-b93c5b34d15e",
+                    "created": "2026-04-10T12:14:06.602015Z",
+                    "modified": "2026-04-10T12:51:15.904126Z"
+                },
+                {
+                    "urn": "urn:pulumi:local::infrastructure::kubernetes:core/v1:ServiceAccount::agent-orchestrator-serviceaccount",
+                    "custom": true,
+                    "id": "agents-control-plane/agent-orchestrator-serviceaccount",
+                    "type": "kubernetes:core/v1:ServiceAccount",
+                    "inputs": {
+                        "apiVersion": "v1",
+                        "kind": "ServiceAccount",
+                        "metadata": {
+                            "name": "agent-orchestrator-serviceaccount",
+                            "namespace": "agents-control-plane"
+                        }
+                    },
+                    "outputs": {
+                        "__fieldManager": "pulumi-kubernetes-169f02bb",
+                        "__initialApiVersion": "v1",
+                        "__inputs": {
+                            "apiVersion": "v1",
+                            "kind": "ServiceAccount",
+                            "metadata": {
+                                "name": "agent-orchestrator-serviceaccount",
+                                "namespace": "agents-control-plane"
+                            }
+                        },
+                        "apiVersion": "v1",
+                        "kind": "ServiceAccount",
+                        "metadata": {
+                            "creationTimestamp": "2026-01-25T20:45:02Z",
+                            "name": "agent-orchestrator-serviceaccount",
+                            "namespace": "agents-control-plane",
+                            "resourceVersion": "1221725",
+                            "uid": "02164918-bdca-445c-81b8-76e6d7d55a79"
+                        }
+                    },
+                    "parent": "urn:pulumi:local::infrastructure::pulumi:pulumi:Stack::infrastructure-local",
+                    "protect": true,
+                    "provider": "urn:pulumi:local::infrastructure::pulumi:providers:kubernetes::default_4_24_1::d4c6f7df-da07-4ed7-8192-b93c5b34d15e",
+                    "created": "2026-04-10T12:14:06.602015Z",
+                    "modified": "2026-04-10T12:51:15.904009Z"
+                }
+            ],
+            "metadata": {}
+        }
+    }
+}

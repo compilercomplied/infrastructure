@@ -73,9 +73,6 @@ export function configureLoki(
     },
   },
     {
-      providers: {
-        kubernetes: new k8s.Provider("k8s-loki-provider", { namespace: namespace })
-      },
       dependsOn: dependencies,
     });
 

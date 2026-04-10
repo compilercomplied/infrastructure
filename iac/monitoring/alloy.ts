@@ -103,9 +103,6 @@ loki.write "local" {
     },
   },
     {
-      providers: {
-        kubernetes: new k8s.Provider("k8s-alloy-provider", { namespace: namespace })
-      },
       dependsOn: dependencies,
     });
 

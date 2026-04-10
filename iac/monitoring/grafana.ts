@@ -20,7 +20,7 @@ export function configureGrafana(
     },
     values: {
       adminPassword: adminPassword,
-      persistence: { enabled: true, size: "10Gi" },
+      persistence: { enabled: true, size: "10Gi", storageClassName: "local-path" },
       
       plugins: [
         "grafana-lokiexplore-app"
@@ -71,8 +71,15 @@ export function configureGrafana(
       },
     },
   }, {
-    providers: { kubernetes: new k8s.Provider("k8s-grafana-provider", { namespace: namespace }) },
     dependsOn: dependencies,
+    transformations: [(args: pulumi.ResourceTransformationArgs) => {
+      // Kubernetes normalizes rules:[] to null; strip empty arrays to avoid perpetual diff.
+      const props = args.props as any;
+      if (Array.isArray(props?.rules) && props.rules.length === 0) {
+        delete props.rules;
+      }
+      return { props, opts: args.opts };
+    }],
   });
 
   return grafana;
