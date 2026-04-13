@@ -2,7 +2,7 @@ encryptionsalt: v1:HClLMcS4IHw=:v1:XmismE5iopZCqRkA:oml9+bqTFygOOVLsQW1xrAzsTNTZ
 config:
   infrastructure:ghcrUsername: compilercomplied
   infrastructure:ghcrPassword:
-    secure: v1:SAp7iElx5SqRR/gF:fmlTqp3FAhzi99LXDrNXKCywQjxI8viXWoCmN4K0yRvF9vSvfo4Qa7GswZR5H+Q5TV025XKJ5bM=
+    secure: v1:Wbm+o2sm1mq7YSqH:Imvne8o343PeCb+zic6W/N5A7Jr1jFqoPp2SH0LeET2v0WsvedPmG8ngH6/eT6aef21g8Lpp3QE=
   infrastructure:ghcrEmail: 8614035+compilercomplied@users.noreply.github.com
   tailscale:clientId: k3DUmg4Dak11CNTRL
   tailscale:clientSecret:
