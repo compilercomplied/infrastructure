@@ -1,47 +1,38 @@
 # Infrastructure
 
-This project contains the infrastructure-as-code (IaC) for the system.
+This project contains the infrastructure-as-code (IaC) for a k3s cluster containing different workflows.
 
-Tailscale is used to securely expose services like Grafana.
+Tailscale is used to securely expose Grafana.
 
-## Local Deployment
+Check [workloads.md](./docs/workloads.md) to see the currently configured
+workloads covering different features and services.
 
-To deploy the infrastructure to your local k3s cluster:
+All infrastructure code written in pulumi is using pulumi servers for the state.
 
-1. **Navigate to the IaC directory**:
-   ```bash
-   cd iac
-   ```
+# Deployment view
 
-2. **Select the local stack**:
-   ```bash
-   pulumi stack select local
-   ```
+This is deployed locally through the local pulumi stack. Related tasks are in
+`mise.toml`.
 
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+# Local development
 
-4. **Deploy**:
-   ```bash
-   pulumi up
-   ```
+Mise is a pre-requisite. The task `mise run project-setup` configures the
+project.
 
 ## Grafana Access
 
 You can use the scripts in the `scripts/` directory to easily access Grafana locally via port-forwarding.
 
-### 1. Port Forward
-Run this script in a separate terminal to access Grafana at [http://localhost:3000](http://localhost:3000).
-
-```bash
-./scripts/port-forward-grafana.sh
-```
-
-### 2. Get Admin Password
+### 1. Get Admin Password
 Run this script to retrieve and decode the admin user's password.
 
 ```bash
 ./scripts/get-grafana-password.sh
+```
+
+### 2. Port Forward
+Run this script in a separate terminal to access Grafana at [http://localhost:3000](http://localhost:3000).
+
+```bash
+./scripts/port-forward-grafana.sh
 ```
