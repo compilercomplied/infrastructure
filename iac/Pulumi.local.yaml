@@ -34,3 +34,6 @@ config:
   authentik:url: https://auth.gdario.dev
   selfhosted:tandoori-secret:
     secure: v1:/GQsWrM01KeSd0Pu:voQirc/p/FuNMcWuGdG0NyimTfax04Lhs1RLpqlCfu/8hb6NaJ0ry26CaWXRSlVZ85u9aC7H/Gjq5W7beuBCJ41QVpdRQa9dcCxitu6Pww==
+  selfhosted:googleClientId: 378512581891-tlc2ft2ni04025rn2t48uvl9oap466f8.apps.googleusercontent.com
+  selfhosted:googleClientSecret:
+    secure: v1:tm9NKWCBw3VzYZ+X:oSsqAJsPcf4w01baC+wO8gcHoIpKOZrYAbg8gKuvU+KJUzXAsY5ZVvap3/eqhsb4hp4B

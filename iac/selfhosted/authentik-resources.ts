@@ -5,6 +5,17 @@ export function configureAuthentikResources() {
   const selfhostedConfig = new pulumi.Config("selfhosted");
   const tandooriSecret = selfhostedConfig.requireSecret("tandoori-secret");
 
+  // 1. Get the default scope mappings for OIDC
+  const scopeOpenid = authentik.getPropertyMappingProviderScopeOutput({
+    managed: "goauthentik.io/providers/oauth2/scope-openid",
+  });
+  const scopeProfile = authentik.getPropertyMappingProviderScopeOutput({
+    managed: "goauthentik.io/providers/oauth2/scope-profile",
+  });
+  const scopeEmail = authentik.getPropertyMappingProviderScopeOutput({
+    managed: "goauthentik.io/providers/oauth2/scope-email",
+  });
+
   // 2. Create the OAuth2/OIDC Provider for Tandoor Recipes
   const tandoorProvider = new authentik.ProviderOauth2("tandoor-recipes-provider", {
     name: "Tandoor Recipes SSO",
@@ -22,6 +33,12 @@ export function configureAuthentikResources() {
         url: "https://recipes.gdario.dev/accounts/oidc/authentik/login/callback/",
       },
     ],
+    // Map standard scopes so that the OIDC userinfo endpoint works
+    propertyMappings: [
+      scopeOpenid.id,
+      scopeProfile.id,
+      scopeEmail.id,
+    ],
   });
 
   // 3. Create the Application mapping which links the Provider to Authentik's portal
@@ -35,8 +52,25 @@ export function configureAuthentikResources() {
     metaPublisher: "GDario Labs",
   });
 
+  const googleClientId = selfhostedConfig.require("googleClientId");
+  const googleClientSecret = selfhostedConfig.requireSecret("googleClientSecret");
+
+  // 4. Create Google OAuth Source in Authentik
+  const googleSource = new authentik.SourceOauth("google-source", {
+    name: "Google",
+    slug: "google",
+    providerType: "google",
+    consumerKey: googleClientId,
+    consumerSecret: googleClientSecret,
+    // Bind the source-specific authentication flow to log in users post-redirect
+    authenticationFlow: "a7c56c41-379d-417c-9885-f0d55e174317",
+    // Link Google accounts automatically to existing users with the same email
+    userMatchingMode: "email_link",
+  });
+
   return {
     tandoorProviderId: tandoorProvider.id,
     tandoorAppSlug: tandoorApp.slug,
+    googleSourceId: googleSource.id,
   };
 }

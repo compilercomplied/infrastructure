@@ -29,6 +29,24 @@ export function configureTandoorRecipes(
     },
   }, { dependsOn: dependencies });
 
+  // Construct the SOCIALACCOUNT_PROVIDERS JSON string securely utilizing Pulumi's Output interpolation
+  const socialaccountProviders = pulumi.interpolate`{
+    "openid_connect": {
+      "SERVERS": [
+        {
+          "id": "authentik",
+          "name": "Authentik",
+          "server_url": "https://auth.gdario.dev/application/o/tandoor-recipes/.well-known/openid-configuration",
+          "token_auth_method": "client_secret_basic",
+          "APP": {
+            "client_id": "tandoor-recipes-client-id",
+            "secret": "${tandooriSecret}"
+          }
+        }
+      ]
+    }
+  }`;
+
   // Create Secret for Django security and PostgreSQL connection
   const tandoorSecrets = new k8s.core.v1.Secret(`${name}-secrets`, {
     metadata: {
@@ -38,7 +56,7 @@ export function configureTandoorRecipes(
     stringData: {
       "SECRET_KEY": tandoorSecretKey,
       "POSTGRES_PASSWORD": tandoorDbPassword,
-      "TANDOOR_OIDC_CLIENT_SECRET": tandooriSecret,
+      "SOCIALACCOUNT_PROVIDERS": socialaccountProviders,
     },
   }, { dependsOn: dependencies });
 
@@ -70,9 +88,7 @@ export function configureTandoorRecipes(
               { name: "POSTGRES_USER", value: "tandoor" },
               { name: "ALLOWED_HOSTS", value: "*" },
               { name: "TANDOOR_PORT", value: "8080" },
-              { name: "TANDOOR_OIDC_ENABLED", value: "True" },
-              { name: "TANDOOR_OIDC_CLIENT_ID", value: "tandoor-recipes-client-id" },
-              { name: "TANDOOR_OIDC_URL", value: "https://auth.gdario.dev/application/o/tandoor-recipes/" },
+              { name: "SOCIAL_PROVIDERS", value: "allauth.socialaccount.providers.openid_connect" },
               {
                 name: "SECRET_KEY",
                 valueFrom: {
@@ -92,11 +108,11 @@ export function configureTandoorRecipes(
                 },
               },
               {
-                name: "TANDOOR_OIDC_CLIENT_SECRET",
+                name: "SOCIALACCOUNT_PROVIDERS",
                 valueFrom: {
                   secretKeyRef: {
                     name: tandoorSecrets.metadata.name,
-                    key: "TANDOOR_OIDC_CLIENT_SECRET",
+                    key: "SOCIALACCOUNT_PROVIDERS",
                   },
                 },
               },
