@@ -8,6 +8,7 @@ export function configureTandoorRecipes(
   const config = new pulumi.Config("selfhosted");
   const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
   const tandoorSecretKey = config.requireSecret("tandoorSecretKey");
+  const tandooriSecret = config.requireSecret("tandoori-secret");
 
   const name = "tandoor-recipes";
 
@@ -37,6 +38,7 @@ export function configureTandoorRecipes(
     stringData: {
       "SECRET_KEY": tandoorSecretKey,
       "POSTGRES_PASSWORD": tandoorDbPassword,
+      "TANDOOR_OIDC_CLIENT_SECRET": tandooriSecret,
     },
   }, { dependsOn: dependencies });
 
@@ -68,6 +70,9 @@ export function configureTandoorRecipes(
               { name: "POSTGRES_USER", value: "tandoor" },
               { name: "ALLOWED_HOSTS", value: "*" },
               { name: "TANDOOR_PORT", value: "8080" },
+              { name: "TANDOOR_OIDC_ENABLED", value: "True" },
+              { name: "TANDOOR_OIDC_CLIENT_ID", value: "tandoor-recipes-client-id" },
+              { name: "TANDOOR_OIDC_URL", value: "https://auth.gdario.dev/application/o/tandoor-recipes/" },
               {
                 name: "SECRET_KEY",
                 valueFrom: {
@@ -83,6 +88,15 @@ export function configureTandoorRecipes(
                   secretKeyRef: {
                     name: tandoorSecrets.metadata.name,
                     key: "POSTGRES_PASSWORD",
+                  },
+                },
+              },
+              {
+                name: "TANDOOR_OIDC_CLIENT_SECRET",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: tandoorSecrets.metadata.name,
+                    key: "TANDOOR_OIDC_CLIENT_SECRET",
                   },
                 },
               },
@@ -124,5 +138,41 @@ export function configureTandoorRecipes(
     },
   }, { dependsOn: deployment });
 
-  return service;
+  // Ingress for Tandoor Recipes with automatic Let's Encrypt TLS provisioning
+  const ingress = new k8s.networking.v1.Ingress(`${name}-ingress`, {
+    metadata: {
+      name: `${name}-ingress`,
+      namespace,
+      annotations: {
+        "cert-manager.io/cluster-issuer": "letsencrypt-prod",
+        "traefik.ingress.kubernetes.io/router.entrypoints": "websecure",
+        "traefik.ingress.kubernetes.io/router.tls": "true",
+      },
+    },
+    spec: {
+      ingressClassName: "traefik",
+      rules: [{
+        host: "recipes.gdario.dev",
+        http: {
+          paths: [{
+            path: "/",
+            pathType: "Prefix",
+            backend: {
+              service: {
+                name: service.metadata.name,
+                port: { number: 80 },
+              },
+            },
+          }],
+        },
+      }],
+      tls: [{
+        hosts: ["recipes.gdario.dev"],
+        secretName: "tandoor-recipes-tls-cert",
+      }],
+    },
+  }, { dependsOn: [service] });
+
+  return { service, ingress };
 }
+

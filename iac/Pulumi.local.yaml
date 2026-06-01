@@ -29,3 +29,8 @@ config:
     secure: v1:l7WYkpBVdIuGso+S:ekYbYHWBh0ofFSLT47puwjpYj3cik4nSpIBAnSNl
   selfhosted:authentikAdminPassword:
     secure: v1:JHK36FRjKPpTcqKC:IwwW05k0UnYzHqrkhmy9Mpth9tvijoYqKBkR9flz
+  authentik:token:
+    secure: v1:8jh/2Ilrn7XBehne:0IjGODf8JZK5GFXVsyVHfJCrorfjNYohMuXIj08q7vt60hluBmykUjICT2Lc06iEbfO75KvTCFObko8jcyk63Z6Hzjsj0A+GeeYEYg==
+  authentik:url: https://auth.gdario.dev
+  selfhosted:tandoori-secret:
+    secure: v1:/GQsWrM01KeSd0Pu:voQirc/p/FuNMcWuGdG0NyimTfax04Lhs1RLpqlCfu/8hb6NaJ0ry26CaWXRSlVZ85u9aC7H/Gjq5W7beuBCJ41QVpdRQa9dcCxitu6Pww==

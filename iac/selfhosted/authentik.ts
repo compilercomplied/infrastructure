@@ -12,7 +12,7 @@ export function configureAuthentik(
   const authentikAdminPassword = config.requireSecret("authentikAdminPassword");
 
   const name = "authentik";
-  const image = "ghcr.io/goauthentik/server:2024.4.2";
+  const image = "ghcr.io/goauthentik/server:2024.10.3";
 
   // 1. Create PVCs for persistent customization storage (media and templates)
   const mediaPvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-media-pvc`, {
