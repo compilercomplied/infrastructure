@@ -8,6 +8,7 @@ export function configureSharedPostgres(
   const config = new pulumi.Config("selfhosted");
   const postgresPassword = config.requireSecret("postgresPassword");
   const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
+  const authentikDbPassword = config.requireSecret("authentikDbPassword");
 
   const name = "shared-postgres";
 
@@ -41,6 +42,13 @@ export function configureSharedPostgres(
         GRANT ALL PRIVILEGES ON DATABASE tandoor TO tandoor;
         \c tandoor
         GRANT ALL ON SCHEMA public TO tandoor;
+      `,
+      "02-init-authentik.sql": pulumi.interpolate`
+        CREATE USER authentik WITH PASSWORD '${authentikDbPassword}';
+        CREATE DATABASE authentik OWNER authentik;
+        GRANT ALL PRIVILEGES ON DATABASE authentik TO authentik;
+        \c authentik
+        GRANT ALL ON SCHEMA public TO authentik;
       `
     },
   }, { dependsOn: dependencies });
