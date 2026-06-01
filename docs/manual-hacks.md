@@ -67,3 +67,18 @@ If the bootstrap password fails, is lost, or gets locked out, you can force a pa
 ```bash
 kubectl exec -n selfhosted deployment/authentik-server -c server -it -- ak shell -c "from authentik.core.models import User; u = User.objects.get(username='akadmin'); u.set_password('NEW_SECURE_PASSWORD'); u.save()"
 ```
+
+### 2. Hardcoded Flow UUIDs in Pulumi Infrastructure (The OIDC Redirect Hack)
+
+When configuring OAuth Sources (like Google) in Pulumi, binding the source to the correct flows is critical to ensuring the OIDC login context is preserved (so users are properly redirected back to applications like Tandoor Recipes instead of the Authentik dashboard).
+
+Currently, the Pulumi Authentik provider lacks data sources for querying some of the default built-in flows by name. As a workaround ("hack"), we hardcode the static UUIDs of Authentik's default flows directly into the `authentik.SourceOauth` configuration in `authentik-resources.ts`.
+
+These are the globally static UUIDs assigned by Authentik to its default flows:
+- **`default-source-authentication`**: `a7c56c41-379d-417c-9885-f0d55e174317`
+- **`default-source-enrollment`**: `96f96a88-5eec-46fd-9943-ba706bfdc8be`
+
+If Authentik ever changes these IDs in a future major release (which is rare, as they are seeded data), these may need to be manually updated by checking `ak shell`:
+```bash
+kubectl exec -n selfhosted deployment/authentik-server -c server -- ak shell -c "from authentik.flows.models import Flow; print([(f.slug, str(f.pk)) for f in Flow.objects.all()])"
+```

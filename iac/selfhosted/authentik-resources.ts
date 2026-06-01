@@ -62,8 +62,9 @@ export function configureAuthentikResources() {
     providerType: "google",
     consumerKey: googleClientId,
     consumerSecret: googleClientSecret,
-    // Bind the source-specific authentication flow to log in users post-redirect
+    // Bind the source authentication flow to handle user login post-redirect and preserve context
     authenticationFlow: "a7c56c41-379d-417c-9885-f0d55e174317",
+    enrollmentFlow: "96f96a88-5eec-46fd-9943-ba706bfdc8be",
     // Link Google accounts automatically to existing users with the same email
     userMatchingMode: "email_link",
   });
