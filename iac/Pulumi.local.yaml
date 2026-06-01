@@ -15,3 +15,9 @@ config:
     secure: v1:jG10p484aW1CvqM4:xXY4od6SBuzMkg1P7a0OcwcVFqVRgYqaU2xOh0JLKp99VVVlM+yUPnggS3cKi/K1TTsDybnPZGw=
   agents:pulumiPassphrase:
     secure: v1:Yy0DVLhnpI+nX3MD:Ri1z1tAo8t5PZVhq5ZJ0GAOqNJaiyOhrfFaFbOcDaS7HOv61+vOIY2MWnI9jb0yKlQiSq4n/dTI/CTtuqRoi98ertQ==
+  selfhosted:postgresPassword:
+    secure: v1:WAh7AZPL54ZZBYkz:n13X3s6cY+/jxJ3iEMHpdb3ZoAVwVZDjGkRRP82f
+  selfhosted:tandoorDbPassword:
+    secure: v1:DlCrHU5+bHs7baor:vHXXXF7DQD9qCvxa91Pp4n2DWByrgvp2osynsdJ5
+  selfhosted:tandoorSecretKey:
+    secure: v1:sXM6s/lzaAlCh6jY:ZeIJA/EhGPCJDibM12qCpbldEdFcFwUj7GpmGtbLdrggJ+ocM9bq7XeC55/yBINcWrsPndqCPLEUoxqxqQ==

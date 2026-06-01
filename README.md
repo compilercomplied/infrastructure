@@ -2,7 +2,7 @@
 
 This project contains the infrastructure-as-code (IaC) for a k3s cluster containing different workflows.
 
-Tailscale is used to securely expose Grafana.
+Tailscale is used to securely expose Grafana and other services.
 
 Check [workloads.md](./docs/workloads.md) to see the currently configured
 workloads covering different features and services.
