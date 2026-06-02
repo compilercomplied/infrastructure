@@ -55,6 +55,11 @@ export function configureAuthentikResources() {
     providerType: "google",
     consumerKey: googleClientId,
     consumerSecret: googleClientSecret,
+    // Provide URLs explicitly to prevent Pulumi diffs on every run
+    accessTokenUrl: "https://oauth2.googleapis.com/token",
+    authorizationUrl: "https://accounts.google.com/o/oauth2/v2/auth",
+    oidcJwksUrl: "https://www.googleapis.com/oauth2/v3/certs",
+    profileUrl: "https://openidconnect.googleapis.com/v1/userinfo",
 		// This is a manual hack that should have been automated through the
 		// authentik pulumi provider.
     authenticationFlow: "a7c56c41-379d-417c-9885-f0d55e174317",
