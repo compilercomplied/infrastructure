@@ -38,6 +38,8 @@ export function configureLinkwarden(
       "NEXTAUTH_SECRET": linkwardenNextAuthSecret,
       "POSTGRES_PASSWORD": linkwardenDbPassword,
       "AUTHENTIK_CLIENT_SECRET": linkwardenSecret,
+      "NEXT_PUBLIC_DISABLE_REGISTRATION": "true",
+      "NEXT_PUBLIC_CREDENTIALS_ENABLED": "false",
     },
   }, { dependsOn: dependencies });
 
@@ -60,6 +62,7 @@ export function configureLinkwarden(
             name: name,
             image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
             ports: [{ containerPort: 3000, name: "http" }],
+            envFrom: [{ secretRef: { name: linkwardenSecrets.metadata.name } }],
             env: [
               { name: "DATABASE_URL", value: pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/linkwarden` },
               { name: "NEXTAUTH_URL", value: "https://linkwarden.gdario.dev/api/v1/auth" },
@@ -67,24 +70,6 @@ export function configureLinkwarden(
               { name: "AUTHENTIK_CUSTOM_NAME", value: "authentik" },
               { name: "AUTHENTIK_ISSUER", value: "https://auth.gdario.dev/application/o/linkwarden" },
               { name: "AUTHENTIK_CLIENT_ID", value: "linkwarden-client-id" },
-              {
-                name: "NEXTAUTH_SECRET",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: linkwardenSecrets.metadata.name,
-                    key: "NEXTAUTH_SECRET",
-                  },
-                },
-              },
-              {
-                name: "AUTHENTIK_CLIENT_SECRET",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: linkwardenSecrets.metadata.name,
-                    key: "AUTHENTIK_CLIENT_SECRET",
-                  },
-                },
-              },
             ],
             volumeMounts: [
               {

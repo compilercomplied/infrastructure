@@ -88,6 +88,7 @@ export function configureTandoorRecipes(
               { name: "ALLOWED_HOSTS", value: "*" },
               { name: "TANDOOR_PORT", value: "8080" },
               { name: "SOCIAL_PROVIDERS", value: "allauth.socialaccount.providers.openid_connect" },
+              { name: "HIDE_LOGIN_FORM", value: "1" },
               {
                 name: "SECRET_KEY",
                 valueFrom: {
