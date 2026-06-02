@@ -153,7 +153,7 @@ export function configureAuthentik(
         metadata: { labels: { app: serverName } },
         spec: {
           containers: [{
-            name: "server",
+            name: "authentik-server",
             image: image,
             args: ["server"],
             ports: [{ containerPort: 9000, name: "http" }],
@@ -196,7 +196,7 @@ export function configureAuthentik(
         metadata: { labels: { app: workerName } },
         spec: {
           containers: [{
-            name: "worker",
+            name: "authentik-worker",
             image: image,
             args: ["worker"],
             env: commonEnv,

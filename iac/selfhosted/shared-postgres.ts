@@ -82,7 +82,7 @@ export function configureSharedPostgres(
         },
         spec: {
           containers: [{
-            name: "postgres",
+            name: "shared-postgres",
             image: "postgres:16-alpine",
             ports: [{ containerPort: 5432, name: "postgres" }],
             env: [
