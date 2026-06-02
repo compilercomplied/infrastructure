@@ -23,6 +23,7 @@ export function configureAuthentikResources() {
 		// authentik pulumi provider.
     authorizationFlow: "9faae557-fad6-4f95-876c-545adc95b3e4",
     invalidationFlow: "12830a53-f573-488d-bdc2-f12ddc59c0a7",
+    signingKey: "e96bc021-31ba-451e-b3ae-a7c62b7f1363",
     
     allowedRedirectUris: [
       {
@@ -67,9 +68,44 @@ export function configureAuthentikResources() {
     userMatchingMode: "email_link",
   });
 
+  const linkwardenSecret = selfhostedConfig.requireSecret("linkwarden-secret");
+
+  const linkwardenProvider = new authentik.ProviderOauth2("linkwarden-provider", {
+    name: "Linkwarden SSO",
+    clientId: "linkwarden-client-id",
+    clientSecret: linkwardenSecret,
+    clientType: "confidential",
+    authorizationFlow: "9faae557-fad6-4f95-876c-545adc95b3e4",
+    invalidationFlow: "12830a53-f573-488d-bdc2-f12ddc59c0a7",
+    signingKey: "e96bc021-31ba-451e-b3ae-a7c62b7f1363",
+    
+    allowedRedirectUris: [
+      {
+        matching_mode: "strict",
+        url: "https://linkwarden.gdario.dev/api/v1/auth/callback/authentik",
+      },
+    ],
+    propertyMappings: [
+      scopeOpenid.id,
+      scopeProfile.id,
+      scopeEmail.id,
+    ],
+  });
+
+  const linkwardenApp = new authentik.Application("linkwarden-app", {
+    name: "Linkwarden",
+    slug: "linkwarden",
+    protocolProvider: linkwardenProvider.id.apply(id => parseInt(id)),
+    
+    metaLaunchUrl: "https://linkwarden.gdario.dev",
+    metaPublisher: "GDario Labs",
+  });
+
   return {
     tandoorProviderId: tandoorProvider.id,
     tandoorAppSlug: tandoorApp.slug,
     googleSourceId: googleSource.id,
+    linkwardenProviderId: linkwardenProvider.id,
+    linkwardenAppSlug: linkwardenApp.slug,
   };
 }

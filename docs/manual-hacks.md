@@ -82,3 +82,37 @@ If Authentik ever changes these IDs in a future major release (which is rare, as
 ```bash
 kubectl exec -n selfhosted deployment/authentik-server -c server -- ak shell -c "from authentik.flows.models import Flow; print([(f.slug, str(f.pk)) for f in Flow.objects.all()])"
 ```
+
+---
+
+## 💾 Database Operations
+
+### 1. Manual Database Initialization inside `shared-postgres`
+
+The official `postgres` Docker container only executes the `.sql` init scripts in `/docker-entrypoint-initdb.d/` on the very first boot when the PVC data directory is empty. When adding new applications (like Linkwarden) to the existing `shared-postgres` database cluster, the updated initialization scripts added via Pulumi are ignored.
+
+Instead of writing a complex Kubernetes Job to handle idempotency, we manually execute the new script inside the running Postgres container:
+
+```bash
+# Execute the newly added init script inside the running postgres pod
+kubectl exec -n selfhosted statefulset/shared-postgres -- psql -U postgres -f /docker-entrypoint-initdb.d/03-init-linkwarden.sql
+```
+
+### 2. Manual OAuth2 Provider `grant_types` Configuration
+
+In newer versions of Authentik (e.g. 2026.5.2), the `grant_types` array for OAuth2 providers is strictly enforced but defaults to an empty list. The current `@pulumi/authentik` provider SDK does not yet support configuring this field. Consequently, newly created OAuth2 providers via Pulumi will reject all authentication attempts with an `Invalid grant_type for provider` error.
+
+To bypass this schema limitation, you must manually append the required grant types (like `authorization_code` and `refresh_token`) to the providers directly in the Authentik database:
+
+```bash
+kubectl exec -n selfhosted deployment/authentik-worker -- python -c "
+import os
+import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'authentik.root.settings')
+django.setup()
+from authentik.providers.oauth2.models import OAuth2Provider
+for p in OAuth2Provider.objects.all():
+    p.grant_types = ['authorization_code', 'refresh_token']
+    p.save()
+"
+```

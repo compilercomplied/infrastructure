@@ -37,3 +37,9 @@ config:
   selfhosted:googleClientId: 378512581891-tlc2ft2ni04025rn2t48uvl9oap466f8.apps.googleusercontent.com
   selfhosted:googleClientSecret:
     secure: v1:tm9NKWCBw3VzYZ+X:oSsqAJsPcf4w01baC+wO8gcHoIpKOZrYAbg8gKuvU+KJUzXAsY5ZVvap3/eqhsb4hp4B
+  selfhosted:linkwardenDbPassword:
+    secure: v1:kXtJMf3gM2uMJ6ol:Gpy6o2iyo+S1wYCAvpxRW6c/arkzY1IPSUkXJVgz/ZAi2/JmaSV4skYt3J4r2IWj
+  selfhosted:linkwarden-secret:
+    secure: v1:eiQQWNoddxK+dpeh:UIc8HwmEkM4DeK+imw+73Kd9l0U5odzg2mQaWs/vx+d5gGejQSZy/Ft+6a1XEOJmW3KUlKYM626WvPkBKKfuPcc/Zwe/ueCJMRxaArZvpac=
+  selfhosted:linkwardenNextAuthSecret:
+    secure: v1:0uzHNTi0IxoJnMh4:DpUP1SrwKjLczuQlJDffwI36331jYQHzi2fynJiNAnZuVDcjBHIe3WGExGvfhfXb0B2fBSDvMzCBXQuoqOnLh0tQi2yjKTkPD6VWN+1mLE4=

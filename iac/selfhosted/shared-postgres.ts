@@ -9,6 +9,7 @@ export function configureSharedPostgres(
   const postgresPassword = config.requireSecret("postgresPassword");
   const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
   const authentikDbPassword = config.requireSecret("authentikDbPassword");
+  const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
 
   const name = "shared-postgres";
 
@@ -40,15 +41,22 @@ export function configureSharedPostgres(
         CREATE USER tandoor WITH PASSWORD '${tandoorDbPassword}';
         CREATE DATABASE tandoor OWNER tandoor;
         GRANT ALL PRIVILEGES ON DATABASE tandoor TO tandoor;
-        \c tandoor
+        \\c tandoor
         GRANT ALL ON SCHEMA public TO tandoor;
       `,
       "02-init-authentik.sql": pulumi.interpolate`
         CREATE USER authentik WITH PASSWORD '${authentikDbPassword}';
         CREATE DATABASE authentik OWNER authentik;
         GRANT ALL PRIVILEGES ON DATABASE authentik TO authentik;
-        \c authentik
+        \\c authentik
         GRANT ALL ON SCHEMA public TO authentik;
+      `,
+      "03-init-linkwarden.sql": pulumi.interpolate`
+        CREATE USER linkwarden WITH PASSWORD '${linkwardenDbPassword}';
+        CREATE DATABASE linkwarden OWNER linkwarden;
+        GRANT ALL PRIVILEGES ON DATABASE linkwarden TO linkwarden;
+        \\c linkwarden
+        GRANT ALL ON SCHEMA public TO linkwarden;
       `
     },
   }, { dependsOn: dependencies });
