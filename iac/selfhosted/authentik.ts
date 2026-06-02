@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { createLetsEncryptIngress } from "../library/ingress";
 
 export function configureAuthentik(
   namespace: pulumi.Input<string>,
@@ -14,7 +15,6 @@ export function configureAuthentik(
   const name = "authentik";
   const image = "ghcr.io/goauthentik/server:2026.5.2";
 
-  // 1. Create PVCs for persistent customization storage (media and templates)
   const mediaPvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-media-pvc`, {
     metadata: {
       name: `${name}-media-pvc`,
@@ -47,7 +47,6 @@ export function configureAuthentik(
     },
   }, { dependsOn: dependencies });
 
-  // 2. Secret store for Authentik's security key and database connection
   const secrets = new k8s.core.v1.Secret(`${name}-secrets`, {
     metadata: {
       name: `${name}-secrets`,
@@ -61,7 +60,8 @@ export function configureAuthentik(
     },
   }, { dependsOn: dependencies });
 
-  // 3. Redis Deployment & Service (required cache store)
+	// Redis is a hard dependency for authentik.
+	// It is used as an internal task queue.
   const redisName = `${name}-redis`;
   const redisDeployment = new k8s.apps.v1.Deployment(redisName, {
     metadata: {
@@ -95,7 +95,6 @@ export function configureAuthentik(
     },
   }, { dependsOn: redisDeployment });
 
-  // 4. Common Environment Variables for Server and Worker
   const commonEnv = [
     { name: "AUTHENTIK_REDIS__HOST", value: redisService.metadata.name },
     { name: "AUTHENTIK_POSTGRESQL__HOST", value: "shared-postgres.selfhosted.svc.cluster.local" },
@@ -141,7 +140,6 @@ export function configureAuthentik(
     },
   ];
 
-  // 5. Authentik Server Deployment & Service
   const serverName = `${name}-server`;
   const serverDeployment = new k8s.apps.v1.Deployment(serverName, {
     metadata: {
@@ -185,7 +183,6 @@ export function configureAuthentik(
     },
   }, { dependsOn: serverDeployment });
 
-  // 6. Authentik Worker Deployment
   const workerName = `${name}-worker`;
   const workerDeployment = new k8s.apps.v1.Deployment(workerName, {
     metadata: {
@@ -217,42 +214,13 @@ export function configureAuthentik(
     },
   }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService] });
 
-  // 7. Traefik Ingress with Automatic Let's Encrypt TLS Provisioning
-  const ingress = new k8s.networking.v1.Ingress(`${name}-ingress`, {
-    metadata: {
-      name: `${name}-ingress`,
-      namespace,
-      annotations: {
-        // Triggers cert-manager to provision the certificate
-        "cert-manager.io/cluster-issuer": "letsencrypt-prod",
-        // Force HTTPS via Traefik configurations
-        "traefik.ingress.kubernetes.io/router.entrypoints": "websecure",
-        "traefik.ingress.kubernetes.io/router.tls": "true",
-      },
-    },
-    spec: {
-      ingressClassName: "traefik",
-      rules: [{
-        host: "auth.gdario.dev",
-        http: {
-          paths: [{
-            path: "/",
-            pathType: "Prefix",
-            backend: {
-              service: {
-                name: serverService.metadata.name,
-                port: { number: 80 },
-              },
-            },
-          }],
-        },
-      }],
-      tls: [{
-        hosts: ["auth.gdario.dev"],
-        secretName: "authentik-tls-cert", // Where cert-manager stores the issued certificate
-      }],
-    },
-  }, { dependsOn: [serverService] });
+  const ingress = createLetsEncryptIngress({
+    name,
+    namespace,
+    host: "auth.gdario.dev",
+    serviceName: serverService.metadata.name,
+    dependencies: [serverService],
+  });
 
   return {
     redisService,

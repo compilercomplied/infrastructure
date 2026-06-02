@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { createLetsEncryptIngress } from "../library/ingress";
 
 export function configureTandoorRecipes(
   namespace: pulumi.Input<string>,
@@ -12,7 +13,6 @@ export function configureTandoorRecipes(
 
   const name = "tandoor-recipes";
 
-  // Create PVC for media uploads
   const pvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-media-pvc`, {
     metadata: {
       name: `${name}-media-pvc`,
@@ -29,7 +29,8 @@ export function configureTandoorRecipes(
     },
   }, { dependsOn: dependencies });
 
-  // Construct the SOCIALACCOUNT_PROVIDERS JSON string securely utilizing Pulumi's Output interpolation
+  // Construct the SOCIALACCOUNT_PROVIDERS JSON string securely utilizing
+	// Pulumi's Output interpolation
   const socialaccountProviders = pulumi.interpolate`{
     "openid_connect": {
       "SERVERS": [
@@ -47,7 +48,6 @@ export function configureTandoorRecipes(
     }
   }`;
 
-  // Create Secret for Django security and PostgreSQL connection
   const tandoorSecrets = new k8s.core.v1.Secret(`${name}-secrets`, {
     metadata: {
       name: `${name}-secrets`,
@@ -60,7 +60,6 @@ export function configureTandoorRecipes(
     },
   }, { dependsOn: dependencies });
 
-  // Deployment for Tandoor Recipes Web Application
   const deployment = new k8s.apps.v1.Deployment(name, {
     metadata: {
       name,
@@ -137,7 +136,6 @@ export function configureTandoorRecipes(
     },
   }, { dependsOn: [pvc, tandoorSecrets, ...dependencies] });
 
-  // Service for Tandoor, exposed through Tailscale Operator annotations
   const service = new k8s.core.v1.Service(name, {
     metadata: {
       name,
@@ -154,40 +152,13 @@ export function configureTandoorRecipes(
     },
   }, { dependsOn: deployment });
 
-  // Ingress for Tandoor Recipes with automatic Let's Encrypt TLS provisioning
-  const ingress = new k8s.networking.v1.Ingress(`${name}-ingress`, {
-    metadata: {
-      name: `${name}-ingress`,
-      namespace,
-      annotations: {
-        "cert-manager.io/cluster-issuer": "letsencrypt-prod",
-        "traefik.ingress.kubernetes.io/router.entrypoints": "websecure",
-        "traefik.ingress.kubernetes.io/router.tls": "true",
-      },
-    },
-    spec: {
-      ingressClassName: "traefik",
-      rules: [{
-        host: "recipes.gdario.dev",
-        http: {
-          paths: [{
-            path: "/",
-            pathType: "Prefix",
-            backend: {
-              service: {
-                name: service.metadata.name,
-                port: { number: 80 },
-              },
-            },
-          }],
-        },
-      }],
-      tls: [{
-        hosts: ["recipes.gdario.dev"],
-        secretName: "tandoor-recipes-tls-cert",
-      }],
-    },
-  }, { dependsOn: [service] });
+  const ingress = createLetsEncryptIngress({
+    name,
+    namespace,
+    host: "recipes.gdario.dev",
+    serviceName: service.metadata.name,
+    dependencies: [service],
+  });
 
   return { service, ingress };
 }
