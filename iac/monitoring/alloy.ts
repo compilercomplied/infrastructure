@@ -57,6 +57,14 @@ discovery.relabel "pod_logs" {
     target_label  = "app"
   }
 
+  // Explicit mapping for loki-canary
+  rule {
+    source_labels = ["__meta_kubernetes_pod_name"]
+    regex         = "^loki-canary-.*$"
+    replacement   = "loki-canary"
+    target_label  = "app"
+  }
+
   rule {
     source_labels = ["app"]
     target_label  = "service_name"
