@@ -33,7 +33,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
 
   if (rateLimit !== false) {
     const rlAverage = rateLimit.average || 360;
-    const rlBurst = rateLimit.burst || 120;
+    const rlBurst = rateLimit.burst || 720;
     const rlPeriod = rateLimit.period || "1m";
     const middlewareName = `${name}-rate-limit`;
 
