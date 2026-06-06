@@ -1,6 +1,5 @@
-import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createLetsEncryptIngress } from "../library/ingress";
+import { createSelfhostedApp } from "../library/selfhosted-app";
 
 export function configureLinkwarden(
   namespace: pulumi.Input<string>,
@@ -11,109 +10,45 @@ export function configureLinkwarden(
   const linkwardenSecret = config.requireSecret("linkwarden-secret");
   const linkwardenNextAuthSecret = config.requireSecret("linkwardenNextAuthSecret");
 
-  const name = "linkwarden";
-
-  const pvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-pvc`, {
-    metadata: {
-      name: `${name}-pvc`,
-      namespace,
-    },
-    spec: {
-      accessModes: ["ReadWriteOnce"],
-      storageClassName: "local-path",
-      resources: {
-        requests: {
-          storage: "10Gi",
-        },
-      },
-    },
-  }, { dependsOn: dependencies });
-
-  const linkwardenSecrets = new k8s.core.v1.Secret(`${name}-secrets`, {
-    metadata: {
-      name: `${name}-secrets`,
-      namespace,
-    },
-    stringData: {
+  return createSelfhostedApp({
+    name: "linkwarden",
+    namespace,
+    image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
+    containerPort: 3000,
+    exposeType: "public",
+    host: "linkwarden.gdario.dev",
+    secrets: {
       "NEXTAUTH_SECRET": linkwardenNextAuthSecret,
       "POSTGRES_PASSWORD": linkwardenDbPassword,
       "AUTHENTIK_CLIENT_SECRET": linkwardenSecret,
       "NEXT_PUBLIC_DISABLE_REGISTRATION": "true",
       "NEXT_PUBLIC_CREDENTIALS_ENABLED": "false",
     },
-  }, { dependsOn: dependencies });
-
-  const deployment = new k8s.apps.v1.Deployment(name, {
-    metadata: {
-      name,
-      namespace,
-    },
-    spec: {
-      replicas: 1,
-      selector: {
-        matchLabels: { app: name },
+    env: [
+      {
+        name: "DATABASE_URL",
+        value: pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/linkwarden`,
       },
-      template: {
-        metadata: {
-          labels: { app: name },
-        },
-        spec: {
-          containers: [{
-            name: name,
-            image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
-            ports: [{ containerPort: 3000, name: "http" }],
-            envFrom: [{ secretRef: { name: linkwardenSecrets.metadata.name } }],
-            env: [
-              { name: "DATABASE_URL", value: pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/linkwarden` },
-              { name: "NEXTAUTH_URL", value: "https://linkwarden.gdario.dev/api/v1/auth" },
-              { name: "NEXT_PUBLIC_AUTHENTIK_ENABLED", value: "true" },
-              { name: "AUTHENTIK_CUSTOM_NAME", value: "authentik" },
-              { name: "AUTHENTIK_ISSUER", value: "https://auth.gdario.dev/application/o/linkwarden" },
-              { name: "AUTHENTIK_CLIENT_ID", value: "linkwarden-client-id" },
-            ],
-            volumeMounts: [
-              {
-                name: "linkwarden-data",
-                mountPath: "/data/data",
-              },
-            ],
-          }],
-          volumes: [
-            {
-              name: "linkwarden-data",
-              persistentVolumeClaim: {
-                claimName: pvc.metadata.name,
-              },
-            },
-          ],
-        },
+      {
+        name: "NEXTAUTH_URL",
+        value: "https://linkwarden.gdario.dev/api/v1/auth",
       },
-    },
-  }, { dependsOn: [pvc, linkwardenSecrets, ...dependencies] });
-
-  const service = new k8s.core.v1.Service(name, {
-    metadata: {
-      name,
-      namespace,
-      annotations: {
-        "tailscale.com/expose": "true",
-        "tailscale.com/hostname": name,
-        "tailscale.com/tags": "tag:kubernetes",
+      { name: "NEXT_PUBLIC_AUTHENTIK_ENABLED", value: "true" },
+      { name: "AUTHENTIK_CUSTOM_NAME", value: "authentik" },
+      {
+        name: "AUTHENTIK_ISSUER",
+        value: "https://auth.gdario.dev/application/o/linkwarden",
       },
-    },
-    spec: {
-      ports: [{ port: 80, targetPort: 3000, protocol: "TCP", name: "http" }],
-      selector: { app: name },
-    },
-  }, { dependsOn: deployment });
-
-  const ingress = createLetsEncryptIngress({
-    name,
-    namespace,
-    host: "linkwarden.gdario.dev",
-    serviceName: service.metadata.name,
-    dependencies: [service],
+      { name: "AUTHENTIK_CLIENT_ID", value: "linkwarden-client-id" },
+    ],
+    volumes: [
+      {
+        name: "linkwarden-data",
+        mountPath: "/data/data",
+        size: "10Gi",
+        pvcName: "linkwarden-pvc",
+      },
+    ],
+    dependencies,
   });
-
-  return { service, ingress };
 }

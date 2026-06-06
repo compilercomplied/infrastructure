@@ -1,15 +1,18 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
+export interface PostgresDatabaseArgs {
+  name: string;
+  password: pulumi.Input<string>;
+}
+
 export function configureSharedPostgres(
   namespace: pulumi.Input<string>,
+  databases: PostgresDatabaseArgs[],
   dependencies: pulumi.Resource[] = []
 ) {
   const config = new pulumi.Config("selfhosted");
   const postgresPassword = config.requireSecret("postgresPassword");
-  const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
-  const authentikDbPassword = config.requireSecret("authentikDbPassword");
-  const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
 
   const name = "shared-postgres";
 
@@ -30,35 +33,25 @@ export function configureSharedPostgres(
     },
   }, { dependsOn: dependencies });
 
+  const initScripts: Record<string, pulumi.Output<string>> = {};
+  databases.forEach((db, i) => {
+    const fileIndex = String(i + 1).padStart(2, "0");
+    initScripts[`${fileIndex}-init-${db.name}.sql`] = pulumi.interpolate`
+        CREATE USER ${db.name} WITH PASSWORD '${db.password}';
+        CREATE DATABASE ${db.name} OWNER ${db.name};
+        GRANT ALL PRIVILEGES ON DATABASE ${db.name} TO ${db.name};
+        \\c ${db.name}
+        GRANT ALL ON SCHEMA public TO ${db.name};
+      `;
+  });
+
   // Create a secret containing database initialization scripts
   const initScriptSecret = new k8s.core.v1.Secret(`${name}-init-script`, {
     metadata: {
       name: `${name}-init-script`,
       namespace,
     },
-    stringData: {
-      "01-init-tandoor.sql": pulumi.interpolate`
-        CREATE USER tandoor WITH PASSWORD '${tandoorDbPassword}';
-        CREATE DATABASE tandoor OWNER tandoor;
-        GRANT ALL PRIVILEGES ON DATABASE tandoor TO tandoor;
-        \\c tandoor
-        GRANT ALL ON SCHEMA public TO tandoor;
-      `,
-      "02-init-authentik.sql": pulumi.interpolate`
-        CREATE USER authentik WITH PASSWORD '${authentikDbPassword}';
-        CREATE DATABASE authentik OWNER authentik;
-        GRANT ALL PRIVILEGES ON DATABASE authentik TO authentik;
-        \\c authentik
-        GRANT ALL ON SCHEMA public TO authentik;
-      `,
-      "03-init-linkwarden.sql": pulumi.interpolate`
-        CREATE USER linkwarden WITH PASSWORD '${linkwardenDbPassword}';
-        CREATE DATABASE linkwarden OWNER linkwarden;
-        GRANT ALL PRIVILEGES ON DATABASE linkwarden TO linkwarden;
-        \\c linkwarden
-        GRANT ALL ON SCHEMA public TO linkwarden;
-      `
-    },
+    stringData: initScripts,
   }, { dependsOn: dependencies });
 
   // PostgreSQL deployment secret for admin password

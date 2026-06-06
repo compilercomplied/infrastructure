@@ -1,4 +1,5 @@
 import * as k8s from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
 import { configureSharedPostgres } from "./shared-postgres";
 import { configureTandoorRecipes } from "./tandoor-recipes";
 import { configureAuthentik } from "./authentik";
@@ -12,8 +13,17 @@ export function configureSelfhosted() {
 
   const namespaceName = namespace.metadata.name;
 
+  const config = new pulumi.Config("selfhosted");
+  const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
+  const authentikDbPassword = config.requireSecret("authentikDbPassword");
+  const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
+
 	// Deployments
-  const postgres = configureSharedPostgres(namespaceName);
+  const postgres = configureSharedPostgres(namespaceName, [
+    { name: "tandoor", password: tandoorDbPassword },
+    { name: "authentik", password: authentikDbPassword },
+    { name: "linkwarden", password: linkwardenDbPassword },
+  ]);
   const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
