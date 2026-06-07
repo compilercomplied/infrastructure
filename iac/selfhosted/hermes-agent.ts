@@ -115,6 +115,7 @@ export function configureHermesAgent(
 
   // 4. Kubernetes ConfigMap containing Hermes config.yaml
   const allowedChats = authorizedUsers.apply(users => users.map(u => u.telegramId));
+  const allowedUsersString = authorizedUsers.apply(users => users.map(u => u.telegramId).join(","));
 
   const configMap = new k8s.core.v1.ConfigMap(`${name}-config`, {
     metadata: {
@@ -198,6 +199,7 @@ ${chats.map(chat => `    - "${chat}"`).join("\n")}
                   },
                 },
               },
+              { name: "TELEGRAM_ALLOWED_USERS", value: allowedUsersString },
             ],
             volumeMounts: [
               { name: "data", mountPath: "/opt/data" },
