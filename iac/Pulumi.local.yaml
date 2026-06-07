@@ -51,3 +51,11 @@ config:
     secure: v1:17dhH+s5MYtdKlAl:lBMspzs5/DJPdI7wM/5eih8DNIU28OWeYNGwhx1QQ4zSzVuWJpTuBjmaNa0AKgmd
   maintenance:r2SecretAccessKey:
     secure: v1:lipGaZOBkCzIhKQi:daYB7lyzTbh3mwjekzpUtLhB9n5pv7FEgs+UnNT5/R+4dLaI/Zrfdc8tI21wAyurLDo3BEdKC93XYJTKZaPPQy+7Yo4b4OxMH1TviHVlAuk=
+  selfhosted:deepseekApiKey:
+    secure: v1:FOzNWVoZsPhqzhJx:d3hIw1FcxSfTxKg+UcgdZCAKB+iD7fHwBzxb+4paE/CBtuCOZI8YbruRaeey/pnPbX4I
+  selfhosted:telegramBotToken:
+    secure: v1:V+3Y8JswGLp712zI:qE/IRWVjC14tRN/RZsyxsHX4fuXqSYQF2N5AIsn551ZrrTiPHfFjeK7NH93gHd1i47gyO3ogGlq43JPmcss=
+  selfhosted:authorizedUsers:
+    secure: v1:H8ZIg1WIrXWqpZU/:chKiu7hC6AdwmkiYVCAIcT2U41ENXPde2UivjAb4hwmGMvAIS7ntyoIhx0ZJdQ+yjRh0kwKqZ425YlA+LlU6Cewj7UZ3TBRTi6Zgew3i0uGfAlKBd4LTS82I/FxJxtJCvvXl7dRjBy2CFu42WwhufZMHmiDHpS9z0QLndxD03nO1ydg4EejdHDW4I5TGSPWeqsp+ds8FqLZRLzsupd4+AW214kbYhxqhxPtUpVgSPT0pbPz2vi5SG40f5atCfpI=
+  selfhosted:hermesSecret:
+    secure: v1:2CBkwOuQwGBM0sVe:YxWOSBePPf4Hx6omQJ7dBTSI7crqgo1v2BGH2PgHUQKKcA2najLDdgn1WHjI
