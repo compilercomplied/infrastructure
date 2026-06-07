@@ -104,7 +104,8 @@ export function configureHermesAgent(
       namespace,
     },
     stringData: {
-      "CUSTOM_PROVIDER_API_KEY": deepseekApiKey,
+      "CUSTOM_API_KEY": deepseekApiKey,
+      "DEEPSEEK_API_KEY": deepseekApiKey,
       "TELEGRAM_BOT_TOKEN": telegramBotToken,
       // The API server requires a key to start, even when bound to 0.0.0.0.
       // Reusing hermesSecret satisfies this requirement securely.
@@ -160,13 +161,22 @@ ${chats.map(chat => `    - "${chat}"`).join("\n")}
               { name: "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", value: hermesSecret },
               { name: "API_SERVER_ENABLED", value: "true" },
               { name: "API_SERVER_HOST", value: "0.0.0.0" },
-              { name: "CUSTOM_PROVIDER_BASE_URL", value: "https://api.deepseek.com/v1" },
+              { name: "CUSTOM_BASE_URL", value: "https://api.deepseek.com/v1" },
               {
-                name: "CUSTOM_PROVIDER_API_KEY",
+                name: "CUSTOM_API_KEY",
                 valueFrom: {
                   secretKeyRef: {
                     name: secrets.metadata.name,
-                    key: "CUSTOM_PROVIDER_API_KEY",
+                    key: "CUSTOM_API_KEY",
+                  },
+                },
+              },
+              {
+                name: "DEEPSEEK_API_KEY",
+                valueFrom: {
+                  secretKeyRef: {
+                    name: secrets.metadata.name,
+                    key: "DEEPSEEK_API_KEY",
                   },
                 },
               },
