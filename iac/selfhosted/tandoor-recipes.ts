@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
+import { createBackupJob } from "../maintenance/backup";
 
 export function configureTandoorRecipes(
   namespace: pulumi.Input<string>,
@@ -27,7 +28,7 @@ export function configureTandoorRecipes(
     }
   }`;
 
-  return createSelfhostedApp({
+  const app = createSelfhostedApp({
     name: "tandoor-recipes",
     namespace,
     image: "ghcr.io/tandoorrecipes/recipes:2.6.9",
@@ -60,5 +61,35 @@ export function configureTandoorRecipes(
     ],
     dependencies,
   });
+
+  const dbBackup = createBackupJob({
+    appName: "tandoor-recipes",
+    namespace,
+    source: {
+      type: "postgres",
+      databaseName: "tandoor",
+      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbUser: "tandoor",
+      dbPasswordSecret: tandoorDbPassword,
+    },
+    dependencies: [...dependencies, app.deployment],
+  });
+
+  const filesBackup = createBackupJob({
+    appName: "tandoor-recipes",
+    namespace,
+    source: {
+      type: "pvc",
+      pvcName: "tandoor-recipes-media-pvc",
+      mountPath: "/opt/recipes/mediafiles",
+    },
+    dependencies: [...dependencies, app.deployment],
+  });
+
+  return {
+    ...app,
+    dbBackup,
+    filesBackup,
+  };
 }
 

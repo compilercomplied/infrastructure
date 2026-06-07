@@ -43,3 +43,11 @@ config:
     secure: v1:eiQQWNoddxK+dpeh:UIc8HwmEkM4DeK+imw+73Kd9l0U5odzg2mQaWs/vx+d5gGejQSZy/Ft+6a1XEOJmW3KUlKYM626WvPkBKKfuPcc/Zwe/ueCJMRxaArZvpac=
   selfhosted:linkwardenNextAuthSecret:
     secure: v1:0uzHNTi0IxoJnMh4:DpUP1SrwKjLczuQlJDffwI36331jYQHzi2fynJiNAnZuVDcjBHIe3WGExGvfhfXb0B2fBSDvMzCBXQuoqOnLh0tQi2yjKTkPD6VWN+1mLE4=
+  maintenance:resticRepository:
+    secure: v1:dGjZoIoxgg6Mpkuy:/sAcNNmgMi1ETEHsjN2k8uxjbe0ZPD1FBqAjE0ow4SHeOQURt59PDs/IoWE/cMC04LJuvhwsku96idCdvczsP4vMGNUWV0Bn3Qi6/qR4W1XSt+dlhGxM2NVl8nIcMnBKb0t0
+  maintenance:resticPassword:
+    secure: v1:acsyqcZtrQjtxB27:2/ayEA8rJBBeot9Fh103Y4qZmSBcN2hk8sduAHHr
+  maintenance:r2AccessKeyId:
+    secure: v1:17dhH+s5MYtdKlAl:lBMspzs5/DJPdI7wM/5eih8DNIU28OWeYNGwhx1QQ4zSzVuWJpTuBjmaNa0AKgmd
+  maintenance:r2SecretAccessKey:
+    secure: v1:lipGaZOBkCzIhKQi:daYB7lyzTbh3mwjekzpUtLhB9n5pv7FEgs+UnNT5/R+4dLaI/Zrfdc8tI21wAyurLDo3BEdKC93XYJTKZaPPQy+7Yo4b4OxMH1TviHVlAuk=

@@ -1,6 +1,8 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
+export const postgresClientImage = "postgres:16-alpine";
+
 export interface PostgresDatabaseArgs {
   name: string;
   password: pulumi.Input<string>;

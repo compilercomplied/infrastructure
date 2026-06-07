@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
+import { createBackupJob } from "../maintenance/backup";
 
 export function configureLinkwarden(
   namespace: pulumi.Input<string>,
@@ -10,7 +11,7 @@ export function configureLinkwarden(
   const linkwardenSecret = config.requireSecret("linkwarden-secret");
   const linkwardenNextAuthSecret = config.requireSecret("linkwardenNextAuthSecret");
 
-  return createSelfhostedApp({
+  const app = createSelfhostedApp({
     name: "linkwarden",
     namespace,
     image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
@@ -51,4 +52,34 @@ export function configureLinkwarden(
     ],
     dependencies,
   });
+
+  const dbBackup = createBackupJob({
+    appName: "linkwarden",
+    namespace,
+    source: {
+      type: "postgres",
+      databaseName: "linkwarden",
+      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbUser: "linkwarden",
+      dbPasswordSecret: linkwardenDbPassword,
+    },
+    dependencies: [...dependencies, app.deployment],
+  });
+
+  const filesBackup = createBackupJob({
+    appName: "linkwarden",
+    namespace,
+    source: {
+      type: "pvc",
+      pvcName: "linkwarden-pvc",
+      mountPath: "/data/data",
+    },
+    dependencies: [...dependencies, app.deployment],
+  });
+
+  return {
+    ...app,
+    dbBackup,
+    filesBackup,
+  };
 }
