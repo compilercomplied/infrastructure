@@ -34,7 +34,9 @@ export function configureAuthentikResources() {
     // This is a manual hack that should have been automated through the
     // authentik pulumi provider.
     authenticationFlow: "a7c56c41-379d-417c-9885-f0d55e174317",
-    enrollmentFlow: "96f96a88-5eec-46fd-9943-ba706bfdc8be",
+    // We set enrollmentFlow to an empty string to clear any existing registration
+    // flow and prevent self-service signup via Google OAuth.
+    enrollmentFlow: "",
     userMatchingMode: "email_link",
   });
 
