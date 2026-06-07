@@ -68,7 +68,23 @@ If the bootstrap password fails, is lost, or gets locked out, you can force a pa
 kubectl exec -n selfhosted deployment/authentik-server -c server -it -- ak shell -c "from authentik.core.models import User; u = User.objects.get(username='akadmin'); u.set_password('NEW_SECURE_PASSWORD'); u.save()"
 ```
 
-### 2. Hardcoded Flow UUIDs in Pulumi Infrastructure (The OIDC Redirect Hack)
+### 2. Promoting a User to Superadmin
+If an existing federated or internal user needs full superadmin status in Authentik, they must be added to the `authentik Admins` group.
+
+You can use the built-in management command:
+```bash
+kubectl exec -n selfhosted deployment/authentik-server -c authentik-server -- ak create_admin_group <username>
+```
+
+Or execute it via the Django database shell:
+```bash
+kubectl exec -n selfhosted deployment/authentik-server -c authentik-server -- ak shell -c "from authentik.core.models import User, Group; user = User.objects.get(username='<username>'); group = Group.objects.get(name='authentik Admins'); group.users.add(user)"
+```
+
+> [!NOTE]
+> Authentik caches active session details (such as user group memberships and admin status) at login. After promoting a user, they **must log out and log back in** (or clear cookies) for the new permissions to take effect in the UI.
+
+### 3. Hardcoded Flow UUIDs in Pulumi Infrastructure (The OIDC Redirect Hack)
 
 When configuring OAuth Sources (like Google) in Pulumi, binding the source to the correct flows is critical to ensuring the OIDC login context is preserved (so users are properly redirected back to applications like Tandoor Recipes instead of the Authentik dashboard).
 
