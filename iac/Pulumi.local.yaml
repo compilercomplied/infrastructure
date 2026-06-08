@@ -55,9 +55,15 @@ config:
     secure: v1:FOzNWVoZsPhqzhJx:d3hIw1FcxSfTxKg+UcgdZCAKB+iD7fHwBzxb+4paE/CBtuCOZI8YbruRaeey/pnPbX4I
   selfhosted:telegramBotToken:
     secure: v1:V+3Y8JswGLp712zI:qE/IRWVjC14tRN/RZsyxsHX4fuXqSYQF2N5AIsn551ZrrTiPHfFjeK7NH93gHd1i47gyO3ogGlq43JPmcss=
-  selfhosted:authorizedUsers:
-    secure: v1:H8ZIg1WIrXWqpZU/:chKiu7hC6AdwmkiYVCAIcT2U41ENXPde2UivjAb4hwmGMvAIS7ntyoIhx0ZJdQ+yjRh0kwKqZ425YlA+LlU6Cewj7UZ3TBRTi6Zgew3i0uGfAlKBd4LTS82I/FxJxtJCvvXl7dRjBy2CFu42WwhufZMHmiDHpS9z0QLndxD03nO1ydg4EejdHDW4I5TGSPWeqsp+ds8FqLZRLzsupd4+AW214kbYhxqhxPtUpVgSPT0pbPz2vi5SG40f5atCfpI=
   selfhosted:hermesSecret:
     secure: v1:2CBkwOuQwGBM0sVe:YxWOSBePPf4Hx6omQJ7dBTSI7crqgo1v2BGH2PgHUQKKcA2najLDdgn1WHjI
   selfhosted:tandoorMcpToken:
     secure: v1:XYEINadrA1o84tFk:/JBRsd5korBBSmNSJH9/nvzb29kRgvZosqQWy/sRFqBcgGnZ75hnxIh9KN/vZUI/GsFStILC2AM=
+  selfhosted:user-gdario-email:
+    secure: v1:oEAeDjdc7+xNq3+y:8WoG4BY6+c+2i0cKMJRdj8LPjtyLvLtJKCPz0zwhS1KVY45t9nI=
+  selfhosted:user-gdario-telegramId:
+    secure: v1:2CyAsMsbOGdN0duf:y9BpiqQC+cBL7ROLyGM7plwcFTPLdnTX
+  selfhosted:user-andrea-email:
+    secure: v1:lb4FgMRTtwF7dbv2:ssnzFQ5TyuG3vwtwo95qyrOtVTGmNMeHQeW4LBnQzi8wzLx4nNQ=
+  selfhosted:user-andrea-telegramId:
+    secure: v1:1ZAP/xn4Xx4H/F76:uPr2muPC2T1oAWL0Sfrq+VfYbUACaCmcQw==

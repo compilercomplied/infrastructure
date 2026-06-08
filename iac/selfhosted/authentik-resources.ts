@@ -1,10 +1,42 @@
 import * as authentik from "@pulumi/authentik";
 import * as pulumi from "@pulumi/pulumi";
 import { createAuthentikOpenId } from "../library/authentik";
+import { getAuthorizedUsers, getGroupDefinitions } from "./users";
 
 export function configureAuthentikResources() {
   const selfhostedConfig = new pulumi.Config("selfhosted");
   const tandooriSecret = selfhostedConfig.requireSecret("tandoori-secret");
+
+  // Load the central user directory configuration.
+  const users = getAuthorizedUsers();
+
+  // Provision users centrally in Authentik. Existing users in the database will be
+  // matched by username/email via the Authentik provider.
+  const authentikUsers = users.map(u => new authentik.User(u.name, {
+    username: u.name,
+    name: u.name,
+    email: u.email,
+    isActive: true,
+  }));
+
+  // Create a mapping of username to their respective Authentik ID Output.
+  // Using a reducer map makes resolving members by username simple and DRY.
+  const userIdMap = users.reduce((acc, u, i) => {
+    acc[u.name] = authentikUsers[i].id.apply(id => parseInt(id));
+    return acc;
+  }, {} as Record<string, pulumi.Output<number>>);
+
+  // Retrieve central group mappings and dynamically provision the Authentik groups.
+  // This loop handles hermes-users, grafana-admins, and any future groups automatically.
+  const groupDefs = getGroupDefinitions(users.map(u => u.name));
+  const groups = groupDefs.reduce((acc, gd) => {
+    const group = new authentik.Group(gd.name, {
+      name: gd.name,
+      users: pulumi.all(gd.members.map(m => userIdMap[m])),
+    });
+    acc[gd.name] = group;
+    return acc;
+  }, {} as Record<string, authentik.Group>);
 
   const tandoor = createAuthentikOpenId({
     name: "Tandoor Recipes",
@@ -59,5 +91,7 @@ export function configureAuthentikResources() {
     googleSourceId: googleSource.id,
     linkwardenProviderId: linkwarden.provider.id,
     linkwardenAppSlug: linkwarden.app.slug,
+    hermesGroupId: groups["hermes-users"].id,
+    grafanaAdminsGroupId: groups["grafana-admins"].id,
   };
 }

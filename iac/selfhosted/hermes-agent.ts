@@ -4,45 +4,19 @@ import * as authentik from "@pulumi/authentik";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createBackupJob } from "../maintenance/backup";
-
-export interface AuthorizedUser {
-  name: string;
-  email: string;
-  telegramId: string;
-}
+import { getAuthorizedUsers } from "./users";
 
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = []
 ) {
   const config = new pulumi.Config("selfhosted");
-  const authorizedUsers = config.requireSecretObject<AuthorizedUser[]>("authorizedUsers");
   const deepseekApiKey = config.requireSecret("deepseekApiKey");
   const telegramBotToken = config.requireSecret("telegramBotToken");
   const hermesSecret = config.requireSecret("hermesSecret");
 
   const name = "hermes-agent";
   const host = "hermes.gdario.dev";
-
-  // Provision users and gather their primary keys
-  const userPks = authorizedUsers.apply(users => {
-    return users.map(user => {
-      // Declare a User resource for every user. Existing users must be imported.
-      const newUser = new authentik.User(user.name, {
-        username: user.name,
-        name: user.name,
-        email: user.email,
-        isActive: true,
-      });
-      return newUser.id.apply(id => parseInt(id));
-    });
-  });
-
-  // Create the hermes-users group and assign users directly
-  const hermesGroup = new authentik.Group("hermes-users", {
-    name: "hermes-users",
-    users: userPks,
-  });
 
   // Create OIDC Provider and Application in Authentik
   const scopeOpenid = authentik.getPropertyMappingProviderScopeOutput({
@@ -117,8 +91,9 @@ export function configureHermesAgent(
   }, { dependsOn: dependencies });
 
   // 4. Kubernetes ConfigMap containing Hermes config.yaml
-  const allowedChats = authorizedUsers.apply(users => users.map(u => u.telegramId));
-  const allowedUsersString = authorizedUsers.apply(users => users.map(u => u.telegramId).join(","));
+  const users = getAuthorizedUsers();
+  const allowedChats = pulumi.all(users.map(u => u.telegramId));
+  const allowedUsersString = allowedChats.apply(chats => chats.join(","));
 
   // Read the default configuration template from templates
   const configTemplate = fs.readFileSync(path.resolve(__dirname, "./templates/hermes-config.yaml"), "utf-8");
@@ -308,7 +283,6 @@ export function configureHermesAgent(
     deployment,
     service,
     ingress,
-    hermesGroup,
     provider,
     app,
     dataBackup,
