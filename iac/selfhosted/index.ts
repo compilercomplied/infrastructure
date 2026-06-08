@@ -6,6 +6,7 @@ import { configureAuthentik } from "./authentik";
 import { configureAuthentikResources } from "./authentik-resources";
 import { configureLinkwarden } from "./linkwarden";
 import { configureHermesAgent } from "./hermes-agent";
+import { configureTandoorMcp } from "./tandoor-mcp";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -26,6 +27,7 @@ export function configureSelfhosted() {
     { name: "linkwarden", password: linkwardenDbPassword },
   ]);
   const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
+  const tandoorMcp = configureTandoorMcp(namespaceName, [postgres, tandoor.deployment]);
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService]);
@@ -37,6 +39,7 @@ export function configureSelfhosted() {
     namespace: namespaceName,
     postgres,
     tandoor,
+    tandoorMcp,
     authentik,
     linkwarden,
     hermes,
