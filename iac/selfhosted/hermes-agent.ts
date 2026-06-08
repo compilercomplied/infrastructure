@@ -133,6 +133,11 @@ telegram:
   enabled: true
   allowed_chats:
 ${chats.map(chat => `    - "${chat}"`).join("\n")}
+
+mcp_servers:
+  tandoor:
+    url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8000/sse"
+    transport: "sse"
 `),
     },
   }, { dependsOn: dependencies });

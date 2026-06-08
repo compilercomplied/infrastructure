@@ -24,18 +24,13 @@ export function configureTandoorMcp(
         // We use the direct Kubernetes ClusterIP service DNS name for Tandoor recipes inside the cluster
         // to avoid routing external traffic and minimize latency.
         name: "TANDOOR_URL",
-        value: "http://tandoor-recipes.selfhosted.svc.cluster.local:8080",
+        value: "http://tandoor-recipes.selfhosted.svc.cluster.local:80",
       },
       {
         // The public URL is configured so the MCP server can construct fully-qualified public hyperlinks
         // when returning recipes to users or agents.
         name: "TANDOOR_PUBLIC_URL",
         value: "https://recipes.gdario.dev",
-      },
-      {
-        // Enable stateless HTTP mode globally in FastMCP as the stateless_http constructor argument is deprecated.
-        name: "FASTMCP_STATELESS_HTTP",
-        value: "true",
       },
     ],
     dependencies,

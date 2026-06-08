@@ -12,8 +12,9 @@ WORKDIR /app
 RUN git clone https://github.com/oculairmedia/Tandoor.mcp.git . && \
     git checkout a66940a8aae9a2c56b9a8cb1665d055909263532
 
-# Remove the deprecated stateless_http constructor argument to prevent startup crash on recent FastMCP versions.
-RUN sed -i 's/, stateless_http=True//g' server.py
+# Remove the deprecated stateless_http constructor argument and use standard sse transport for client compatibility.
+RUN sed -i 's/, stateless_http=True//g' server.py && \
+    sed -i 's/transport="http"/transport="sse"/g' server.py
 
 # Installing dependencies at build time ensures the container is self-contained and does not download external packages at runtime.
 RUN pip install --no-cache-dir -r requirements.txt

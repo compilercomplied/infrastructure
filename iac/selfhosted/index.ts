@@ -30,7 +30,7 @@ export function configureSelfhosted() {
   const tandoorMcp = configureTandoorMcp(namespaceName, [postgres, tandoor.deployment]);
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
-  const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService]);
+  const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService, tandoorMcp.service]);
 
   // Declarative SSO Applications & Providers configuration
   const authentikResources = configureAuthentikResources();
