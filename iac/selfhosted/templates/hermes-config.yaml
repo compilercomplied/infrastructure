@@ -1,0 +1,14 @@
+model:
+  provider: "custom"
+  base_url: "https://api.deepseek.com/v1"
+  default: "deepseek-chat"
+
+telegram:
+  enabled: true
+  allowed_chats:
+    # {{ALLOWED_CHATS}}
+
+mcp_servers:
+  tandoor:
+    url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8000/sse"
+    transport: "sse"
