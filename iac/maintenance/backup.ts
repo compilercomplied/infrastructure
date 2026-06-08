@@ -97,7 +97,6 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
 
   if (source.type === "postgres") {
     scriptName = "backup-postgres.sh";
-    // Single source of truth: import the client image reference exported by the postgres module.
     image = postgresClientImage;
 
     env.push(
@@ -117,7 +116,8 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       { name: "APP_NAME", value: appName }
     );
 
-    // Mount target PVC in read-only mode to prevent any chance of application data corruption.
+    // Mount target PVC in read-only mode to prevent any chance of application
+		// data corruption.
     volumes.push({
       name: "backup-source-volume",
       persistentVolumeClaim: {

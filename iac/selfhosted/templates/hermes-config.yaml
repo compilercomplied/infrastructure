@@ -12,3 +12,53 @@ mcp_servers:
   tandoor:
     url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8000/sse"
     transport: "sse"
+skills:
+  disabled:
+    - airtable
+    - blogwatcher
+    - claude-code
+    - claude-design
+    - codebase-inspection
+    - codex
+    - comfyui 
+    - design-md
+    - dogfood
+    - gif-search
+    - github-auth
+    - github-code-review
+    - github-issues
+    - github-pr-workflow
+    - github-repo-management
+    - godmode
+    - heartmula
+    - huggingface-hub
+    - jupyter-live-kernel
+    - llama-cpp
+    - manim-video
+    - node-inspect-debugger
+    - notion
+    - obliteratus
+    - opencode
+    - openhue
+    - polymarket
+    - popular-web-designs
+    - powerpoint
+    - pretext
+    - python-debugpy
+    - requesting-code-review
+    - research-paper-writing
+    - segment-anything-model
+    - serving-llms-vllm
+    - simplify-code
+    - sketch
+    - songsee
+    - songwriting-and-ai-music
+    - spike
+    - systematic-debugging
+    - teams-meeting-pipeline
+    - test-driven-development
+    - touchdesigner-mcp
+    - weights-and-biases
+    - xurl
+    - yuanbao
+    - youtube-content
