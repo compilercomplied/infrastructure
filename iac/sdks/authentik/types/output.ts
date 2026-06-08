@@ -21,8 +21,8 @@ export interface GetGroupsGroup {
     isSuperuser: boolean;
     name: string;
     numPk: number;
-    parent: string;
     parentName: string;
+    parents: string[];
     pk: string;
     users: number[];
     usersObjs: outputs.GetGroupsGroupUsersObj[];
@@ -42,6 +42,7 @@ export interface GetGroupsGroupUsersObj {
 export interface GetUsersUser {
     attributes: string;
     avatar: string;
+    dateJoined: string;
     email: string;
     groups: string[];
     isActive: boolean;

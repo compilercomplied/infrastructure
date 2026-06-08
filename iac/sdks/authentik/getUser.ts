@@ -29,6 +29,7 @@ export interface GetUserArgs {
 export interface GetUserResult {
     readonly attributes: string;
     readonly avatar: string;
+    readonly dateJoined: string;
     readonly email: string;
     readonly groups: string[];
     readonly id: string;

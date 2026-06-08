@@ -44,7 +44,7 @@ export class Flow extends pulumi.CustomResource {
      */
     declare public readonly authentication: pulumi.Output<string | undefined>;
     /**
-     * Optional URL to an image which will be used as the background during the flow.
+     * Optional URL to an image which will be used as the background during the flow. Defaults to `/static/dist/assets/images/flow_background.jpg`.
      */
     declare public readonly background: pulumi.Output<string | undefined>;
     /**
@@ -74,6 +74,8 @@ export class Flow extends pulumi.CustomResource {
      *   - <span pulumi-lang-nodejs="`contentRight`" pulumi-lang-dotnet="`ContentRight`" pulumi-lang-go="`contentRight`" pulumi-lang-python="`content_right`" pulumi-lang-yaml="`contentRight`" pulumi-lang-java="`contentRight`" pulumi-lang-hcl="`content_right`">`contentRight`</span>
      *   - <span pulumi-lang-nodejs="`sidebarLeft`" pulumi-lang-dotnet="`SidebarLeft`" pulumi-lang-go="`sidebarLeft`" pulumi-lang-python="`sidebar_left`" pulumi-lang-yaml="`sidebarLeft`" pulumi-lang-java="`sidebarLeft`" pulumi-lang-hcl="`sidebar_left`">`sidebarLeft`</span>
      *   - <span pulumi-lang-nodejs="`sidebarRight`" pulumi-lang-dotnet="`SidebarRight`" pulumi-lang-go="`sidebarRight`" pulumi-lang-python="`sidebar_right`" pulumi-lang-yaml="`sidebarRight`" pulumi-lang-java="`sidebarRight`" pulumi-lang-hcl="`sidebar_right`">`sidebarRight`</span>
+     *   - <span pulumi-lang-nodejs="`sidebarLeftFrameBackground`" pulumi-lang-dotnet="`SidebarLeftFrameBackground`" pulumi-lang-go="`sidebarLeftFrameBackground`" pulumi-lang-python="`sidebar_left_frame_background`" pulumi-lang-yaml="`sidebarLeftFrameBackground`" pulumi-lang-java="`sidebarLeftFrameBackground`" pulumi-lang-hcl="`sidebar_left_frame_background`">`sidebarLeftFrameBackground`</span>
+     *   - <span pulumi-lang-nodejs="`sidebarRightFrameBackground`" pulumi-lang-dotnet="`SidebarRightFrameBackground`" pulumi-lang-go="`sidebarRightFrameBackground`" pulumi-lang-python="`sidebar_right_frame_background`" pulumi-lang-yaml="`sidebarRightFrameBackground`" pulumi-lang-java="`sidebarRightFrameBackground`" pulumi-lang-hcl="`sidebar_right_frame_background`">`sidebarRightFrameBackground`</span>
      *  Defaults to <span pulumi-lang-nodejs="`stacked`" pulumi-lang-dotnet="`Stacked`" pulumi-lang-go="`stacked`" pulumi-lang-python="`stacked`" pulumi-lang-yaml="`stacked`" pulumi-lang-java="`stacked`" pulumi-lang-hcl="`stacked`">`stacked`</span>.
      */
     declare public readonly layout: pulumi.Output<string | undefined>;
@@ -162,7 +164,7 @@ export interface FlowState {
      */
     authentication?: pulumi.Input<string>;
     /**
-     * Optional URL to an image which will be used as the background during the flow.
+     * Optional URL to an image which will be used as the background during the flow. Defaults to `/static/dist/assets/images/flow_background.jpg`.
      */
     background?: pulumi.Input<string>;
     /**
@@ -192,6 +194,8 @@ export interface FlowState {
      *   - <span pulumi-lang-nodejs="`contentRight`" pulumi-lang-dotnet="`ContentRight`" pulumi-lang-go="`contentRight`" pulumi-lang-python="`content_right`" pulumi-lang-yaml="`contentRight`" pulumi-lang-java="`contentRight`" pulumi-lang-hcl="`content_right`">`contentRight`</span>
      *   - <span pulumi-lang-nodejs="`sidebarLeft`" pulumi-lang-dotnet="`SidebarLeft`" pulumi-lang-go="`sidebarLeft`" pulumi-lang-python="`sidebar_left`" pulumi-lang-yaml="`sidebarLeft`" pulumi-lang-java="`sidebarLeft`" pulumi-lang-hcl="`sidebar_left`">`sidebarLeft`</span>
      *   - <span pulumi-lang-nodejs="`sidebarRight`" pulumi-lang-dotnet="`SidebarRight`" pulumi-lang-go="`sidebarRight`" pulumi-lang-python="`sidebar_right`" pulumi-lang-yaml="`sidebarRight`" pulumi-lang-java="`sidebarRight`" pulumi-lang-hcl="`sidebar_right`">`sidebarRight`</span>
+     *   - <span pulumi-lang-nodejs="`sidebarLeftFrameBackground`" pulumi-lang-dotnet="`SidebarLeftFrameBackground`" pulumi-lang-go="`sidebarLeftFrameBackground`" pulumi-lang-python="`sidebar_left_frame_background`" pulumi-lang-yaml="`sidebarLeftFrameBackground`" pulumi-lang-java="`sidebarLeftFrameBackground`" pulumi-lang-hcl="`sidebar_left_frame_background`">`sidebarLeftFrameBackground`</span>
+     *   - <span pulumi-lang-nodejs="`sidebarRightFrameBackground`" pulumi-lang-dotnet="`SidebarRightFrameBackground`" pulumi-lang-go="`sidebarRightFrameBackground`" pulumi-lang-python="`sidebar_right_frame_background`" pulumi-lang-yaml="`sidebarRightFrameBackground`" pulumi-lang-java="`sidebarRightFrameBackground`" pulumi-lang-hcl="`sidebar_right_frame_background`">`sidebarRightFrameBackground`</span>
      *  Defaults to <span pulumi-lang-nodejs="`stacked`" pulumi-lang-dotnet="`Stacked`" pulumi-lang-go="`stacked`" pulumi-lang-python="`stacked`" pulumi-lang-yaml="`stacked`" pulumi-lang-java="`stacked`" pulumi-lang-hcl="`stacked`">`stacked`</span>.
      */
     layout?: pulumi.Input<string>;
@@ -227,7 +231,7 @@ export interface FlowArgs {
      */
     authentication?: pulumi.Input<string>;
     /**
-     * Optional URL to an image which will be used as the background during the flow.
+     * Optional URL to an image which will be used as the background during the flow. Defaults to `/static/dist/assets/images/flow_background.jpg`.
      */
     background?: pulumi.Input<string>;
     /**
@@ -257,6 +261,8 @@ export interface FlowArgs {
      *   - <span pulumi-lang-nodejs="`contentRight`" pulumi-lang-dotnet="`ContentRight`" pulumi-lang-go="`contentRight`" pulumi-lang-python="`content_right`" pulumi-lang-yaml="`contentRight`" pulumi-lang-java="`contentRight`" pulumi-lang-hcl="`content_right`">`contentRight`</span>
      *   - <span pulumi-lang-nodejs="`sidebarLeft`" pulumi-lang-dotnet="`SidebarLeft`" pulumi-lang-go="`sidebarLeft`" pulumi-lang-python="`sidebar_left`" pulumi-lang-yaml="`sidebarLeft`" pulumi-lang-java="`sidebarLeft`" pulumi-lang-hcl="`sidebar_left`">`sidebarLeft`</span>
      *   - <span pulumi-lang-nodejs="`sidebarRight`" pulumi-lang-dotnet="`SidebarRight`" pulumi-lang-go="`sidebarRight`" pulumi-lang-python="`sidebar_right`" pulumi-lang-yaml="`sidebarRight`" pulumi-lang-java="`sidebarRight`" pulumi-lang-hcl="`sidebar_right`">`sidebarRight`</span>
+     *   - <span pulumi-lang-nodejs="`sidebarLeftFrameBackground`" pulumi-lang-dotnet="`SidebarLeftFrameBackground`" pulumi-lang-go="`sidebarLeftFrameBackground`" pulumi-lang-python="`sidebar_left_frame_background`" pulumi-lang-yaml="`sidebarLeftFrameBackground`" pulumi-lang-java="`sidebarLeftFrameBackground`" pulumi-lang-hcl="`sidebar_left_frame_background`">`sidebarLeftFrameBackground`</span>
+     *   - <span pulumi-lang-nodejs="`sidebarRightFrameBackground`" pulumi-lang-dotnet="`SidebarRightFrameBackground`" pulumi-lang-go="`sidebarRightFrameBackground`" pulumi-lang-python="`sidebar_right_frame_background`" pulumi-lang-yaml="`sidebarRightFrameBackground`" pulumi-lang-java="`sidebarRightFrameBackground`" pulumi-lang-hcl="`sidebar_right_frame_background`">`sidebarRightFrameBackground`</span>
      *  Defaults to <span pulumi-lang-nodejs="`stacked`" pulumi-lang-dotnet="`Stacked`" pulumi-lang-go="`stacked`" pulumi-lang-python="`stacked`" pulumi-lang-yaml="`stacked`" pulumi-lang-java="`stacked`" pulumi-lang-hcl="`stacked`">`stacked`</span>.
      */
     layout?: pulumi.Input<string>;

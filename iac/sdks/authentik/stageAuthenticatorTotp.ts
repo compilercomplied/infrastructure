@@ -40,6 +40,9 @@ export class StageAuthenticatorTotp extends pulumi.CustomResource {
      *  Defaults to <span pulumi-lang-nodejs="`6`" pulumi-lang-dotnet="`6`" pulumi-lang-go="`6`" pulumi-lang-python="`6`" pulumi-lang-yaml="`6`" pulumi-lang-java="`6`" pulumi-lang-hcl="`6`">`6`</span>.
      */
     declare public readonly digits: pulumi.Output<string | undefined>;
+    /**
+     * Defaults to ``.
+     */
     declare public readonly friendlyName: pulumi.Output<string | undefined>;
     declare public readonly name: pulumi.Output<string>;
     declare public readonly stageAuthenticatorTotpId: pulumi.Output<string>;
@@ -87,6 +90,9 @@ export interface StageAuthenticatorTotpState {
      *  Defaults to <span pulumi-lang-nodejs="`6`" pulumi-lang-dotnet="`6`" pulumi-lang-go="`6`" pulumi-lang-python="`6`" pulumi-lang-yaml="`6`" pulumi-lang-java="`6`" pulumi-lang-hcl="`6`">`6`</span>.
      */
     digits?: pulumi.Input<string>;
+    /**
+     * Defaults to ``.
+     */
     friendlyName?: pulumi.Input<string>;
     name?: pulumi.Input<string>;
     stageAuthenticatorTotpId?: pulumi.Input<string>;
@@ -104,6 +110,9 @@ export interface StageAuthenticatorTotpArgs {
      *  Defaults to <span pulumi-lang-nodejs="`6`" pulumi-lang-dotnet="`6`" pulumi-lang-go="`6`" pulumi-lang-python="`6`" pulumi-lang-yaml="`6`" pulumi-lang-java="`6`" pulumi-lang-hcl="`6`">`6`</span>.
      */
     digits?: pulumi.Input<string>;
+    /**
+     * Defaults to ``.
+     */
     friendlyName?: pulumi.Input<string>;
     name?: pulumi.Input<string>;
     stageAuthenticatorTotpId?: pulumi.Input<string>;

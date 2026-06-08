@@ -81,6 +81,7 @@ export class SourceSaml extends pulumi.CustomResource {
      *   - `urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName`
      *   - `urn:oasis:names:tc:SAML:2.0:nameid-format:WindowsDomainQualifiedName`
      *   - `urn:oasis:names:tc:SAML:2.0:nameid-format:transient`
+     *   - `urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified`
      *  Defaults to `urn:oasis:names:tc:SAML:2.0:nameid-format:persistent`.
      */
     declare public readonly nameIdPolicy: pulumi.Output<string | undefined>;
@@ -92,6 +93,12 @@ export class SourceSaml extends pulumi.CustomResource {
      */
     declare public readonly policyEngineMode: pulumi.Output<string | undefined>;
     declare public readonly preAuthenticationFlow: pulumi.Output<string>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    declare public readonly promoted: pulumi.Output<boolean | undefined>;
+    declare public readonly propertyMappings: pulumi.Output<string[] | undefined>;
+    declare public readonly propertyMappingsGroups: pulumi.Output<string[] | undefined>;
     /**
      * Allowed values:
      *   - `http://www.w3.org/2000/09/xmldsig#rsa-sha1`
@@ -106,13 +113,21 @@ export class SourceSaml extends pulumi.CustomResource {
      *  Defaults to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`.
      */
     declare public readonly signatureAlgorithm: pulumi.Output<string | undefined>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    declare public readonly signedAssertion: pulumi.Output<boolean | undefined>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    declare public readonly signedResponse: pulumi.Output<boolean | undefined>;
     declare public readonly signingKp: pulumi.Output<string | undefined>;
     declare public readonly sloUrl: pulumi.Output<string | undefined>;
     declare public readonly slug: pulumi.Output<string>;
     declare public readonly sourceSamlId: pulumi.Output<string>;
     declare public readonly ssoUrl: pulumi.Output<string>;
     /**
-     * Defaults to `days=1`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `days=1`.
      */
     declare public readonly temporaryUserDeleteAfter: pulumi.Output<string | undefined>;
     /**
@@ -133,6 +148,7 @@ export class SourceSaml extends pulumi.CustomResource {
      * Generated.
      */
     declare public readonly uuid: pulumi.Output<string>;
+    declare public readonly verificationKp: pulumi.Output<string | undefined>;
 
     /**
      * Create a SourceSaml resource with the given unique name, arguments, and options.
@@ -161,7 +177,12 @@ export class SourceSaml extends pulumi.CustomResource {
             resourceInputs["nameIdPolicy"] = state?.nameIdPolicy;
             resourceInputs["policyEngineMode"] = state?.policyEngineMode;
             resourceInputs["preAuthenticationFlow"] = state?.preAuthenticationFlow;
+            resourceInputs["promoted"] = state?.promoted;
+            resourceInputs["propertyMappings"] = state?.propertyMappings;
+            resourceInputs["propertyMappingsGroups"] = state?.propertyMappingsGroups;
             resourceInputs["signatureAlgorithm"] = state?.signatureAlgorithm;
+            resourceInputs["signedAssertion"] = state?.signedAssertion;
+            resourceInputs["signedResponse"] = state?.signedResponse;
             resourceInputs["signingKp"] = state?.signingKp;
             resourceInputs["sloUrl"] = state?.sloUrl;
             resourceInputs["slug"] = state?.slug;
@@ -171,6 +192,7 @@ export class SourceSaml extends pulumi.CustomResource {
             resourceInputs["userMatchingMode"] = state?.userMatchingMode;
             resourceInputs["userPathTemplate"] = state?.userPathTemplate;
             resourceInputs["uuid"] = state?.uuid;
+            resourceInputs["verificationKp"] = state?.verificationKp;
         } else {
             const args = argsOrState as SourceSamlArgs | undefined;
             if (args?.preAuthenticationFlow === undefined && !opts.urn) {
@@ -195,7 +217,12 @@ export class SourceSaml extends pulumi.CustomResource {
             resourceInputs["nameIdPolicy"] = args?.nameIdPolicy;
             resourceInputs["policyEngineMode"] = args?.policyEngineMode;
             resourceInputs["preAuthenticationFlow"] = args?.preAuthenticationFlow;
+            resourceInputs["promoted"] = args?.promoted;
+            resourceInputs["propertyMappings"] = args?.propertyMappings;
+            resourceInputs["propertyMappingsGroups"] = args?.propertyMappingsGroups;
             resourceInputs["signatureAlgorithm"] = args?.signatureAlgorithm;
+            resourceInputs["signedAssertion"] = args?.signedAssertion;
+            resourceInputs["signedResponse"] = args?.signedResponse;
             resourceInputs["signingKp"] = args?.signingKp;
             resourceInputs["sloUrl"] = args?.sloUrl;
             resourceInputs["slug"] = args?.slug;
@@ -205,6 +232,7 @@ export class SourceSaml extends pulumi.CustomResource {
             resourceInputs["userMatchingMode"] = args?.userMatchingMode;
             resourceInputs["userPathTemplate"] = args?.userPathTemplate;
             resourceInputs["uuid"] = args?.uuid;
+            resourceInputs["verificationKp"] = args?.verificationKp;
             resourceInputs["metadata"] = undefined /*out*/;
         }
         opts = pulumi.mergeOptions(utilities.resourceOptsDefaults(), opts);
@@ -265,6 +293,7 @@ export interface SourceSamlState {
      *   - `urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName`
      *   - `urn:oasis:names:tc:SAML:2.0:nameid-format:WindowsDomainQualifiedName`
      *   - `urn:oasis:names:tc:SAML:2.0:nameid-format:transient`
+     *   - `urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified`
      *  Defaults to `urn:oasis:names:tc:SAML:2.0:nameid-format:persistent`.
      */
     nameIdPolicy?: pulumi.Input<string>;
@@ -276,6 +305,12 @@ export interface SourceSamlState {
      */
     policyEngineMode?: pulumi.Input<string>;
     preAuthenticationFlow?: pulumi.Input<string>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    promoted?: pulumi.Input<boolean>;
+    propertyMappings?: pulumi.Input<pulumi.Input<string>[]>;
+    propertyMappingsGroups?: pulumi.Input<pulumi.Input<string>[]>;
     /**
      * Allowed values:
      *   - `http://www.w3.org/2000/09/xmldsig#rsa-sha1`
@@ -290,13 +325,21 @@ export interface SourceSamlState {
      *  Defaults to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`.
      */
     signatureAlgorithm?: pulumi.Input<string>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    signedAssertion?: pulumi.Input<boolean>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    signedResponse?: pulumi.Input<boolean>;
     signingKp?: pulumi.Input<string>;
     sloUrl?: pulumi.Input<string>;
     slug?: pulumi.Input<string>;
     sourceSamlId?: pulumi.Input<string>;
     ssoUrl?: pulumi.Input<string>;
     /**
-     * Defaults to `days=1`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `days=1`.
      */
     temporaryUserDeleteAfter?: pulumi.Input<string>;
     /**
@@ -317,6 +360,7 @@ export interface SourceSamlState {
      * Generated.
      */
     uuid?: pulumi.Input<string>;
+    verificationKp?: pulumi.Input<string>;
 }
 
 /**
@@ -368,6 +412,7 @@ export interface SourceSamlArgs {
      *   - `urn:oasis:names:tc:SAML:1.1:nameid-format:X509SubjectName`
      *   - `urn:oasis:names:tc:SAML:2.0:nameid-format:WindowsDomainQualifiedName`
      *   - `urn:oasis:names:tc:SAML:2.0:nameid-format:transient`
+     *   - `urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified`
      *  Defaults to `urn:oasis:names:tc:SAML:2.0:nameid-format:persistent`.
      */
     nameIdPolicy?: pulumi.Input<string>;
@@ -379,6 +424,12 @@ export interface SourceSamlArgs {
      */
     policyEngineMode?: pulumi.Input<string>;
     preAuthenticationFlow: pulumi.Input<string>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    promoted?: pulumi.Input<boolean>;
+    propertyMappings?: pulumi.Input<pulumi.Input<string>[]>;
+    propertyMappingsGroups?: pulumi.Input<pulumi.Input<string>[]>;
     /**
      * Allowed values:
      *   - `http://www.w3.org/2000/09/xmldsig#rsa-sha1`
@@ -393,13 +444,21 @@ export interface SourceSamlArgs {
      *  Defaults to `http://www.w3.org/2001/04/xmldsig-more#rsa-sha256`.
      */
     signatureAlgorithm?: pulumi.Input<string>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    signedAssertion?: pulumi.Input<boolean>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     */
+    signedResponse?: pulumi.Input<boolean>;
     signingKp?: pulumi.Input<string>;
     sloUrl?: pulumi.Input<string>;
     slug: pulumi.Input<string>;
     sourceSamlId?: pulumi.Input<string>;
     ssoUrl: pulumi.Input<string>;
     /**
-     * Defaults to `days=1`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `days=1`.
      */
     temporaryUserDeleteAfter?: pulumi.Input<string>;
     /**
@@ -420,4 +479,5 @@ export interface SourceSamlArgs {
      * Generated.
      */
     uuid?: pulumi.Input<string>;
+    verificationKp?: pulumi.Input<string>;
 }

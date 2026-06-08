@@ -4,9 +4,9 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as utilities from "./utilities";
 
-export class StageEmail extends pulumi.CustomResource {
+export class StageAuthenticatorEmail extends pulumi.CustomResource {
     /**
-     * Get an existing StageEmail resource's state with the given name, ID, and optional extra
+     * Get an existing StageAuthenticatorEmail resource's state with the given name, ID, and optional extra
      * properties used to qualify the lookup.
      *
      * @param name The _unique_ name of the resulting resource.
@@ -14,28 +14,29 @@ export class StageEmail extends pulumi.CustomResource {
      * @param state Any extra arguments used during the lookup.
      * @param opts Optional settings to control the behavior of the CustomResource.
      */
-    public static get(name: string, id: pulumi.Input<pulumi.ID>, state?: StageEmailState, opts?: pulumi.CustomResourceOptions): StageEmail {
-        return new StageEmail(name, <any>state, { ...opts, id: id });
+    public static get(name: string, id: pulumi.Input<pulumi.ID>, state?: StageAuthenticatorEmailState, opts?: pulumi.CustomResourceOptions): StageAuthenticatorEmail {
+        return new StageAuthenticatorEmail(name, <any>state, { ...opts, id: id });
     }
 
     /** @internal */
-    public static readonly __pulumiType = 'authentik:index/stageEmail:StageEmail';
+    public static readonly __pulumiType = 'authentik:index/stageAuthenticatorEmail:StageAuthenticatorEmail';
 
     /**
-     * Returns true if the given object is an instance of StageEmail.  This is designed to work even
+     * Returns true if the given object is an instance of StageAuthenticatorEmail.  This is designed to work even
      * when multiple copies of the Pulumi SDK have been loaded into the same process.
      */
-    public static isInstance(obj: any): obj is StageEmail {
+    public static isInstance(obj: any): obj is StageAuthenticatorEmail {
         if (obj === undefined || obj === null) {
             return false;
         }
-        return obj['__pulumiType'] === StageEmail.__pulumiType;
+        return obj['__pulumiType'] === StageAuthenticatorEmail.__pulumiType;
     }
 
+    declare public readonly configureFlow: pulumi.Output<string | undefined>;
     /**
-     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     * Defaults to ``.
      */
-    declare public readonly activateUserOnSuccess: pulumi.Output<boolean | undefined>;
+    declare public readonly friendlyName: pulumi.Output<string | undefined>;
     /**
      * Defaults to `system@authentik.local`.
      */
@@ -50,15 +51,7 @@ export class StageEmail extends pulumi.CustomResource {
      * Defaults to <span pulumi-lang-nodejs="`25`" pulumi-lang-dotnet="`25`" pulumi-lang-go="`25`" pulumi-lang-python="`25`" pulumi-lang-yaml="`25`" pulumi-lang-java="`25`" pulumi-lang-hcl="`25`">`25`</span>.
      */
     declare public readonly port: pulumi.Output<number | undefined>;
-    /**
-     * Format: hours=1;minutes=2;seconds=3. Defaults to `minutes=5`.
-     */
-    declare public readonly recoveryCacheTimeout: pulumi.Output<string | undefined>;
-    /**
-     * Defaults to <span pulumi-lang-nodejs="`5`" pulumi-lang-dotnet="`5`" pulumi-lang-go="`5`" pulumi-lang-python="`5`" pulumi-lang-yaml="`5`" pulumi-lang-java="`5`" pulumi-lang-hcl="`5`">`5`</span>.
-     */
-    declare public readonly recoveryMaxAttempts: pulumi.Output<number | undefined>;
-    declare public readonly stageEmailId: pulumi.Output<string>;
+    declare public readonly stageAuthenticatorEmailId: pulumi.Output<string>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`authentik`" pulumi-lang-dotnet="`Authentik`" pulumi-lang-go="`authentik`" pulumi-lang-python="`authentik`" pulumi-lang-yaml="`authentik`" pulumi-lang-java="`authentik`" pulumi-lang-hcl="`authentik`">`authentik`</span>.
      */
@@ -84,27 +77,26 @@ export class StageEmail extends pulumi.CustomResource {
     declare public readonly username: pulumi.Output<string | undefined>;
 
     /**
-     * Create a StageEmail resource with the given unique name, arguments, and options.
+     * Create a StageAuthenticatorEmail resource with the given unique name, arguments, and options.
      *
      * @param name The _unique_ name of the resource.
      * @param args The arguments to use to populate this resource's properties.
      * @param opts A bag of options that control this resource's behavior.
      */
-    constructor(name: string, args?: StageEmailArgs, opts?: pulumi.CustomResourceOptions)
-    constructor(name: string, argsOrState?: StageEmailArgs | StageEmailState, opts?: pulumi.CustomResourceOptions) {
+    constructor(name: string, args?: StageAuthenticatorEmailArgs, opts?: pulumi.CustomResourceOptions)
+    constructor(name: string, argsOrState?: StageAuthenticatorEmailArgs | StageAuthenticatorEmailState, opts?: pulumi.CustomResourceOptions) {
         let resourceInputs: pulumi.Inputs = {};
         opts = opts || {};
         if (opts.id) {
-            const state = argsOrState as StageEmailState | undefined;
-            resourceInputs["activateUserOnSuccess"] = state?.activateUserOnSuccess;
+            const state = argsOrState as StageAuthenticatorEmailState | undefined;
+            resourceInputs["configureFlow"] = state?.configureFlow;
+            resourceInputs["friendlyName"] = state?.friendlyName;
             resourceInputs["fromAddress"] = state?.fromAddress;
             resourceInputs["host"] = state?.host;
             resourceInputs["name"] = state?.name;
             resourceInputs["password"] = state?.password;
             resourceInputs["port"] = state?.port;
-            resourceInputs["recoveryCacheTimeout"] = state?.recoveryCacheTimeout;
-            resourceInputs["recoveryMaxAttempts"] = state?.recoveryMaxAttempts;
-            resourceInputs["stageEmailId"] = state?.stageEmailId;
+            resourceInputs["stageAuthenticatorEmailId"] = state?.stageAuthenticatorEmailId;
             resourceInputs["subject"] = state?.subject;
             resourceInputs["template"] = state?.template;
             resourceInputs["timeout"] = state?.timeout;
@@ -114,16 +106,15 @@ export class StageEmail extends pulumi.CustomResource {
             resourceInputs["useTls"] = state?.useTls;
             resourceInputs["username"] = state?.username;
         } else {
-            const args = argsOrState as StageEmailArgs | undefined;
-            resourceInputs["activateUserOnSuccess"] = args?.activateUserOnSuccess;
+            const args = argsOrState as StageAuthenticatorEmailArgs | undefined;
+            resourceInputs["configureFlow"] = args?.configureFlow;
+            resourceInputs["friendlyName"] = args?.friendlyName;
             resourceInputs["fromAddress"] = args?.fromAddress;
             resourceInputs["host"] = args?.host;
             resourceInputs["name"] = args?.name;
             resourceInputs["password"] = args?.password ? pulumi.secret(args.password) : undefined;
             resourceInputs["port"] = args?.port;
-            resourceInputs["recoveryCacheTimeout"] = args?.recoveryCacheTimeout;
-            resourceInputs["recoveryMaxAttempts"] = args?.recoveryMaxAttempts;
-            resourceInputs["stageEmailId"] = args?.stageEmailId;
+            resourceInputs["stageAuthenticatorEmailId"] = args?.stageAuthenticatorEmailId;
             resourceInputs["subject"] = args?.subject;
             resourceInputs["template"] = args?.template;
             resourceInputs["timeout"] = args?.timeout;
@@ -136,18 +127,19 @@ export class StageEmail extends pulumi.CustomResource {
         opts = pulumi.mergeOptions(utilities.resourceOptsDefaults(), opts);
         const secretOpts = { additionalSecretOutputs: ["password"] };
         opts = pulumi.mergeOptions(opts, secretOpts);
-        super(StageEmail.__pulumiType, name, resourceInputs, opts, false /*dependency*/, utilities.getPackage());
+        super(StageAuthenticatorEmail.__pulumiType, name, resourceInputs, opts, false /*dependency*/, utilities.getPackage());
     }
 }
 
 /**
- * Input properties used for looking up and filtering StageEmail resources.
+ * Input properties used for looking up and filtering StageAuthenticatorEmail resources.
  */
-export interface StageEmailState {
+export interface StageAuthenticatorEmailState {
+    configureFlow?: pulumi.Input<string>;
     /**
-     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     * Defaults to ``.
      */
-    activateUserOnSuccess?: pulumi.Input<boolean>;
+    friendlyName?: pulumi.Input<string>;
     /**
      * Defaults to `system@authentik.local`.
      */
@@ -162,15 +154,7 @@ export interface StageEmailState {
      * Defaults to <span pulumi-lang-nodejs="`25`" pulumi-lang-dotnet="`25`" pulumi-lang-go="`25`" pulumi-lang-python="`25`" pulumi-lang-yaml="`25`" pulumi-lang-java="`25`" pulumi-lang-hcl="`25`">`25`</span>.
      */
     port?: pulumi.Input<number>;
-    /**
-     * Format: hours=1;minutes=2;seconds=3. Defaults to `minutes=5`.
-     */
-    recoveryCacheTimeout?: pulumi.Input<string>;
-    /**
-     * Defaults to <span pulumi-lang-nodejs="`5`" pulumi-lang-dotnet="`5`" pulumi-lang-go="`5`" pulumi-lang-python="`5`" pulumi-lang-yaml="`5`" pulumi-lang-java="`5`" pulumi-lang-hcl="`5`">`5`</span>.
-     */
-    recoveryMaxAttempts?: pulumi.Input<number>;
-    stageEmailId?: pulumi.Input<string>;
+    stageAuthenticatorEmailId?: pulumi.Input<string>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`authentik`" pulumi-lang-dotnet="`Authentik`" pulumi-lang-go="`authentik`" pulumi-lang-python="`authentik`" pulumi-lang-yaml="`authentik`" pulumi-lang-java="`authentik`" pulumi-lang-hcl="`authentik`">`authentik`</span>.
      */
@@ -197,13 +181,14 @@ export interface StageEmailState {
 }
 
 /**
- * The set of arguments for constructing a StageEmail resource.
+ * The set of arguments for constructing a StageAuthenticatorEmail resource.
  */
-export interface StageEmailArgs {
+export interface StageAuthenticatorEmailArgs {
+    configureFlow?: pulumi.Input<string>;
     /**
-     * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
+     * Defaults to ``.
      */
-    activateUserOnSuccess?: pulumi.Input<boolean>;
+    friendlyName?: pulumi.Input<string>;
     /**
      * Defaults to `system@authentik.local`.
      */
@@ -218,15 +203,7 @@ export interface StageEmailArgs {
      * Defaults to <span pulumi-lang-nodejs="`25`" pulumi-lang-dotnet="`25`" pulumi-lang-go="`25`" pulumi-lang-python="`25`" pulumi-lang-yaml="`25`" pulumi-lang-java="`25`" pulumi-lang-hcl="`25`">`25`</span>.
      */
     port?: pulumi.Input<number>;
-    /**
-     * Format: hours=1;minutes=2;seconds=3. Defaults to `minutes=5`.
-     */
-    recoveryCacheTimeout?: pulumi.Input<string>;
-    /**
-     * Defaults to <span pulumi-lang-nodejs="`5`" pulumi-lang-dotnet="`5`" pulumi-lang-go="`5`" pulumi-lang-python="`5`" pulumi-lang-yaml="`5`" pulumi-lang-java="`5`" pulumi-lang-hcl="`5`">`5`</span>.
-     */
-    recoveryMaxAttempts?: pulumi.Input<number>;
-    stageEmailId?: pulumi.Input<string>;
+    stageAuthenticatorEmailId?: pulumi.Input<string>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`authentik`" pulumi-lang-dotnet="`Authentik`" pulumi-lang-go="`authentik`" pulumi-lang-python="`authentik`" pulumi-lang-yaml="`authentik`" pulumi-lang-java="`authentik`" pulumi-lang-hcl="`authentik`">`authentik`</span>.
      */

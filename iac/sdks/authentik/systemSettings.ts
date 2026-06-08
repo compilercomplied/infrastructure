@@ -37,7 +37,7 @@ export class SystemSettings extends pulumi.CustomResource {
      */
     declare public readonly avatars: pulumi.Output<string | undefined>;
     /**
-     * Defaults to `minutes=30`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `minutes=30`.
      */
     declare public readonly defaultTokenDuration: pulumi.Output<string | undefined>;
     /**
@@ -57,9 +57,13 @@ export class SystemSettings extends pulumi.CustomResource {
      */
     declare public readonly defaultUserChangeUsername: pulumi.Output<boolean | undefined>;
     /**
-     * Defaults to `days=365`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `days=365`.
      */
     declare public readonly eventRetention: pulumi.Output<string | undefined>;
+    /**
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{<span pulumi-lang-nodejs=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-dotnet=""EnterpriseAuditIncludeExpandedDiff"" pulumi-lang-go=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-python=""enterprise_audit_include_expanded_diff"" pulumi-lang-yaml=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-java=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-hcl=""enterprise_audit_include_expanded_diff"">"enterpriseAuditIncludeExpandedDiff"</span>:false,<span pulumi-lang-nodejs=""flowsContinuousLogin"" pulumi-lang-dotnet=""FlowsContinuousLogin"" pulumi-lang-go=""flowsContinuousLogin"" pulumi-lang-python=""flows_continuous_login"" pulumi-lang-yaml=""flowsContinuousLogin"" pulumi-lang-java=""flowsContinuousLogin"" pulumi-lang-hcl=""flows_continuous_login"">"flowsContinuousLogin"</span>:false,<span pulumi-lang-nodejs=""flowsRefreshOthers"" pulumi-lang-dotnet=""FlowsRefreshOthers"" pulumi-lang-go=""flowsRefreshOthers"" pulumi-lang-python=""flows_refresh_others"" pulumi-lang-yaml=""flowsRefreshOthers"" pulumi-lang-java=""flowsRefreshOthers"" pulumi-lang-hcl=""flows_refresh_others"">"flowsRefreshOthers"</span>:false,<span pulumi-lang-nodejs=""policiesBufferedAccessView"" pulumi-lang-dotnet=""PoliciesBufferedAccessView"" pulumi-lang-go=""policiesBufferedAccessView"" pulumi-lang-python=""policies_buffered_access_view"" pulumi-lang-yaml=""policiesBufferedAccessView"" pulumi-lang-java=""policiesBufferedAccessView"" pulumi-lang-hcl=""policies_buffered_access_view"">"policiesBufferedAccessView"</span>:false}`.
+     */
+    declare public readonly flags: pulumi.Output<string | undefined>;
     declare public readonly footerLinks: pulumi.Output<{[key: string]: string}[] | undefined>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
@@ -69,6 +73,22 @@ export class SystemSettings extends pulumi.CustomResource {
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
      */
     declare public readonly impersonation: pulumi.Output<boolean | undefined>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`20`" pulumi-lang-dotnet="`20`" pulumi-lang-go="`20`" pulumi-lang-python="`20`" pulumi-lang-yaml="`20`" pulumi-lang-java="`20`" pulumi-lang-hcl="`20`">`20`</span>.
+     */
+    declare public readonly paginationDefaultPageSize: pulumi.Output<number | undefined>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`100`" pulumi-lang-dotnet="`100`" pulumi-lang-go="`100`" pulumi-lang-python="`100`" pulumi-lang-yaml="`100`" pulumi-lang-java="`100`" pulumi-lang-hcl="`100`">`100`</span>.
+     */
+    declare public readonly paginationMaxPageSize: pulumi.Output<number | undefined>;
+    /**
+     * Defaults to `-5`.
+     */
+    declare public readonly reputationLowerLimit: pulumi.Output<number | undefined>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`5`" pulumi-lang-dotnet="`5`" pulumi-lang-go="`5`" pulumi-lang-python="`5`" pulumi-lang-yaml="`5`" pulumi-lang-java="`5`" pulumi-lang-hcl="`5`">`5`</span>.
+     */
+    declare public readonly reputationUpperLimit: pulumi.Output<number | undefined>;
     declare public readonly systemSettingsId: pulumi.Output<string>;
 
     /**
@@ -91,9 +111,14 @@ export class SystemSettings extends pulumi.CustomResource {
             resourceInputs["defaultUserChangeName"] = state?.defaultUserChangeName;
             resourceInputs["defaultUserChangeUsername"] = state?.defaultUserChangeUsername;
             resourceInputs["eventRetention"] = state?.eventRetention;
+            resourceInputs["flags"] = state?.flags;
             resourceInputs["footerLinks"] = state?.footerLinks;
             resourceInputs["gdprCompliance"] = state?.gdprCompliance;
             resourceInputs["impersonation"] = state?.impersonation;
+            resourceInputs["paginationDefaultPageSize"] = state?.paginationDefaultPageSize;
+            resourceInputs["paginationMaxPageSize"] = state?.paginationMaxPageSize;
+            resourceInputs["reputationLowerLimit"] = state?.reputationLowerLimit;
+            resourceInputs["reputationUpperLimit"] = state?.reputationUpperLimit;
             resourceInputs["systemSettingsId"] = state?.systemSettingsId;
         } else {
             const args = argsOrState as SystemSettingsArgs | undefined;
@@ -104,9 +129,14 @@ export class SystemSettings extends pulumi.CustomResource {
             resourceInputs["defaultUserChangeName"] = args?.defaultUserChangeName;
             resourceInputs["defaultUserChangeUsername"] = args?.defaultUserChangeUsername;
             resourceInputs["eventRetention"] = args?.eventRetention;
+            resourceInputs["flags"] = args?.flags;
             resourceInputs["footerLinks"] = args?.footerLinks;
             resourceInputs["gdprCompliance"] = args?.gdprCompliance;
             resourceInputs["impersonation"] = args?.impersonation;
+            resourceInputs["paginationDefaultPageSize"] = args?.paginationDefaultPageSize;
+            resourceInputs["paginationMaxPageSize"] = args?.paginationMaxPageSize;
+            resourceInputs["reputationLowerLimit"] = args?.reputationLowerLimit;
+            resourceInputs["reputationUpperLimit"] = args?.reputationUpperLimit;
             resourceInputs["systemSettingsId"] = args?.systemSettingsId;
         }
         opts = pulumi.mergeOptions(utilities.resourceOptsDefaults(), opts);
@@ -123,7 +153,7 @@ export interface SystemSettingsState {
      */
     avatars?: pulumi.Input<string>;
     /**
-     * Defaults to `minutes=30`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `minutes=30`.
      */
     defaultTokenDuration?: pulumi.Input<string>;
     /**
@@ -143,9 +173,13 @@ export interface SystemSettingsState {
      */
     defaultUserChangeUsername?: pulumi.Input<boolean>;
     /**
-     * Defaults to `days=365`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `days=365`.
      */
     eventRetention?: pulumi.Input<string>;
+    /**
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{<span pulumi-lang-nodejs=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-dotnet=""EnterpriseAuditIncludeExpandedDiff"" pulumi-lang-go=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-python=""enterprise_audit_include_expanded_diff"" pulumi-lang-yaml=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-java=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-hcl=""enterprise_audit_include_expanded_diff"">"enterpriseAuditIncludeExpandedDiff"</span>:false,<span pulumi-lang-nodejs=""flowsContinuousLogin"" pulumi-lang-dotnet=""FlowsContinuousLogin"" pulumi-lang-go=""flowsContinuousLogin"" pulumi-lang-python=""flows_continuous_login"" pulumi-lang-yaml=""flowsContinuousLogin"" pulumi-lang-java=""flowsContinuousLogin"" pulumi-lang-hcl=""flows_continuous_login"">"flowsContinuousLogin"</span>:false,<span pulumi-lang-nodejs=""flowsRefreshOthers"" pulumi-lang-dotnet=""FlowsRefreshOthers"" pulumi-lang-go=""flowsRefreshOthers"" pulumi-lang-python=""flows_refresh_others"" pulumi-lang-yaml=""flowsRefreshOthers"" pulumi-lang-java=""flowsRefreshOthers"" pulumi-lang-hcl=""flows_refresh_others"">"flowsRefreshOthers"</span>:false,<span pulumi-lang-nodejs=""policiesBufferedAccessView"" pulumi-lang-dotnet=""PoliciesBufferedAccessView"" pulumi-lang-go=""policiesBufferedAccessView"" pulumi-lang-python=""policies_buffered_access_view"" pulumi-lang-yaml=""policiesBufferedAccessView"" pulumi-lang-java=""policiesBufferedAccessView"" pulumi-lang-hcl=""policies_buffered_access_view"">"policiesBufferedAccessView"</span>:false}`.
+     */
+    flags?: pulumi.Input<string>;
     footerLinks?: pulumi.Input<pulumi.Input<{[key: string]: pulumi.Input<string>}>[]>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
@@ -155,6 +189,22 @@ export interface SystemSettingsState {
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
      */
     impersonation?: pulumi.Input<boolean>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`20`" pulumi-lang-dotnet="`20`" pulumi-lang-go="`20`" pulumi-lang-python="`20`" pulumi-lang-yaml="`20`" pulumi-lang-java="`20`" pulumi-lang-hcl="`20`">`20`</span>.
+     */
+    paginationDefaultPageSize?: pulumi.Input<number>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`100`" pulumi-lang-dotnet="`100`" pulumi-lang-go="`100`" pulumi-lang-python="`100`" pulumi-lang-yaml="`100`" pulumi-lang-java="`100`" pulumi-lang-hcl="`100`">`100`</span>.
+     */
+    paginationMaxPageSize?: pulumi.Input<number>;
+    /**
+     * Defaults to `-5`.
+     */
+    reputationLowerLimit?: pulumi.Input<number>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`5`" pulumi-lang-dotnet="`5`" pulumi-lang-go="`5`" pulumi-lang-python="`5`" pulumi-lang-yaml="`5`" pulumi-lang-java="`5`" pulumi-lang-hcl="`5`">`5`</span>.
+     */
+    reputationUpperLimit?: pulumi.Input<number>;
     systemSettingsId?: pulumi.Input<string>;
 }
 
@@ -167,7 +217,7 @@ export interface SystemSettingsArgs {
      */
     avatars?: pulumi.Input<string>;
     /**
-     * Defaults to `minutes=30`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `minutes=30`.
      */
     defaultTokenDuration?: pulumi.Input<string>;
     /**
@@ -187,9 +237,13 @@ export interface SystemSettingsArgs {
      */
     defaultUserChangeUsername?: pulumi.Input<boolean>;
     /**
-     * Defaults to `days=365`.
+     * Format: hours=1;minutes=2;seconds=3. Defaults to `days=365`.
      */
     eventRetention?: pulumi.Input<string>;
+    /**
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{<span pulumi-lang-nodejs=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-dotnet=""EnterpriseAuditIncludeExpandedDiff"" pulumi-lang-go=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-python=""enterprise_audit_include_expanded_diff"" pulumi-lang-yaml=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-java=""enterpriseAuditIncludeExpandedDiff"" pulumi-lang-hcl=""enterprise_audit_include_expanded_diff"">"enterpriseAuditIncludeExpandedDiff"</span>:false,<span pulumi-lang-nodejs=""flowsContinuousLogin"" pulumi-lang-dotnet=""FlowsContinuousLogin"" pulumi-lang-go=""flowsContinuousLogin"" pulumi-lang-python=""flows_continuous_login"" pulumi-lang-yaml=""flowsContinuousLogin"" pulumi-lang-java=""flowsContinuousLogin"" pulumi-lang-hcl=""flows_continuous_login"">"flowsContinuousLogin"</span>:false,<span pulumi-lang-nodejs=""flowsRefreshOthers"" pulumi-lang-dotnet=""FlowsRefreshOthers"" pulumi-lang-go=""flowsRefreshOthers"" pulumi-lang-python=""flows_refresh_others"" pulumi-lang-yaml=""flowsRefreshOthers"" pulumi-lang-java=""flowsRefreshOthers"" pulumi-lang-hcl=""flows_refresh_others"">"flowsRefreshOthers"</span>:false,<span pulumi-lang-nodejs=""policiesBufferedAccessView"" pulumi-lang-dotnet=""PoliciesBufferedAccessView"" pulumi-lang-go=""policiesBufferedAccessView"" pulumi-lang-python=""policies_buffered_access_view"" pulumi-lang-yaml=""policiesBufferedAccessView"" pulumi-lang-java=""policiesBufferedAccessView"" pulumi-lang-hcl=""policies_buffered_access_view"">"policiesBufferedAccessView"</span>:false}`.
+     */
+    flags?: pulumi.Input<string>;
     footerLinks?: pulumi.Input<pulumi.Input<{[key: string]: pulumi.Input<string>}>[]>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
@@ -199,5 +253,21 @@ export interface SystemSettingsArgs {
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
      */
     impersonation?: pulumi.Input<boolean>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`20`" pulumi-lang-dotnet="`20`" pulumi-lang-go="`20`" pulumi-lang-python="`20`" pulumi-lang-yaml="`20`" pulumi-lang-java="`20`" pulumi-lang-hcl="`20`">`20`</span>.
+     */
+    paginationDefaultPageSize?: pulumi.Input<number>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`100`" pulumi-lang-dotnet="`100`" pulumi-lang-go="`100`" pulumi-lang-python="`100`" pulumi-lang-yaml="`100`" pulumi-lang-java="`100`" pulumi-lang-hcl="`100`">`100`</span>.
+     */
+    paginationMaxPageSize?: pulumi.Input<number>;
+    /**
+     * Defaults to `-5`.
+     */
+    reputationLowerLimit?: pulumi.Input<number>;
+    /**
+     * Defaults to <span pulumi-lang-nodejs="`5`" pulumi-lang-dotnet="`5`" pulumi-lang-go="`5`" pulumi-lang-python="`5`" pulumi-lang-yaml="`5`" pulumi-lang-java="`5`" pulumi-lang-hcl="`5`">`5`</span>.
+     */
+    reputationUpperLimit?: pulumi.Input<number>;
     systemSettingsId?: pulumi.Input<string>;
 }

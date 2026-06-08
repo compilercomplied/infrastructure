@@ -32,6 +32,14 @@ export class EventTransport extends pulumi.CustomResource {
         return obj['__pulumiType'] === EventTransport.__pulumiType;
     }
 
+    /**
+     * Defaults to `authentik Notification:`.
+     */
+    declare public readonly emailSubjectPrefix: pulumi.Output<string | undefined>;
+    /**
+     * Defaults to `email/event_notification.html`.
+     */
+    declare public readonly emailTemplate: pulumi.Output<string | undefined>;
     declare public readonly eventTransportId: pulumi.Output<string>;
     /**
      * Allowed values:
@@ -46,7 +54,8 @@ export class EventTransport extends pulumi.CustomResource {
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
      */
     declare public readonly sendOnce: pulumi.Output<boolean | undefined>;
-    declare public readonly webhookMapping: pulumi.Output<string | undefined>;
+    declare public readonly webhookMappingBody: pulumi.Output<string | undefined>;
+    declare public readonly webhookMappingHeaders: pulumi.Output<string | undefined>;
     declare public readonly webhookUrl: pulumi.Output<string | undefined>;
 
     /**
@@ -62,22 +71,28 @@ export class EventTransport extends pulumi.CustomResource {
         opts = opts || {};
         if (opts.id) {
             const state = argsOrState as EventTransportState | undefined;
+            resourceInputs["emailSubjectPrefix"] = state?.emailSubjectPrefix;
+            resourceInputs["emailTemplate"] = state?.emailTemplate;
             resourceInputs["eventTransportId"] = state?.eventTransportId;
             resourceInputs["mode"] = state?.mode;
             resourceInputs["name"] = state?.name;
             resourceInputs["sendOnce"] = state?.sendOnce;
-            resourceInputs["webhookMapping"] = state?.webhookMapping;
+            resourceInputs["webhookMappingBody"] = state?.webhookMappingBody;
+            resourceInputs["webhookMappingHeaders"] = state?.webhookMappingHeaders;
             resourceInputs["webhookUrl"] = state?.webhookUrl;
         } else {
             const args = argsOrState as EventTransportArgs | undefined;
             if (args?.mode === undefined && !opts.urn) {
                 throw new Error("Missing required property 'mode'");
             }
+            resourceInputs["emailSubjectPrefix"] = args?.emailSubjectPrefix;
+            resourceInputs["emailTemplate"] = args?.emailTemplate;
             resourceInputs["eventTransportId"] = args?.eventTransportId;
             resourceInputs["mode"] = args?.mode;
             resourceInputs["name"] = args?.name;
             resourceInputs["sendOnce"] = args?.sendOnce;
-            resourceInputs["webhookMapping"] = args?.webhookMapping;
+            resourceInputs["webhookMappingBody"] = args?.webhookMappingBody;
+            resourceInputs["webhookMappingHeaders"] = args?.webhookMappingHeaders;
             resourceInputs["webhookUrl"] = args?.webhookUrl;
         }
         opts = pulumi.mergeOptions(utilities.resourceOptsDefaults(), opts);
@@ -89,6 +104,14 @@ export class EventTransport extends pulumi.CustomResource {
  * Input properties used for looking up and filtering EventTransport resources.
  */
 export interface EventTransportState {
+    /**
+     * Defaults to `authentik Notification:`.
+     */
+    emailSubjectPrefix?: pulumi.Input<string>;
+    /**
+     * Defaults to `email/event_notification.html`.
+     */
+    emailTemplate?: pulumi.Input<string>;
     eventTransportId?: pulumi.Input<string>;
     /**
      * Allowed values:
@@ -103,7 +126,8 @@ export interface EventTransportState {
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
      */
     sendOnce?: pulumi.Input<boolean>;
-    webhookMapping?: pulumi.Input<string>;
+    webhookMappingBody?: pulumi.Input<string>;
+    webhookMappingHeaders?: pulumi.Input<string>;
     webhookUrl?: pulumi.Input<string>;
 }
 
@@ -111,6 +135,14 @@ export interface EventTransportState {
  * The set of arguments for constructing a EventTransport resource.
  */
 export interface EventTransportArgs {
+    /**
+     * Defaults to `authentik Notification:`.
+     */
+    emailSubjectPrefix?: pulumi.Input<string>;
+    /**
+     * Defaults to `email/event_notification.html`.
+     */
+    emailTemplate?: pulumi.Input<string>;
     eventTransportId?: pulumi.Input<string>;
     /**
      * Allowed values:
@@ -125,6 +157,7 @@ export interface EventTransportArgs {
      * Defaults to <span pulumi-lang-nodejs="`true`" pulumi-lang-dotnet="`True`" pulumi-lang-go="`true`" pulumi-lang-python="`true`" pulumi-lang-yaml="`true`" pulumi-lang-java="`true`" pulumi-lang-hcl="`true`">`true`</span>.
      */
     sendOnce?: pulumi.Input<boolean>;
-    webhookMapping?: pulumi.Input<string>;
+    webhookMappingBody?: pulumi.Input<string>;
+    webhookMappingHeaders?: pulumi.Input<string>;
     webhookUrl?: pulumi.Input<string>;
 }

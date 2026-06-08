@@ -33,16 +33,22 @@ export class Brand extends pulumi.CustomResource {
     }
 
     /**
-     * JSON format expected. Use jsonencode() to pass objects. Defaults to `{}`.
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{}`.
      */
     declare public readonly attributes: pulumi.Output<string | undefined>;
     declare public readonly brandId: pulumi.Output<string>;
+    declare public readonly brandingCustomCss: pulumi.Output<string | undefined>;
+    /**
+     * Defaults to `/static/dist/assets/images/flow_background.jpg`.
+     */
+    declare public readonly brandingDefaultFlowBackground: pulumi.Output<string | undefined>;
     declare public readonly brandingFavicon: pulumi.Output<string | undefined>;
     declare public readonly brandingLogo: pulumi.Output<string | undefined>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`authentik`" pulumi-lang-dotnet="`Authentik`" pulumi-lang-go="`authentik`" pulumi-lang-python="`authentik`" pulumi-lang-yaml="`authentik`" pulumi-lang-java="`authentik`" pulumi-lang-hcl="`authentik`">`authentik`</span>.
      */
     declare public readonly brandingTitle: pulumi.Output<string | undefined>;
+    declare public readonly clientCertificates: pulumi.Output<string[] | undefined>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
      */
@@ -72,9 +78,12 @@ export class Brand extends pulumi.CustomResource {
             const state = argsOrState as BrandState | undefined;
             resourceInputs["attributes"] = state?.attributes;
             resourceInputs["brandId"] = state?.brandId;
+            resourceInputs["brandingCustomCss"] = state?.brandingCustomCss;
+            resourceInputs["brandingDefaultFlowBackground"] = state?.brandingDefaultFlowBackground;
             resourceInputs["brandingFavicon"] = state?.brandingFavicon;
             resourceInputs["brandingLogo"] = state?.brandingLogo;
             resourceInputs["brandingTitle"] = state?.brandingTitle;
+            resourceInputs["clientCertificates"] = state?.clientCertificates;
             resourceInputs["default"] = state?.default;
             resourceInputs["defaultApplication"] = state?.defaultApplication;
             resourceInputs["domain"] = state?.domain;
@@ -92,9 +101,12 @@ export class Brand extends pulumi.CustomResource {
             }
             resourceInputs["attributes"] = args?.attributes;
             resourceInputs["brandId"] = args?.brandId;
+            resourceInputs["brandingCustomCss"] = args?.brandingCustomCss;
+            resourceInputs["brandingDefaultFlowBackground"] = args?.brandingDefaultFlowBackground;
             resourceInputs["brandingFavicon"] = args?.brandingFavicon;
             resourceInputs["brandingLogo"] = args?.brandingLogo;
             resourceInputs["brandingTitle"] = args?.brandingTitle;
+            resourceInputs["clientCertificates"] = args?.clientCertificates;
             resourceInputs["default"] = args?.default;
             resourceInputs["defaultApplication"] = args?.defaultApplication;
             resourceInputs["domain"] = args?.domain;
@@ -116,16 +128,22 @@ export class Brand extends pulumi.CustomResource {
  */
 export interface BrandState {
     /**
-     * JSON format expected. Use jsonencode() to pass objects. Defaults to `{}`.
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{}`.
      */
     attributes?: pulumi.Input<string>;
     brandId?: pulumi.Input<string>;
+    brandingCustomCss?: pulumi.Input<string>;
+    /**
+     * Defaults to `/static/dist/assets/images/flow_background.jpg`.
+     */
+    brandingDefaultFlowBackground?: pulumi.Input<string>;
     brandingFavicon?: pulumi.Input<string>;
     brandingLogo?: pulumi.Input<string>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`authentik`" pulumi-lang-dotnet="`Authentik`" pulumi-lang-go="`authentik`" pulumi-lang-python="`authentik`" pulumi-lang-yaml="`authentik`" pulumi-lang-java="`authentik`" pulumi-lang-hcl="`authentik`">`authentik`</span>.
      */
     brandingTitle?: pulumi.Input<string>;
+    clientCertificates?: pulumi.Input<pulumi.Input<string>[]>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
      */
@@ -146,16 +164,22 @@ export interface BrandState {
  */
 export interface BrandArgs {
     /**
-     * JSON format expected. Use jsonencode() to pass objects. Defaults to `{}`.
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{}`.
      */
     attributes?: pulumi.Input<string>;
     brandId?: pulumi.Input<string>;
+    brandingCustomCss?: pulumi.Input<string>;
+    /**
+     * Defaults to `/static/dist/assets/images/flow_background.jpg`.
+     */
+    brandingDefaultFlowBackground?: pulumi.Input<string>;
     brandingFavicon?: pulumi.Input<string>;
     brandingLogo?: pulumi.Input<string>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`authentik`" pulumi-lang-dotnet="`Authentik`" pulumi-lang-go="`authentik`" pulumi-lang-python="`authentik`" pulumi-lang-yaml="`authentik`" pulumi-lang-java="`authentik`" pulumi-lang-hcl="`authentik`">`authentik`</span>.
      */
     brandingTitle?: pulumi.Input<string>;
+    clientCertificates?: pulumi.Input<pulumi.Input<string>[]>;
     /**
      * Defaults to <span pulumi-lang-nodejs="`false`" pulumi-lang-dotnet="`False`" pulumi-lang-go="`false`" pulumi-lang-python="`false`" pulumi-lang-yaml="`false`" pulumi-lang-java="`false`" pulumi-lang-hcl="`false`">`false`</span>.
      */

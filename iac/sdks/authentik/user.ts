@@ -33,7 +33,7 @@ export class User extends pulumi.CustomResource {
     }
 
     /**
-     * JSON format expected. Use jsonencode() to pass objects. Defaults to `{}`.
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{}`.
      */
     declare public readonly attributes: pulumi.Output<string | undefined>;
     declare public readonly email: pulumi.Output<string | undefined>;
@@ -57,6 +57,10 @@ export class User extends pulumi.CustomResource {
      * Defaults to <span pulumi-lang-nodejs="`users`" pulumi-lang-dotnet="`Users`" pulumi-lang-go="`users`" pulumi-lang-python="`users`" pulumi-lang-yaml="`users`" pulumi-lang-java="`users`" pulumi-lang-hcl="`users`">`users`</span>.
      */
     declare public readonly path: pulumi.Output<string | undefined>;
+    /**
+     * Generated.
+     */
+    declare public readonly roles: pulumi.Output<string[]>;
     /**
      * Allowed values:
      *   - <span pulumi-lang-nodejs="`internal`" pulumi-lang-dotnet="`Internal`" pulumi-lang-go="`internal`" pulumi-lang-python="`internal`" pulumi-lang-yaml="`internal`" pulumi-lang-java="`internal`" pulumi-lang-hcl="`internal`">`internal`</span>
@@ -89,6 +93,7 @@ export class User extends pulumi.CustomResource {
             resourceInputs["name"] = state?.name;
             resourceInputs["password"] = state?.password;
             resourceInputs["path"] = state?.path;
+            resourceInputs["roles"] = state?.roles;
             resourceInputs["type"] = state?.type;
             resourceInputs["userId"] = state?.userId;
             resourceInputs["username"] = state?.username;
@@ -104,6 +109,7 @@ export class User extends pulumi.CustomResource {
             resourceInputs["name"] = args?.name;
             resourceInputs["password"] = args?.password ? pulumi.secret(args.password) : undefined;
             resourceInputs["path"] = args?.path;
+            resourceInputs["roles"] = args?.roles;
             resourceInputs["type"] = args?.type;
             resourceInputs["userId"] = args?.userId;
             resourceInputs["username"] = args?.username;
@@ -120,7 +126,7 @@ export class User extends pulumi.CustomResource {
  */
 export interface UserState {
     /**
-     * JSON format expected. Use jsonencode() to pass objects. Defaults to `{}`.
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{}`.
      */
     attributes?: pulumi.Input<string>;
     email?: pulumi.Input<string>;
@@ -144,6 +150,10 @@ export interface UserState {
      * Defaults to <span pulumi-lang-nodejs="`users`" pulumi-lang-dotnet="`Users`" pulumi-lang-go="`users`" pulumi-lang-python="`users`" pulumi-lang-yaml="`users`" pulumi-lang-java="`users`" pulumi-lang-hcl="`users`">`users`</span>.
      */
     path?: pulumi.Input<string>;
+    /**
+     * Generated.
+     */
+    roles?: pulumi.Input<pulumi.Input<string>[]>;
     /**
      * Allowed values:
      *   - <span pulumi-lang-nodejs="`internal`" pulumi-lang-dotnet="`Internal`" pulumi-lang-go="`internal`" pulumi-lang-python="`internal`" pulumi-lang-yaml="`internal`" pulumi-lang-java="`internal`" pulumi-lang-hcl="`internal`">`internal`</span>
@@ -162,7 +172,7 @@ export interface UserState {
  */
 export interface UserArgs {
     /**
-     * JSON format expected. Use jsonencode() to pass objects. Defaults to `{}`.
+     * JSON format expected. Use `jsonencode()` to pass objects. Defaults to `{}`.
      */
     attributes?: pulumi.Input<string>;
     email?: pulumi.Input<string>;
@@ -186,6 +196,10 @@ export interface UserArgs {
      * Defaults to <span pulumi-lang-nodejs="`users`" pulumi-lang-dotnet="`Users`" pulumi-lang-go="`users`" pulumi-lang-python="`users`" pulumi-lang-yaml="`users`" pulumi-lang-java="`users`" pulumi-lang-hcl="`users`">`users`</span>.
      */
     path?: pulumi.Input<string>;
+    /**
+     * Generated.
+     */
+    roles?: pulumi.Input<pulumi.Input<string>[]>;
     /**
      * Allowed values:
      *   - <span pulumi-lang-nodejs="`internal`" pulumi-lang-dotnet="`Internal`" pulumi-lang-go="`internal`" pulumi-lang-python="`internal`" pulumi-lang-yaml="`internal`" pulumi-lang-java="`internal`" pulumi-lang-hcl="`internal`">`internal`</span>

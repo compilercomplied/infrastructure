@@ -33,6 +33,9 @@ export class StageAuthenticatorStatic extends pulumi.CustomResource {
     }
 
     declare public readonly configureFlow: pulumi.Output<string | undefined>;
+    /**
+     * Defaults to ``.
+     */
     declare public readonly friendlyName: pulumi.Output<string | undefined>;
     declare public readonly name: pulumi.Output<string>;
     declare public readonly stageAuthenticatorStaticId: pulumi.Output<string>;
@@ -83,6 +86,9 @@ export class StageAuthenticatorStatic extends pulumi.CustomResource {
  */
 export interface StageAuthenticatorStaticState {
     configureFlow?: pulumi.Input<string>;
+    /**
+     * Defaults to ``.
+     */
     friendlyName?: pulumi.Input<string>;
     name?: pulumi.Input<string>;
     stageAuthenticatorStaticId?: pulumi.Input<string>;
@@ -101,6 +107,9 @@ export interface StageAuthenticatorStaticState {
  */
 export interface StageAuthenticatorStaticArgs {
     configureFlow?: pulumi.Input<string>;
+    /**
+     * Defaults to ``.
+     */
     friendlyName?: pulumi.Input<string>;
     name?: pulumi.Input<string>;
     stageAuthenticatorStaticId?: pulumi.Input<string>;
