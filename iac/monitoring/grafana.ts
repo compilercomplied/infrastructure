@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { createLetsEncryptIngress } from "../library/ingress";
 
 /**
  * Standalone Grafana Visualization Layer
@@ -11,6 +12,9 @@ export function configureGrafana(
   const config = new pulumi.Config();
   const adminPassword = config.requireSecret("grafanaAdminPassword");
 
+  const selfhostedConfig = new pulumi.Config("selfhosted");
+  const grafanaSecret = selfhostedConfig.requireSecret("grafana-secret");
+
   const grafana = new k8s.helm.v3.Chart("grafana", {
     namespace: namespace,
     chart: "grafana",
@@ -19,6 +23,7 @@ export function configureGrafana(
       repo: "https://grafana.github.io/helm-charts",
     },
     values: {
+      assertNoLeakedSecrets: false,
       adminPassword: adminPassword,
       persistence: { enabled: true, size: "10Gi", storageClassName: "local-path" },
       
@@ -27,18 +32,33 @@ export function configureGrafana(
       ],
 
       "grafana.ini": {
+        server: {
+          root_url: "https://grafana.gdario.dev",
+        },
         plugins: {
           enable_alpha: true,
           allow_loading_unsigned_plugins: "grafana-lokiexplore-app"
+        },
+        auth: {
+          disable_login_form: true,
+          oauth_auto_login: true,
+        },
+        "auth.generic_oauth": {
+          enabled: true,
+          name: "Authentik",
+          allow_sign_up: true,
+          client_id: "grafana-client-id",
+          client_secret: grafanaSecret,
+          scopes: "openid profile email",
+          auth_url: "https://auth.gdario.dev/application/o/authorize/",
+          token_url: "https://auth.gdario.dev/application/o/token/",
+          api_url: "https://auth.gdario.dev/application/o/userinfo/",
+          role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || 'Viewer'",
         }
       },
 
       service: {
-        annotations: {
-          "tailscale.com/expose": "true",
-          "tailscale.com/hostname": "grafana",
-          "tailscale.com/tags": "tag:kubernetes",
-        },
+        annotations: {},
       },
       datasources: {
         "datasources.yaml": {
@@ -80,6 +100,15 @@ export function configureGrafana(
       }
       return { props, opts: args.opts };
     }],
+  });
+
+  createLetsEncryptIngress({
+    name: "grafana",
+    namespace: namespace,
+    host: "grafana.gdario.dev",
+    serviceName: "grafana",
+    servicePort: 80,
+    dependencies: [grafana],
   });
 
   return grafana;

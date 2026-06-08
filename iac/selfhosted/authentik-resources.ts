@@ -1,9 +1,15 @@
 import * as authentik from "@pulumi/authentik";
+import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
 import { createAuthentikOpenId } from "../library/authentik";
 import { getAuthorizedUsers, getGroupDefinitions } from "./users";
 
-export function configureAuthentikResources() {
+export function configureAuthentikResources(
+  namespace: pulumi.Input<string>
+) {
   const selfhostedConfig = new pulumi.Config("selfhosted");
   const tandooriSecret = selfhostedConfig.requireSecret("tandoori-secret");
 
@@ -85,6 +91,124 @@ export function configureAuthentikResources() {
     launchUrl: "https://linkwarden.gdario.dev",
   });
 
+  const grafanaSecret = selfhostedConfig.requireSecret("grafana-secret");
+
+  const grafana = createAuthentikOpenId({
+    name: "Grafana",
+    slug: "grafana",
+    clientId: "grafana-client-id",
+    clientSecret: grafanaSecret,
+    redirectUris: [
+      "https://grafana.gdario.dev/login/generic_oauth",
+    ],
+    launchUrl: "https://grafana.gdario.dev",
+  });
+
+  // The Pulumi Authentik provider (based on TF provider v2026.2.0) does not support the
+  // grant_types field introduced in Authentik 2026.5.x, causing new providers to default to
+  // empty grant types and block OIDC flows. This Kubernetes Job automatically runs a Django
+  // Python snippet to patch the database post-provisioning.
+  const scriptContent = fs.readFileSync(
+    path.join(__dirname, "../maintenance/scripts/patch-grant-types.py"),
+    "utf-8"
+  );
+  const patchScriptConfigMap = new k8s.core.v1.ConfigMap("patch-grant-types-script", {
+    metadata: {
+      namespace: namespace,
+    },
+    data: {
+      "patch.py": scriptContent,
+    },
+  });
+
+  // Hashing the provider IDs forces the Job to be replaced and re-run (via replaceOnChanges and
+  // deleteBeforeReplace) whenever OIDC providers are created, modified, or replaced in Pulumi,
+  // ensuring the database is always in sync with new program definitions.
+  const providersHash = pulumi.all([
+    tandoor.provider.id,
+    linkwarden.provider.id,
+    grafana.provider.id,
+  ]).apply(ids => {
+    return crypto.createHash("sha256").update(ids.join(",")).digest("hex");
+  });
+
+  const patchJob = new k8s.batch.v1.Job("patch-grant-types", {
+    metadata: {
+      namespace: namespace,
+      annotations: {
+        "providers-hash": providersHash,
+      },
+    },
+    spec: {
+      template: {
+        metadata: {
+          annotations: {
+            "providers-hash": providersHash,
+          },
+        },
+        spec: {
+          restartPolicy: "Never",
+          containers: [
+            {
+              name: "patch",
+              image: "ghcr.io/goauthentik/server:2026.5.2",
+              command: ["/ak-root/.venv/bin/python", "/scripts/patch.py"],
+               env: [
+                { name: "PYTHONPATH", value: "/" },
+                { name: "AUTHENTIK_REDIS__HOST", value: "authentik-redis" },
+                { name: "AUTHENTIK_POSTGRESQL__HOST", value: "shared-postgres.selfhosted.svc.cluster.local" },
+                { name: "AUTHENTIK_POSTGRESQL__USER", value: "authentik" },
+                { name: "AUTHENTIK_POSTGRESQL__NAME", value: "authentik" },
+                { name: "AUTHENTIK_POSTGRESQL__PORT", value: "5432" },
+                { name: "AUTHENTIK_ERROR_REPORTING__ENABLED", value: "false" },
+                {
+                  name: "AUTHENTIK_SECRET_KEY",
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: "authentik-secrets",
+                      key: "AUTHENTIK_SECRET_KEY",
+                    },
+                  },
+                },
+                {
+                  name: "AUTHENTIK_POSTGRESQL__PASSWORD",
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: "authentik-secrets",
+                      key: "AUTHENTIK_POSTGRESQL__PASSWORD",
+                    },
+                  },
+                },
+              ],
+              volumeMounts: [
+                {
+                  name: "scripts",
+                  mountPath: "/scripts",
+                },
+              ],
+            },
+          ],
+          volumes: [
+            {
+              name: "scripts",
+              configMap: {
+                name: patchScriptConfigMap.metadata.name,
+              },
+            },
+          ],
+        },
+      },
+    },
+  }, {
+    dependsOn: [
+      tandoor.provider,
+      linkwarden.provider,
+      grafana.provider,
+    ],
+    replaceOnChanges: ["metadata.annotations"],
+    deleteBeforeReplace: true,
+  });
+
   return {
     tandoorProviderId: tandoor.provider.id,
     tandoorAppSlug: tandoor.app.slug,
@@ -93,5 +217,7 @@ export function configureAuthentikResources() {
     linkwardenAppSlug: linkwarden.app.slug,
     hermesGroupId: groups["hermes-users"].id,
     grafanaAdminsGroupId: groups["grafana-admins"].id,
+    grafanaProviderId: grafana.provider.id,
+    grafanaAppSlug: grafana.app.slug,
   };
 }

@@ -33,7 +33,7 @@ export function configureSelfhosted() {
   const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService, tandoorMcp.service]);
 
   // Declarative SSO Applications & Providers configuration
-  const authentikResources = configureAuthentikResources();
+  const authentikResources = configureAuthentikResources(namespaceName);
 
   return {
     namespace: namespaceName,

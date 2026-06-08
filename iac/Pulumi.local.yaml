@@ -30,7 +30,7 @@ config:
   selfhosted:authentikAdminPassword:
     secure: v1:JHK36FRjKPpTcqKC:IwwW05k0UnYzHqrkhmy9Mpth9tvijoYqKBkR9flz
   authentik:token:
-    secure: v1:QevsrrcKMRtIoJzO:O5O9ixrIMJZogOL4An/CKvANuKPxKE7MCR5K5kCgCk8+1M3wBW97FzO+3rTQE+0fIWQ8kZG4xxE0TQKGGw2anUh5YN8kwRJC3O4rtA==
+    secure: v1:3S7lfbd9cGMA2RVz:k/8cIWS8+wowyX3D+AcJpC3ts77KtdMxh7uGffscevRUPy0ubINlWxsfGkeWlLCVvcx50bVfvRMEGsV4IPouTqtHAlKqKOG9hxw8bw==
   authentik:url: https://auth.gdario.dev
   selfhosted:tandoori-secret:
     secure: v1:/GQsWrM01KeSd0Pu:voQirc/p/FuNMcWuGdG0NyimTfax04Lhs1RLpqlCfu/8hb6NaJ0ry26CaWXRSlVZ85u9aC7H/Gjq5W7beuBCJ41QVpdRQa9dcCxitu6Pww==
@@ -67,3 +67,5 @@ config:
     secure: v1:lb4FgMRTtwF7dbv2:ssnzFQ5TyuG3vwtwo95qyrOtVTGmNMeHQeW4LBnQzi8wzLx4nNQ=
   selfhosted:user-andrea-telegramId:
     secure: v1:1ZAP/xn4Xx4H/F76:uPr2muPC2T1oAWL0Sfrq+VfYbUACaCmcQw==
+  selfhosted:grafana-secret:
+    secure: v1:3Uw/QWNuMwC2zzrS:JsYUpPe7iVOmzuLNQ4a9oxs2Asy20N61x/x71OZBCknkrDQdqmpXbtEMLc2HqDyn4yyhOaal/gDMVDYugxRTi5zkfwh9K5GNcFdxvOIqnB4=

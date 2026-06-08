@@ -114,21 +114,3 @@ Instead of writing a complex Kubernetes Job to handle idempotency, we manually e
 kubectl exec -n selfhosted statefulset/shared-postgres -- psql -U postgres -f /docker-entrypoint-initdb.d/03-init-linkwarden.sql
 ```
 
-### 2. Manual OAuth2 Provider `grant_types` Configuration
-
-In newer versions of Authentik (e.g. 2026.5.2), the `grant_types` array for OAuth2 providers is strictly enforced but defaults to an empty list. The current `@pulumi/authentik` provider SDK does not yet support configuring this field. Consequently, newly created OAuth2 providers via Pulumi will reject all authentication attempts with an `Invalid grant_type for provider` error.
-
-To bypass this schema limitation, you must manually append the required grant types (like `authorization_code` and `refresh_token`) to the providers directly in the Authentik database:
-
-```bash
-kubectl exec -n selfhosted deployment/authentik-worker -- python -c "
-import os
-import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'authentik.root.settings')
-django.setup()
-from authentik.providers.oauth2.models import OAuth2Provider
-for p in OAuth2Provider.objects.all():
-    p.grant_types = ['authorization_code', 'refresh_token']
-    p.save()
-"
-```
