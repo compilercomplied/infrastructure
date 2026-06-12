@@ -10,7 +10,7 @@ telegram:
 
 mcp_servers:
   tandoor:
-    url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8000/sse"
+    url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8080/sse"
     transport: "sse"
 skills:
   disabled:

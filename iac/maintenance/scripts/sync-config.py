@@ -17,3 +17,15 @@ if not os.path.exists(dest_path):
         exit(1)
 else:
     print("Configuration already exists, skipping seeding.")
+    # When migrating tandoor-mcp to the Go-based container, the port changed from 8000 to 8080.
+    # We patch the persistent configuration to avoid breaking the connection while preserving other user settings.
+    try:
+        with open(dest_path, "r") as f:
+            content = f.read()
+        if "tandoor-mcp.selfhosted.svc.cluster.local:8000" in content:
+            updated = content.replace("tandoor-mcp.selfhosted.svc.cluster.local:8000", "tandoor-mcp.selfhosted.svc.cluster.local:8080")
+            with open(dest_path, "w") as f:
+                f.write(updated)
+            print("Successfully migrated tandoor-mcp port from 8000 to 8080 in persistent configuration.")
+    except Exception as e:
+        print(f"Error migrating configuration: {e}")

@@ -8,29 +8,36 @@ export function configureTandoorMcp(
   const config = new pulumi.Config("selfhosted");
 
   // The Tandoor API token is required by the MCP server to authenticate with the Tandoor recipes manager instance.
-  // We retrieve this from a secure Pulumi stack configuration secret.
   const tandoorMcpToken = config.requireSecret("tandoorMcpToken");
 
   return createMCPServer({
     name: "tandoor-mcp",
     namespace,
     image: "ghcr.io/compilercomplied/tandoor-mcp:latest",
-    containerPort: 8000,
+    containerPort: 8080, // The new Go-based MCP server exposes its SSE listener on 8080 instead of the old Python version's 8000.
     secrets: {
       "TANDOOR_API_TOKEN": tandoorMcpToken,
     },
     env: [
       {
-        // We use the direct Kubernetes ClusterIP service DNS name for Tandoor recipes inside the cluster
-        // to avoid routing external traffic and minimize latency.
-        name: "TANDOOR_URL",
+        // Direct internal cluster URL is used to keep requests within the VPC/cluster network, avoiding egress and lowering latency.
+        name: "TANDOOR_API_URL",
         value: "http://tandoor-recipes.selfhosted.svc.cluster.local:80",
       },
       {
-        // The public URL is configured so the MCP server can construct fully-qualified public hyperlinks
-        // when returning recipes to users or agents.
+        // Constructed public URLs are returned by the MCP to ensure client links resolve correctly externally.
         name: "TANDOOR_PUBLIC_URL",
         value: "https://recipes.gdario.dev",
+      },
+      {
+        // JSON format is enabled for unified ingest into Loki and structured observability.
+        name: "LOG_FORMAT",
+        value: "json",
+      },
+      {
+        // HTTP body logging is enabled to troubleshoot payload-level schema issues or failed LLM tool payloads.
+        name: "LOG_HTTP_BODY",
+        value: "true",
       },
     ],
     dependencies,
