@@ -69,3 +69,7 @@ config:
     secure: v1:1ZAP/xn4Xx4H/F76:uPr2muPC2T1oAWL0Sfrq+VfYbUACaCmcQw==
   selfhosted:grafana-secret:
     secure: v1:3Uw/QWNuMwC2zzrS:JsYUpPe7iVOmzuLNQ4a9oxs2Asy20N61x/x71OZBCknkrDQdqmpXbtEMLc2HqDyn4yyhOaal/gDMVDYugxRTi5zkfwh9K5GNcFdxvOIqnB4=
+  selfhosted:grimmoryDbPassword:
+    secure: v1:9MfiHEJS8eqhn3HU:o8eGTkJWSXMQSKEbTEJ2qNpmd1WRiTm5LRDVDo8/F9BZT2byGmZcezhMath6kNqF
+  selfhosted:grimmory-secret:
+    secure: v1:KPOwOrdSP6GxZP+B:BwhkePXcEa8p7bEHpwAk6j7l3i860kDkJV5yyEF6LmvzqG8P1TITJKI8FpSJ+hQa

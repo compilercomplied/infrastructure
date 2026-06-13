@@ -104,6 +104,19 @@ export function configureAuthentikResources(
     launchUrl: "https://grafana.gdario.dev",
   });
 
+  const grimmorySecret = selfhostedConfig.requireSecret("grimmory-secret");
+
+  const grimmory = createAuthentikOpenId({
+    name: "Grimmory",
+    slug: "grimmory",
+    clientId: "grimmory-client-id",
+    clientSecret: grimmorySecret,
+    redirectUris: [
+      "https://grimmory.gdario.dev/oauth2-callback",
+    ],
+    launchUrl: "https://grimmory.gdario.dev",
+  });
+
   // The Pulumi Authentik provider (based on TF provider v2026.2.0) does not support the
   // grant_types field introduced in Authentik 2026.5.x, causing new providers to default to
   // empty grant types and block OIDC flows. This Kubernetes Job automatically runs a Django
@@ -128,6 +141,7 @@ export function configureAuthentikResources(
     tandoor.provider.id,
     linkwarden.provider.id,
     grafana.provider.id,
+    grimmory.provider.id,
   ]).apply(ids => {
     return crypto.createHash("sha256").update(ids.join(",")).digest("hex");
   });
@@ -204,6 +218,7 @@ export function configureAuthentikResources(
       tandoor.provider,
       linkwarden.provider,
       grafana.provider,
+      grimmory.provider,
     ],
     replaceOnChanges: ["metadata.annotations"],
     deleteBeforeReplace: true,
@@ -215,6 +230,8 @@ export function configureAuthentikResources(
     googleSourceId: googleSource.id,
     linkwardenProviderId: linkwarden.provider.id,
     linkwardenAppSlug: linkwarden.app.slug,
+    grimmoryProviderId: grimmory.provider.id,
+    grimmoryAppSlug: grimmory.app.slug,
     hermesGroupId: groups["hermes-users"].id,
     grafanaAdminsGroupId: groups["grafana-admins"].id,
     grafanaProviderId: grafana.provider.id,

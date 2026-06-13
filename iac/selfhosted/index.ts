@@ -7,6 +7,7 @@ import { configureAuthentikResources } from "./authentik-resources";
 import { configureLinkwarden } from "./linkwarden";
 import { configureHermesAgent } from "./hermes-agent";
 import { configureTandoorMcp } from "./tandoor-mcp";
+import { configureGrimmory } from "./grimmory";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -30,6 +31,7 @@ export function configureSelfhosted() {
   const tandoorMcp = configureTandoorMcp(namespaceName, [postgres, tandoor.deployment]);
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
+  const grimmory = configureGrimmory(namespaceName, [postgres]);
   const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService, tandoorMcp.service]);
 
   // Declarative SSO Applications & Providers configuration
@@ -42,6 +44,7 @@ export function configureSelfhosted() {
     tandoorMcp,
     authentik,
     linkwarden,
+    grimmory,
     hermes,
     authentikResources
   };

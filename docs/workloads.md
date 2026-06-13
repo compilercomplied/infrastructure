@@ -29,5 +29,3 @@ To allow dynamic configuration edits via the Hermes UI (e.g., enabling/disabling
 
 ### PVC Backup
 The entire `/opt/data` Persistent Volume (containing configuration, databases, memories, and custom skills) is backed up daily using the automated `hermes-agent-pvc-hermes-agent-pvc` CronJob.
-
-
