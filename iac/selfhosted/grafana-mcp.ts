@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as grafana from "@pulumiverse/grafana";
+import { createMCPServer } from "../library/mcp-server";
 
 export function configureGrafanaMcp(
   namespace: pulumi.Input<string>,
@@ -42,57 +43,33 @@ export function configureGrafanaMcp(
   }, { dependsOn: [token, ...dependencies] });
 
   // Expose Grafana MCP server internally in the selfhosted namespace.
-  const deployment = new k8s.apps.v1.Deployment(name, {
-    metadata: {
-      name,
-      namespace,
-    },
-    spec: {
-      replicas: 1,
-      selector: { matchLabels: { app: name } },
-      template: {
-        metadata: { labels: { app: name } },
-        spec: {
-          containers: [{
-            name: "grafana-mcp",
-            image: "grafana/mcp-grafana:latest",
-            args: ["-t", "sse", "--address", ":8000"],
-            ports: [{ containerPort: 8000, name: "http" }],
-            env: [
-              {
-                name: "GRAFANA_URL",
-                value: "http://grafana.monitoring.svc.cluster.local:80",
-              },
-              {
-                name: "GRAFANA_SERVICE_ACCOUNT_TOKEN",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: secret.metadata.name,
-                    key: "token",
-                  },
-                },
-              },
-            ],
-          }],
+  const mcpServer = createMCPServer({
+    name,
+    namespace,
+    image: "grafana/mcp-grafana:latest",
+    args: ["-t", "sse", "--address", ":8000"],
+    containerPort: 8000,
+    env: [
+      {
+        name: "GRAFANA_URL",
+        value: "http://grafana.monitoring.svc.cluster.local:80",
+      },
+      {
+        name: "GRAFANA_SERVICE_ACCOUNT_TOKEN",
+        valueFrom: {
+          secretKeyRef: {
+            name: secret.metadata.name,
+            key: "token",
+          },
         },
       },
-    },
-  }, { dependsOn: [secret] });
-
-  const service = new k8s.core.v1.Service(name, {
-    metadata: {
-      name,
-      namespace,
-    },
-    spec: {
-      ports: [{ port: 8000, targetPort: 8000, protocol: "TCP", name: "http" }],
-      selector: { app: name },
-      type: "ClusterIP",
-    },
-  }, { dependsOn: deployment });
+    ],
+    dependencies: [secret],
+  });
 
   return {
-    deployment,
-    service,
+    deployment: mcpServer.deployment,
+    service: mcpServer.service,
   };
 }
+

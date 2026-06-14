@@ -7,6 +7,8 @@ export interface MCPServerArgs {
   image: string;
   containerPort?: number; // Defaults to 8000
   env?: k8s.types.input.core.v1.EnvVar[];
+  args?: string[];
+  command?: string[];
   secrets?: Record<string, pulumi.Input<string>>;
   dependencies?: pulumi.Resource[];
 }
@@ -27,6 +29,8 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
     image,
     containerPort = 8000,
     env = [],
+    args: containerArgs,
+    command: containerCommand,
     secrets,
     dependencies = [],
   } = args;
@@ -78,6 +82,8 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
             ports: [{ containerPort, name: "http" }],
             envFrom,
             env,
+            args: containerArgs,
+            command: containerCommand,
           }],
         },
       },
