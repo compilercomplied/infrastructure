@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "../library/ingress";
+import { createBackupJob } from "../maintenance/backup";
 
 export function configureAuthentik(
   namespace: pulumi.Input<string>,
@@ -222,10 +223,52 @@ export function configureAuthentik(
     dependencies: [serverService],
   });
 
+  // Back up the authentik PostgreSQL database containing all user credentials,
+  // tokens, and configuration.
+  const dbBackup = createBackupJob({
+    appName: name,
+    namespace,
+    source: {
+      type: "postgres",
+      databaseName: "authentik",
+      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbUser: "authentik",
+      dbPasswordSecret: authentikDbPassword,
+    },
+    dependencies: [...dependencies, serverDeployment],
+  });
+
+  // Back up the media directory containing tenant custom logos and assets.
+  const mediaBackup = createBackupJob({
+    appName: name,
+    namespace,
+    source: {
+      type: "pvc",
+      pvcName: `${name}-media-pvc`,
+      mountPath: "/media",
+    },
+    dependencies: [...dependencies, mediaPvc],
+  });
+
+  // Back up custom templates that contain branding or configuration.
+  const templatesBackup = createBackupJob({
+    appName: name,
+    namespace,
+    source: {
+      type: "pvc",
+      pvcName: `${name}-templates-pvc`,
+      mountPath: "/templates",
+    },
+    dependencies: [...dependencies, templatesPvc],
+  });
+
   return {
     redisService,
     serverService,
     ingress,
     workerDeployment,
+    dbBackup,
+    mediaBackup,
+    templatesBackup,
   };
 }
