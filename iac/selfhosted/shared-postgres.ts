@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { createPVC } from "../library/k8s-pvc";
 
 export const postgresClientImage = "postgres:16-alpine";
 
@@ -19,21 +20,12 @@ export function configureSharedPostgres(
   const name = "shared-postgres";
 
   // Create PVC for database storage
-  const pvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-pvc`, {
-    metadata: {
-      name: `${name}-pvc`,
-      namespace,
-    },
-    spec: {
-      accessModes: ["ReadWriteOnce"],
-      storageClassName: "local-path",
-      resources: {
-        requests: {
-          storage: "10Gi",
-        },
-      },
-    },
-  }, { dependsOn: dependencies });
+  const pvc = createPVC({
+    name: `${name}-pvc`,
+    namespace,
+    size: "10Gi",
+    dependencies,
+  });
 
   const initScripts: Record<string, pulumi.Output<string>> = {};
   databases.forEach((db, i) => {

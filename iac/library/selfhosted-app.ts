@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "./ingress";
+import { createPVC } from "./k8s-pvc";
 
 export interface VolumeConfig {
   name: string;
@@ -80,21 +81,14 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
   if (volumes) {
     for (const vol of volumes) {
       const pvcName = vol.pvcName || `${name}-${vol.name}-pvc`;
-      const pvc = new k8s.core.v1.PersistentVolumeClaim(pvcName, {
-        metadata: {
-          name: pvcName,
-          namespace,
-        },
-        spec: {
-          accessModes: vol.accessModes || ["ReadWriteOnce"],
-          storageClassName: vol.storageClassName || "local-path",
-          resources: {
-            requests: {
-              storage: vol.size || "10Gi",
-            },
-          },
-        },
-      }, { dependsOn: dependencies });
+      const pvc = createPVC({
+        name: pvcName,
+        namespace,
+        size: vol.size,
+        storageClassName: vol.storageClassName,
+        accessModes: vol.accessModes,
+        dependencies,
+      });
 
       pvcs.push(pvc);
 

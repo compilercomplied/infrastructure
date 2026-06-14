@@ -4,6 +4,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { createSelfhostedApp } from "../library/selfhosted-app";
+import { createPVC } from "../library/k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
 
 export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.2.0";
@@ -24,21 +25,12 @@ export function configureGrimmory(
   // keeping it dedicated simplifies isolation. However, if any other application in the future requires MariaDB,
   // this module should be refactored to extract the MariaDB StatefulSet, Service, and secrets into a shared-mariadb
   // component (similar to shared-postgres.ts) to avoid resource duplication.
-  const dbPvc = new k8s.core.v1.PersistentVolumeClaim(`${dbName}-pvc`, {
-    metadata: {
-      name: `${dbName}-pvc`,
-      namespace,
-    },
-    spec: {
-      accessModes: ["ReadWriteOnce"],
-      storageClassName: "local-path",
-      resources: {
-        requests: {
-          storage: "2Gi",
-        },
-      },
-    },
-  }, { dependsOn: dependencies });
+  const dbPvc = createPVC({
+    name: `${dbName}-pvc`,
+    namespace,
+    size: "2Gi",
+    dependencies,
+  });
 
   const dbSecret = new k8s.core.v1.Secret(`${dbName}-secrets`, {
     metadata: {

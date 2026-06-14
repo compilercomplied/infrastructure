@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "../library/ingress";
+import { createPVC } from "../library/k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
 
 export function configureAuthentik(
@@ -16,37 +17,19 @@ export function configureAuthentik(
   const name = "authentik";
   const image = "ghcr.io/goauthentik/server:2026.5.2";
 
-  const mediaPvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-media-pvc`, {
-    metadata: {
-      name: `${name}-media-pvc`,
-      namespace,
-    },
-    spec: {
-      accessModes: ["ReadWriteOnce"],
-      storageClassName: "local-path",
-      resources: {
-        requests: {
-          storage: "2Gi",
-        },
-      },
-    },
-  }, { dependsOn: dependencies });
-
-  const templatesPvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-templates-pvc`, {
-    metadata: {
-      name: `${name}-templates-pvc`,
-      namespace,
-    },
-    spec: {
-      accessModes: ["ReadWriteOnce"],
-      storageClassName: "local-path",
-      resources: {
-        requests: {
-          storage: "2Gi",
-        },
-      },
-    },
-  }, { dependsOn: dependencies });
+  const mediaPvc = createPVC({
+    name: `${name}-media-pvc`,
+    namespace,
+    size: "2Gi",
+    dependencies,
+  });
+ 
+  const templatesPvc = createPVC({
+    name: `${name}-templates-pvc`,
+    namespace,
+    size: "2Gi",
+    dependencies,
+  });
 
   const secrets = new k8s.core.v1.Secret(`${name}-secrets`, {
     metadata: {

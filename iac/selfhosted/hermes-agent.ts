@@ -4,6 +4,7 @@ import * as authentik from "@pulumi/authentik";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createBackupJob } from "../maintenance/backup";
+import { createPVC } from "../library/k8s-pvc";
 import { getAuthorizedUsers } from "./users";
 
 export function configureHermesAgent(
@@ -58,21 +59,12 @@ export function configureHermesAgent(
   });
 
   // 2. Kubernetes Persistent Volume Claim
-  const pvc = new k8s.core.v1.PersistentVolumeClaim(`${name}-pvc`, {
-    metadata: {
-      name: `${name}-pvc`,
-      namespace,
-    },
-    spec: {
-      accessModes: ["ReadWriteOnce"],
-      storageClassName: "local-path",
-      resources: {
-        requests: {
-          storage: "256Mi",
-        },
-      },
-    },
-  }, { dependsOn: dependencies });
+  const pvc = createPVC({
+    name: `${name}-pvc`,
+    namespace,
+    size: "256Mi",
+    dependencies,
+  });
 
   // 3. Kubernetes Secrets for credentials
   const secrets = new k8s.core.v1.Secret(`${name}-secrets`, {
