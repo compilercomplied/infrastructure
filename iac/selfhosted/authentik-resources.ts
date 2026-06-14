@@ -117,6 +117,28 @@ export function configureAuthentikResources(
     launchUrl: "https://grimmory.gdario.dev",
   });
 
+  const syncthingProvider = new authentik.ProviderProxy("syncthing", {
+    name: "Syncthing SSO",
+    externalHost: "https://syncthing.gdario.dev",
+    mode: "forward_single",
+    authorizationFlow: "9faae557-fad6-4f95-876c-545adc95b3e4",
+    invalidationFlow: "12830a53-f573-488d-bdc2-f12ddc59c0a7",
+  });
+
+  const syncthingApp = new authentik.Application("syncthing", {
+    name: "Syncthing",
+    slug: "syncthing",
+    protocolProvider: syncthingProvider.id.apply(id => parseInt(id)),
+    metaLaunchUrl: "https://syncthing.gdario.dev",
+    metaPublisher: "GDario Labs",
+  });
+
+  const embeddedOutpost = authentik.getOutpostOutput({ name: "authentik Embedded Outpost" });
+  new authentik.OutpostProviderAttachment("syncthing-outpost-attachment", {
+    outpost: embeddedOutpost.apply(o => o.id || ""),
+    protocolProvider: syncthingProvider.id.apply(id => parseInt(id)),
+  });
+
   // The Pulumi Authentik provider (based on TF provider v2026.2.0) does not support the
   // grant_types field introduced in Authentik 2026.5.x, causing new providers to default to
   // empty grant types and block OIDC flows. This Kubernetes Job automatically runs a Django
@@ -236,5 +258,7 @@ export function configureAuthentikResources(
     grafanaAdminsGroupId: groups["grafana-admins"].id,
     grafanaProviderId: grafana.provider.id,
     grafanaAppSlug: grafana.app.slug,
+    syncthingProviderId: syncthingProvider.id,
+    syncthingAppSlug: syncthingApp.slug,
   };
 }

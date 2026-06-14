@@ -14,6 +14,7 @@ export interface LetsEncryptIngressArgs {
   serviceName: pulumi.Input<string>;
   servicePort?: number;
   rateLimit?: RateLimitConfig | false;
+  middlewares?: pulumi.Input<string>[];
   dependencies?: pulumi.Resource[];
 }
 
@@ -25,11 +26,13 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
     serviceName,
     servicePort = 80,
     rateLimit = {},
+    middlewares = [],
     dependencies = []
   } = args;
 
   const extraAnnotations: Record<string, pulumi.Input<string>> = {};
   const ingressDependencies = [...dependencies];
+  const middlewareRefs: pulumi.Input<string>[] = [];
 
   if (rateLimit !== false) {
     const rlAverage = rateLimit.average || 360;
@@ -53,8 +56,16 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
       },
     }, { dependsOn: dependencies });
 
-    extraAnnotations["traefik.ingress.kubernetes.io/router.middlewares"] = pulumi.interpolate`${namespace}-${middlewareName}@kubernetescrd`;
+    middlewareRefs.push(pulumi.interpolate`${namespace}-${middlewareName}@kubernetescrd`);
     ingressDependencies.push(middleware);
+  }
+
+  for (const mw of middlewares) {
+    middlewareRefs.push(mw);
+  }
+
+  if (middlewareRefs.length > 0) {
+    extraAnnotations["traefik.ingress.kubernetes.io/router.middlewares"] = pulumi.all(middlewareRefs).apply(refs => refs.join(","));
   }
 
   return new k8s.networking.v1.Ingress(`${name}-ingress`, {

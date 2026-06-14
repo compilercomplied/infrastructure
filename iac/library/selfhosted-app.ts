@@ -33,6 +33,7 @@ export type SelfhostedAppArgs = {
   secrets?: Record<string, pulumi.Input<string>>;
   volumes?: VolumeConfig[];
   dependencies?: pulumi.Resource[];
+  middlewares?: pulumi.Input<string>[];
 } & ExposeConfig;
 
 // Configures standard Kubernetes resources for self-hosted apps to eliminate boilerplate.
@@ -175,6 +176,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
       namespace,
       host: args.host,
       serviceName: service.metadata.name,
+      middlewares: args.middlewares,
       dependencies: [service],
     });
   }
