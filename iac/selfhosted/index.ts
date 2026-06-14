@@ -8,6 +8,7 @@ import { configureLinkwarden } from "./linkwarden";
 import { configureHermesAgent } from "./hermes-agent";
 import { configureTandoorMcp } from "./tandoor-mcp";
 import { configureGrimmory } from "./grimmory";
+import { configureGrafanaMcp } from "./grafana-mcp";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -32,7 +33,8 @@ export function configureSelfhosted() {
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, [postgres]);
-  const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService, tandoorMcp.service]);
+  const grafanaMcp = configureGrafanaMcp(namespaceName, [postgres]);
+  const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service]);
 
   // Declarative SSO Applications & Providers configuration
   const authentikResources = configureAuthentikResources(namespaceName);
@@ -45,6 +47,7 @@ export function configureSelfhosted() {
     authentik,
     linkwarden,
     grimmory,
+    grafanaMcp,
     hermes,
     authentikResources
   };

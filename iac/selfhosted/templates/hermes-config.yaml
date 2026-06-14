@@ -12,6 +12,9 @@ mcp_servers:
   tandoor:
     url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8080/sse"
     transport: "sse"
+  grafana:
+    url: "http://grafana-mcp.selfhosted.svc.cluster.local:8000/sse"
+    transport: "sse"
 skills:
   disabled:
     - airtable

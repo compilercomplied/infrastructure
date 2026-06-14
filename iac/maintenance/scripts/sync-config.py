@@ -16,16 +16,44 @@ if not os.path.exists(dest_path):
         print(f"Error seeding configuration: {e}")
         exit(1)
 else:
-    print("Configuration already exists, skipping seeding.")
-    # When migrating tandoor-mcp to the Go-based container, the port changed from 8000 to 8080.
-    # We patch the persistent configuration to avoid breaking the connection while preserving other user settings.
+    print("Configuration already exists, checking for missing mcp_servers.")
     try:
         with open(dest_path, "r") as f:
             content = f.read()
+
+        # Migrate tandoor-mcp port if necessary
         if "tandoor-mcp.selfhosted.svc.cluster.local:8000" in content:
-            updated = content.replace("tandoor-mcp.selfhosted.svc.cluster.local:8000", "tandoor-mcp.selfhosted.svc.cluster.local:8080")
-            with open(dest_path, "w") as f:
-                f.write(updated)
-            print("Successfully migrated tandoor-mcp port from 8000 to 8080 in persistent configuration.")
+            content = content.replace("tandoor-mcp.selfhosted.svc.cluster.local:8000", "tandoor-mcp.selfhosted.svc.cluster.local:8080")
+            print("Successfully migrated tandoor-mcp port from 8000 to 8080.")
+
+        # Check if grafana mcp server is configured
+        if "grafana-mcp.selfhosted.svc.cluster.local" not in content:
+            # We insert the grafana MCP config under mcp_servers:
+            lines = content.splitlines()
+            mcp_index = -1
+            for i, line in enumerate(lines):
+                if line.strip().startswith("mcp_servers:"):
+                    mcp_index = i
+                    break
+            
+            if mcp_index != -1:
+                # Insert the grafana definition right under mcp_servers:
+                grafana_config = [
+                    "  grafana:",
+                    "    url: http://grafana-mcp.selfhosted.svc.cluster.local:8000/sse",
+                    "    transport: sse"
+                ]
+                lines = lines[:mcp_index + 1] + grafana_config + lines[mcp_index + 1:]
+                content = "\n".join(lines) + "\n"
+                print("Successfully added grafana-mcp to persistent configuration.")
+            else:
+                # If mcp_servers block was missing entirely, append it
+                content += "\nmcp_servers:\n  grafana:\n    url: http://grafana-mcp.selfhosted.svc.cluster.local:8000/sse\n    transport: sse\n"
+                print("Successfully appended mcp_servers block with grafana-mcp to persistent configuration.")
+
+        with open(dest_path, "w") as f:
+            f.write(content)
+
     except Exception as e:
         print(f"Error migrating configuration: {e}")
+
