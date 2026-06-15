@@ -157,19 +157,19 @@ export function configureGrimmory(
       {
         name: "grimmory-data",
         mountPath: "/app/data",
-        size: "10Gi",
+        size: "2Gi",
         pvcName: "grimmory-data-pvc",
       },
       {
         name: "grimmory-books",
         mountPath: "/books",
-        size: "10Gi",
+        size: "2Gi",
         pvcName: "grimmory-books-pvc",
       },
       {
         name: "grimmory-bookdrop",
         mountPath: "/bookdrop",
-        size: "2Gi",
+        size: "1Gi",
         pvcName: "grimmory-bookdrop-pvc",
       },
     ],

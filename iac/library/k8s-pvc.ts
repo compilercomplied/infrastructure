@@ -35,5 +35,5 @@ export function createPVC(args: PVCArgs): k8s.core.v1.PersistentVolumeClaim {
         },
       },
     },
-  }, { dependsOn: dependencies });
+  }, { dependsOn: dependencies, deleteBeforeReplace: true });
 }
