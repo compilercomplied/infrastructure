@@ -10,6 +10,7 @@ export interface VolumeConfig {
   storageClassName?: string; // defaults to "local-path"
   accessModes?: string[]; // defaults to ["ReadWriteOnce"]
   pvcName?: string; // custom name to map to existing persistent volume claims
+  external?: boolean; // if true, does not create the PVC resource, assuming it is declared elsewhere
 }
 
 export type ExposeConfig =
@@ -35,6 +36,7 @@ export type SelfhostedAppArgs = {
   volumes?: VolumeConfig[];
   dependencies?: pulumi.Resource[];
   middlewares?: pulumi.Input<string>[];
+  affinity?: k8s.types.input.core.v1.Affinity;
 } & ExposeConfig;
 
 // Configures standard Kubernetes resources for self-hosted apps to eliminate boilerplate.
@@ -81,21 +83,23 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
   if (volumes) {
     for (const vol of volumes) {
       const pvcName = vol.pvcName || `${name}-${vol.name}-pvc`;
-      const pvc = createPVC({
-        name: pvcName,
-        namespace,
-        size: vol.size,
-        storageClassName: vol.storageClassName,
-        accessModes: vol.accessModes,
-        dependencies,
-      });
-
-      pvcs.push(pvc);
+      
+      if (!vol.external) {
+        const pvc = createPVC({
+          name: pvcName,
+          namespace,
+          size: vol.size,
+          storageClassName: vol.storageClassName,
+          accessModes: vol.accessModes,
+          dependencies,
+        });
+        pvcs.push(pvc);
+      }
 
       k8sVolumes.push({
         name: vol.name,
         persistentVolumeClaim: {
-          claimName: pvc.metadata.name,
+          claimName: pvcName,
         },
       });
 
@@ -135,6 +139,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
             volumeMounts: k8sVolumeMounts,
           }],
           volumes: k8sVolumes,
+          affinity: args.affinity,
         },
       },
     },

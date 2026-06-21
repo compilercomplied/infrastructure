@@ -173,6 +173,27 @@ export function configureGrimmory(
         pvcName: "grimmory-bookdrop-pvc",
       },
     ],
+    // Both Grimmory and Syncthing share the RWO volume `grimmory-bookdrop-pvc`.
+    // We enforce pod affinity to guarantee they run on the same physical node
+    // so Kubernetes can successfully attach the shared volume to both containers.
+    affinity: {
+      podAffinity: {
+        requiredDuringSchedulingIgnoredDuringExecution: [
+          {
+            labelSelector: {
+              matchExpressions: [
+                {
+                  key: "app",
+                  operator: "In",
+                  values: ["syncthing"],
+                },
+              ],
+            },
+            topologyKey: "kubernetes.io/hostname",
+          },
+        ],
+      },
+    },
     dependencies: [...dependencies, dbService],
   });
 

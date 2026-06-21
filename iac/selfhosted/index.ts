@@ -36,7 +36,9 @@ export function configureSelfhosted() {
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, [postgres]);
   const grafanaMcp = configureGrafanaMcp(namespaceName, [postgres]);
-  const syncthing = configureSyncthing(namespaceName, [authentik.serverService]);
+  // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency
+  // on Grimmory's volume being created first. We pass grimmory.deployment as a dependency.
+  const syncthing = configureSyncthing(namespaceName, [authentik.serverService, grimmory.deployment]);
   const filesystemMcp = configureFilesystemMcp(namespaceName, [syncthing.deployment]);
   const hermes = new HermesAgent("hermes-agent", {
     namespace: namespaceName,

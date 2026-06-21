@@ -57,6 +57,15 @@ export function configureSyncthing(
         size: "2Gi",
         pvcName: "syncthing-data-pvc",
       },
+      // Mount Grimmory's bookdrop persistent volume directly inside Syncthing.
+      // This allows Syncthing to sync files directly from the phone into Grimmory's
+      // watch folder, avoiding the need for helper scripts or file-copying sidecars.
+      {
+        name: "grimmory-bookdrop",
+        mountPath: "/var/syncthing/bookdrop",
+        pvcName: "grimmory-bookdrop-pvc",
+        external: true,
+      },
     ],
     middlewares: [pulumi.interpolate`${namespace}-${authMiddleware.metadata.name}@kubernetescrd`],
     dependencies: [...dependencies, authMiddleware],
