@@ -5,7 +5,7 @@ import { configureTandoorRecipes } from "./tandoor-recipes";
 import { configureAuthentik } from "./authentik";
 import { configureAuthentikResources } from "./authentik-resources";
 import { configureLinkwarden } from "./linkwarden";
-import { configureHermesAgent } from "./hermes-agent";
+import { HermesAgent } from "../components/hermes/hermes-agent";
 import { configureTandoorMcp } from "./tandoor-mcp";
 import { configureGrimmory } from "./grimmory";
 import { configureGrafanaMcp } from "./grafana-mcp";
@@ -35,7 +35,10 @@ export function configureSelfhosted() {
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, [postgres]);
   const grafanaMcp = configureGrafanaMcp(namespaceName, [postgres]);
-  const hermes = configureHermesAgent(namespaceName, [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service]);
+  const hermes = new HermesAgent("hermes-agent", {
+    namespace: namespaceName,
+    dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service],
+  });
   const syncthing = configureSyncthing(namespaceName, [authentik.serverService]);
 
   // Declarative SSO Applications & Providers configuration

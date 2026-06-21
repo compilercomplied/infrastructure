@@ -33,12 +33,17 @@ export interface AuthentikOpenIdArgs {
   redirectUris: string[];
   launchUrl: string;
   clientType?: string;
+  /** Optional parent resource to establish the Pulumi resource hierarchy. */
+  parent?: pulumi.Resource;
+  /** Optional aliases to preserve resource URNs when migrating resources under component resources. */
+  aliases?: pulumi.Alias[];
 }
 
 // Configures a standardized OAuth2/OpenID Connect provider and application in Authentik.
 // Using this helper enforces consistency across all self-hosted applications.
 export function createAuthentikOpenId(args: AuthentikOpenIdArgs) {
   const scopes = getScopes();
+  const { parent, aliases } = args;
 
   const provider = new authentik.ProviderOauth2(`${args.slug}-provider`, {
     name: `${args.name} SSO`,
@@ -60,7 +65,7 @@ export function createAuthentikOpenId(args: AuthentikOpenIdArgs) {
       scopes.profile,
       scopes.email,
     ],
-  });
+  }, { parent, aliases });
 
   const app = new authentik.Application(`${args.slug}-app`, {
     name: args.name,
@@ -68,7 +73,7 @@ export function createAuthentikOpenId(args: AuthentikOpenIdArgs) {
     protocolProvider: provider.id.apply(id => parseInt(id)),
     metaLaunchUrl: args.launchUrl,
     metaPublisher: "GDario Labs",
-  });
+  }, { parent, aliases });
 
   return { provider, app };
 }

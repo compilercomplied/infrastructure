@@ -16,6 +16,10 @@ export interface LetsEncryptIngressArgs {
   rateLimit?: RateLimitConfig | false;
   middlewares?: pulumi.Input<string>[];
   dependencies?: pulumi.Resource[];
+  /** Optional parent resource to establish the Pulumi resource hierarchy. */
+  parent?: pulumi.Resource;
+  /** Optional aliases to preserve resource URNs when migrating resources under component resources. */
+  aliases?: pulumi.Alias[];
 }
 
 export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.networking.v1.Ingress {
@@ -27,7 +31,9 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
     servicePort = 80,
     rateLimit = {},
     middlewares = [],
-    dependencies = []
+    dependencies = [],
+    parent,
+    aliases
   } = args;
 
   const extraAnnotations: Record<string, pulumi.Input<string>> = {};
@@ -54,7 +60,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
           period: rlPeriod,
         },
       },
-    }, { dependsOn: dependencies });
+    }, { dependsOn: dependencies, parent, aliases });
 
     middlewareRefs.push(pulumi.interpolate`${namespace}-${middlewareName}@kubernetescrd`);
     ingressDependencies.push(middleware);
@@ -101,5 +107,5 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
         secretName: `${name}-tls-cert`,
       }],
     },
-  }, { dependsOn: ingressDependencies });
+  }, { dependsOn: ingressDependencies, parent, aliases });
 }

@@ -35,6 +35,10 @@ export interface BackupJobArgs {
   schedule?: string;
   source: BackupSource;
   dependencies?: pulumi.Resource[];
+  /** Optional parent resource to establish the Pulumi resource hierarchy. */
+  parent?: pulumi.Resource;
+  /** Optional aliases to preserve resource URNs when migrating resources under component resources. */
+  aliases?: pulumi.Alias[];
 }
 
 // Configures a standardized Kubernetes CronJob running Restic to back up a database or PVC to Cloudflare R2.
@@ -49,6 +53,8 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
     schedule = "0 3 * * *", // Default schedule runs daily at 3 AM
     source,
     dependencies = [],
+    parent,
+    aliases,
   } = args;
 
   const cronJobName = source.type === "postgres"
@@ -65,7 +71,7 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       "backup-postgres.sh": postgresBackupScript,
       "backup-pvc.sh": pvcBackupScript,
     },
-  }, { dependsOn: dependencies });
+  }, { dependsOn: dependencies, parent, aliases });
 
   let image: string;
   let scriptName: string;
@@ -164,5 +170,5 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
         },
       },
     },
-  }, { dependsOn: jobDeps });
+  }, { dependsOn: jobDeps, parent, aliases });
 }
