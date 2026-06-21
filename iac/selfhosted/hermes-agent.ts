@@ -6,6 +6,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { createBackupJob } from "../maintenance/backup";
 import { createPVC } from "../library/k8s-pvc";
 import { getAuthorizedUsers } from "./users";
+import { createLetsEncryptIngress } from "../library/ingress";
 
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,
@@ -148,7 +149,10 @@ export function configureHermesAgent(
             name: "hermes-agent",
             image: "nousresearch/hermes-agent:latest",
             args: ["gateway", "run"],
-            ports: [{ containerPort: 9119, name: "http" }],
+            ports: [
+              { containerPort: 9119, name: "http" },
+              { containerPort: 8642, name: "api" },
+            ],
             env: [
               { name: "HERMES_DASHBOARD", value: "1" },
               { name: "HERMES_DASHBOARD_PUBLIC_URL", value: `https://${host}` },
@@ -157,6 +161,7 @@ export function configureHermesAgent(
               { name: "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", value: hermesSecret },
               { name: "API_SERVER_ENABLED", value: "true" },
               { name: "API_SERVER_HOST", value: "0.0.0.0" },
+              { name: "API_SERVER_CORS_ORIGINS", value: "*" },
               { name: "CUSTOM_BASE_URL", value: "https://api.deepseek.com/v1" },
               {
                 name: "CUSTOM_API_KEY",
@@ -217,7 +222,10 @@ export function configureHermesAgent(
       namespace,
     },
     spec: {
-      ports: [{ port: 80, targetPort: 9119, protocol: "TCP", name: "http" }],
+      ports: [
+        { port: 80, targetPort: 9119, protocol: "TCP", name: "http" },
+        { port: 8642, targetPort: 8642, protocol: "TCP", name: "api" },
+      ],
       selector: { app: name },
     },
   }, { dependsOn: deployment });
@@ -259,6 +267,18 @@ export function configureHermesAgent(
     },
   }, { dependsOn: [service] });
 
+  // 8b. API Ingress for OpenAI-compatible client API access.
+  // We expose this without Authentik forward auth middleware to allow external OpenAI-compatible
+  // clients (e.g. Android client apps) to authenticate natively via the API_SERVER_KEY bearer token.
+  const apiIngress = createLetsEncryptIngress({
+    name: `${name}-api`,
+    namespace,
+    host: "hermes-api.gdario.dev",
+    serviceName: service.metadata.name,
+    servicePort: 8642,
+    dependencies: [service],
+  });
+
   // 9. Back up the Hermes persistent volume data (databases, config, memories, and skills) daily.
   const dataBackup = createBackupJob({
     appName: name,
@@ -275,6 +295,7 @@ export function configureHermesAgent(
     deployment,
     service,
     ingress,
+    apiIngress,
     provider,
     app,
     dataBackup,
