@@ -1,12 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as authentik from "@pulumi/authentik";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createBackupJob } from "../maintenance/backup";
 import { createPVC } from "../library/k8s-pvc";
 import { getAuthorizedUsers } from "./users";
 import { createLetsEncryptIngress } from "../library/ingress";
+import { createAuthentikOpenId } from "../library/authentik";
 
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,
@@ -20,43 +20,15 @@ export function configureHermesAgent(
   const name = "hermes-agent";
   const host = "hermes.gdario.dev";
 
-  // Create OIDC Provider and Application in Authentik
-  const scopeOpenid = authentik.getPropertyMappingProviderScopeOutput({
-    managed: "goauthentik.io/providers/oauth2/scope-openid",
-  });
-  const scopeProfile = authentik.getPropertyMappingProviderScopeOutput({
-    managed: "goauthentik.io/providers/oauth2/scope-profile",
-  });
-  const scopeEmail = authentik.getPropertyMappingProviderScopeOutput({
-    managed: "goauthentik.io/providers/oauth2/scope-email",
-  });
-
-  const provider = new authentik.ProviderOauth2("hermes-provider", {
-    name: "Hermes SSO",
+  // 1. Create OIDC Provider and Application in Authentik using library wrapper
+  const { provider, app } = createAuthentikOpenId({
+    name: "Hermes Agent",
+    slug: "hermes",
     clientId: "hermes-client-id",
     clientSecret: hermesSecret,
     clientType: "public",
-    // Flow/Signing keys from pre-existing Authentik setups
-    authorizationFlow: "9faae557-fad6-4f95-876c-545adc95b3e4",
-    invalidationFlow: "12830a53-f573-488d-bdc2-f12ddc59c0a7",
-    signingKey: "e96bc021-31ba-451e-b3ae-a7c62b7f1363",
-    allowedRedirectUris: [{
-      matching_mode: "strict",
-      url: `https://${host}/auth/callback`,
-    }],
-    propertyMappings: [
-      scopeOpenid.id,
-      scopeProfile.id,
-      scopeEmail.id,
-    ],
-  });
-
-  const app = new authentik.Application("hermes-app", {
-    name: "Hermes Agent",
-    slug: "hermes",
-    protocolProvider: provider.id.apply(id => parseInt(id)),
-    metaLaunchUrl: `https://${host}`,
-    metaPublisher: "GDario Labs",
+    redirectUris: [`https://${host}/auth/callback`],
+    launchUrl: `https://${host}`,
   });
 
   // 2. Kubernetes Persistent Volume Claim
