@@ -4,6 +4,8 @@ import { configurePrometheus } from "./prometheus";
 import { configureGrafana } from "./grafana";
 import { configureLoki } from "./loki";
 import { configureAlloy } from "./alloy";
+import { configurePvcExporter } from "./pvc-exporter";
+import { configureDeepseekExporter } from "./deepseek-exporter";
 
 /**
  * Entry point for the modular Monitoring stack.
@@ -30,12 +32,20 @@ export function configureMonitoring() {
   // Depends on storage engines to ensure service endpoints are available
   const grafana = configureGrafana(namespaceName, [prometheus, loki]);
 
+  // 5. Expose real PVC disk usage metrics by scanning host directories
+  const pvcExporter = configurePvcExporter(namespaceName, prometheusCRDs);
+
+  // 6. Monitor DeepSeek API usage and credit balance dynamically
+  const deepseekExporter = configureDeepseekExporter(namespaceName, prometheusCRDs);
+
   return {
     monitoringNamespace,
     prometheus,
     loki,
     alloy,
     grafana,
-    prometheusCRDs
+    prometheusCRDs,
+    pvcExporter,
+    deepseekExporter
   };
 }
