@@ -11,6 +11,11 @@ export interface MCPServerArgs {
   command?: string[];
   secrets?: Record<string, pulumi.Input<string>>;
   dependencies?: pulumi.Resource[];
+  volumes?: k8s.types.input.core.v1.Volume[];
+  volumeMounts?: k8s.types.input.core.v1.VolumeMount[];
+  securityContext?: k8s.types.input.core.v1.PodSecurityContext;
+  containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
+  affinity?: k8s.types.input.core.v1.Affinity;
 }
 
 export interface MCPServerResult {
@@ -76,6 +81,8 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
           labels: { app: name },
         },
         spec: {
+          securityContext: args.securityContext,
+          affinity: args.affinity,
           containers: [{
             name,
             image,
@@ -84,7 +91,10 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
             env,
             args: containerArgs,
             command: containerCommand,
+            volumeMounts: args.volumeMounts,
+            securityContext: args.containerSecurityContext,
           }],
+          volumes: args.volumes,
         },
       },
     },

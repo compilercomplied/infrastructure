@@ -10,6 +10,7 @@ import { configureTandoorMcp } from "./tandoor-mcp";
 import { configureGrimmory } from "./grimmory";
 import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureSyncthing } from "./syncthing";
+import { configureFilesystemMcp } from "./filesystem-mcp";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -35,11 +36,12 @@ export function configureSelfhosted() {
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, [postgres]);
   const grafanaMcp = configureGrafanaMcp(namespaceName, [postgres]);
+  const syncthing = configureSyncthing(namespaceName, [authentik.serverService]);
+  const filesystemMcp = configureFilesystemMcp(namespaceName, [syncthing.deployment]);
   const hermes = new HermesAgent("hermes-agent", {
     namespace: namespaceName,
-    dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service],
+    dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service, filesystemMcp.service],
   });
-  const syncthing = configureSyncthing(namespaceName, [authentik.serverService]);
 
   // Declarative SSO Applications & Providers configuration
   const authentikResources = configureAuthentikResources(namespaceName);
@@ -56,5 +58,6 @@ export function configureSelfhosted() {
     hermes,
     authentikResources,
     syncthing,
+    filesystemMcp,
   };
 }

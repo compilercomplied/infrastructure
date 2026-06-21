@@ -15,6 +15,9 @@ mcp_servers:
   grafana:
     url: "http://grafana-mcp.selfhosted.svc.cluster.local:8000/sse"
     transport: "sse"
+  filesystem:
+    url: "http://filesystem-mcp.selfhosted.svc.cluster.local:3000/sse"
+    transport: "sse"
 skills:
   disabled:
     - airtable

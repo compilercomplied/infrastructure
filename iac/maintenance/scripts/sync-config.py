@@ -51,9 +51,35 @@ else:
                 content += "\nmcp_servers:\n  grafana:\n    url: http://grafana-mcp.selfhosted.svc.cluster.local:8000/sse\n    transport: sse\n"
                 print("Successfully appended mcp_servers block with grafana-mcp to persistent configuration.")
 
+        # Check if filesystem mcp server is configured
+        if "filesystem-mcp.selfhosted.svc.cluster.local" not in content:
+            # We insert the filesystem MCP config under mcp_servers:
+            lines = content.splitlines()
+            mcp_index = -1
+            for i, line in enumerate(lines):
+                if line.strip().startswith("mcp_servers:"):
+                    mcp_index = i
+                    break
+            
+            if mcp_index != -1:
+                # Insert the filesystem definition right under mcp_servers:
+                filesystem_config = [
+                    "  filesystem:",
+                    "    url: http://filesystem-mcp.selfhosted.svc.cluster.local:3000/sse",
+                    "    transport: sse"
+                ]
+                lines = lines[:mcp_index + 1] + filesystem_config + lines[mcp_index + 1:]
+                content = "\n".join(lines) + "\n"
+                print("Successfully added filesystem-mcp to persistent configuration.")
+            else:
+                # If mcp_servers block was missing entirely, append it
+                content += "\nmcp_servers:\n  filesystem:\n    url: http://filesystem-mcp.selfhosted.svc.cluster.local:3000/sse\n    transport: sse\n"
+                print("Successfully appended mcp_servers block with filesystem-mcp to persistent configuration.")
+
         with open(dest_path, "w") as f:
             f.write(content)
 
     except Exception as e:
         print(f"Error migrating configuration: {e}")
+
 

@@ -33,6 +33,8 @@ export interface AuthentikOpenIdArgs {
   redirectUris: string[];
   launchUrl: string;
   clientType?: string;
+  accessTokenValidity?: string;
+  refreshTokenValidity?: string;
   /** Optional parent resource to establish the Pulumi resource hierarchy. */
   parent?: pulumi.Resource;
   /** Optional aliases to preserve resource URNs when migrating resources under component resources. */
@@ -65,6 +67,10 @@ export function createAuthentikOpenId(args: AuthentikOpenIdArgs) {
       scopes.profile,
       scopes.email,
     ],
+    // Set token lifetimes to ensure OIDC sessions are not terminated prematurely.
+    accessTokenValidity: args.accessTokenValidity || "hours=1",
+		// Default is 30 days, we're making it explicit
+    refreshTokenValidity: args.refreshTokenValidity || "days=30",
   }, { parent, aliases });
 
   const app = new authentik.Application(`${args.slug}-app`, {
