@@ -46,7 +46,7 @@ export function configureTandoorRecipes(
       { name: "POSTGRES_PORT", value: "5432" },
       { name: "POSTGRES_DB", value: "tandoor" },
       { name: "POSTGRES_USER", value: "tandoor" },
-      { name: "ALLOWED_HOSTS", value: "*" },
+      { name: "ALLOWED_HOSTS", value: "recipes.gdario.dev,tandoor-recipes,tandoor-recipes.selfhosted.svc.cluster.local" },
       { name: "TANDOOR_PORT", value: "8080" },
       { name: "SOCIAL_PROVIDERS", value: "allauth.socialaccount.providers.openid_connect" },
       { name: "HIDE_LOGIN_FORM", value: "1" },
