@@ -3,6 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as path from "path";
 import { postgresClientImage } from "../selfhosted/shared-postgres";
+import { Labels } from "../selfhosted/labels";
 
 // Load the standalone script files to satisfy the script-ownership guidelines.
 // This decouples script logic from the Pulumi infrastructure definition.
@@ -141,6 +142,11 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
 
   const jobDeps = [scriptsConfigMap, ...dependencies];
 
+  const cronJobLabels: Record<string, string> = {};
+  if (source.type === "postgres") {
+    cronJobLabels[Labels.Network.AllowPostgres] = "true";
+  }
+
   return new k8s.batch.v1.CronJob(cronJobName, {
     metadata: {
       name: cronJobName,
@@ -154,6 +160,9 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       jobTemplate: {
         spec: {
           template: {
+            metadata: {
+              labels: cronJobLabels,
+            },
             spec: {
               restartPolicy: "OnFailure",
               containers: [{

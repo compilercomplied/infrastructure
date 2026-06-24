@@ -3,6 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "../library/ingress";
 import { createPVC } from "../library/k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
+import { Labels } from "./labels";
 
 export function configureAuthentik(
   namespace: pulumi.Input<string>,
@@ -134,7 +135,12 @@ export function configureAuthentik(
       replicas: 1,
       selector: { matchLabels: { app: serverName } },
       template: {
-        metadata: { labels: { app: serverName } },
+        metadata: {
+          labels: {
+            app: serverName,
+            [Labels.Network.AllowPostgres]: "true",
+          },
+        },
         spec: {
           containers: [{
             name: "authentik-server",
@@ -177,7 +183,12 @@ export function configureAuthentik(
       replicas: 1,
       selector: { matchLabels: { app: workerName } },
       template: {
-        metadata: { labels: { app: workerName } },
+        metadata: {
+          labels: {
+            app: workerName,
+            [Labels.Network.AllowPostgres]: "true",
+          },
+        },
         spec: {
           containers: [{
             name: "authentik-worker",
@@ -198,13 +209,18 @@ export function configureAuthentik(
     },
   }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService] });
 
-  const ingress = createLetsEncryptIngress({
+  const exposure = createLetsEncryptIngress({
     name,
     namespace,
     host: "auth.gdario.dev",
     serviceName: serverService.metadata.name,
+    servicePort: 80,
+    targetPort: 9000,
+    podSelector: { app: serverName },
     dependencies: [serverService],
   });
+  const ingress = exposure.ingress;
+  const traefikPolicy = exposure.policy;
 
   // Back up the authentik PostgreSQL database containing all user credentials,
   // tokens, and configuration.
@@ -245,6 +261,59 @@ export function configureAuthentik(
     dependencies: [...dependencies, templatesPvc],
   });
 
+  // Ingress is restricted to pods carrying the network/allow-authentik label. Internal pods require direct access
+  // to the Authentik Server to perform OIDC authentication and token validation.
+  const internalPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-server-allow-internal`, {
+    metadata: {
+      name: `${name}-server-allow-internal`,
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: { app: serverName },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowAuthentik]: "true",
+                },
+              },
+            },
+          ],
+          ports: [{ port: 9000 }],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: serverDeployment });
+
+  // NetworkPolicy to allow only Authentik components to connect to Authentik Redis
+  const redisPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-redis-allow-ingress`, {
+    metadata: {
+      name: `${name}-redis-allow-ingress`,
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: { app: redisName },
+      },
+      ingress: [
+        {
+          from: [
+            { podSelector: { matchLabels: { app: serverName } } },
+            { podSelector: { matchLabels: { app: workerName } } },
+            { podSelector: { matchLabels: { app: "authentik-patch" } } },
+          ],
+          ports: [{ port: 6379 }],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: redisDeployment });
+
   return {
     redisService,
     serverService,
@@ -253,5 +322,8 @@ export function configureAuthentik(
     dbBackup,
     mediaBackup,
     templatesBackup,
+    internalPolicy,
+    traefikPolicy,
+    redisPolicy,
   };
 }

@@ -16,12 +16,14 @@ export interface MCPServerArgs {
   securityContext?: k8s.types.input.core.v1.PodSecurityContext;
   containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
   affinity?: k8s.types.input.core.v1.Affinity;
+  labels?: Record<string, string>;
 }
 
 export interface MCPServerResult {
   deployment: k8s.apps.v1.Deployment;
   service: k8s.core.v1.Service;
   secret?: k8s.core.v1.Secret;
+  hermesPolicy?: k8s.networking.v1.NetworkPolicy;
 }
 
 // Configures standard Kubernetes resources for cluster-internal MCP servers.
@@ -38,6 +40,7 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
     command: containerCommand,
     secrets,
     dependencies = [],
+    labels = {},
   } = args;
 
   let secretResource: k8s.core.v1.Secret | undefined;
@@ -78,7 +81,7 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
       },
       template: {
         metadata: {
-          labels: { app: name },
+          labels: { app: name, ...labels },
         },
         spec: {
           securityContext: args.securityContext,
@@ -115,9 +118,35 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
     },
   }, { dependsOn: deployment });
 
+  const hermesPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-allow-hermes`, {
+    metadata: {
+      name: `${name}-allow-hermes`,
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: { app: name },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              podSelector: {
+                matchLabels: { app: "hermes-agent" },
+              },
+            },
+          ],
+          ports: [{ port: containerPort }],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: deployment });
+
   return {
     secret: secretResource,
     deployment,
     service,
+    hermesPolicy,
   };
 }

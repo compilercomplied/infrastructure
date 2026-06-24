@@ -13,6 +13,11 @@ export interface VolumeConfig {
   external?: boolean; // if true, does not create the PVC resource, assuming it is declared elsewhere
 }
 
+export interface IngressRuleConfig {
+  podSelector: Record<string, string>;
+  port?: number;
+}
+
 export type ExposeConfig =
   | {
       exposeType: "tailscale";
@@ -37,6 +42,8 @@ export type SelfhostedAppArgs = {
   dependencies?: pulumi.Resource[];
   middlewares?: pulumi.Input<string>[];
   affinity?: k8s.types.input.core.v1.Affinity;
+  labels?: Record<string, string>;
+  allowIngressFrom?: IngressRuleConfig[];
 } & ExposeConfig;
 
 // Configures standard Kubernetes resources for self-hosted apps to eliminate boilerplate.
@@ -52,6 +59,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
     secrets,
     volumes,
     dependencies = [],
+    labels = {},
   } = args;
 
   let secretResource: k8s.core.v1.Secret | undefined;
@@ -127,7 +135,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
       },
       template: {
         metadata: {
-          labels: { app: name },
+          labels: { app: name, ...labels },
         },
         spec: {
           containers: [{
@@ -169,15 +177,59 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
   }, { dependsOn: deployment });
 
   let ingress: k8s.networking.v1.Ingress | undefined;
+  let traefikPolicy: k8s.networking.v1.NetworkPolicy | undefined;
+
   if (args.exposeType === "public") {
-    ingress = createLetsEncryptIngress({
+    const exposure = createLetsEncryptIngress({
       name,
       namespace,
       host: args.host,
       serviceName: service.metadata.name,
+      servicePort: 80,
+      targetPort: containerPort,
+      podSelector: { app: name },
       middlewares: args.middlewares,
       dependencies: [service],
     });
+    ingress = exposure.ingress;
+    traefikPolicy = exposure.policy;
+  }
+
+  const internalPolicies: k8s.networking.v1.NetworkPolicy[] = [];
+
+  if (args.allowIngressFrom && args.allowIngressFrom.length > 0) {
+    for (const rule of args.allowIngressFrom) {
+      const clientName = Object.values(rule.podSelector)[0];
+      const policyName = `${name}-allow-${clientName}`;
+
+      // Configures internal, pod-to-pod network rules. Restricting ingress on a per-app basis
+      // is key to enforcing our zero-trust lateral isolation boundaries.
+      const policy = new k8s.networking.v1.NetworkPolicy(policyName, {
+        metadata: {
+          name: policyName,
+          namespace,
+        },
+        spec: {
+          podSelector: {
+            matchLabels: { app: name },
+          },
+          ingress: [
+            {
+              from: [
+                {
+                  podSelector: {
+                    matchLabels: rule.podSelector,
+                  },
+                },
+              ],
+              ports: [{ port: rule.port || containerPort }],
+            },
+          ],
+          policyTypes: ["Ingress"],
+        },
+      }, { dependsOn: deployment });
+      internalPolicies.push(policy);
+    }
   }
 
   return {
@@ -186,5 +238,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
     deployment,
     service,
     ingress,
+    traefikPolicy,
+    internalPolicies,
   };
 }

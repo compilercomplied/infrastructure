@@ -20,9 +20,18 @@ export interface LetsEncryptIngressArgs {
   parent?: pulumi.Resource;
   /** Optional aliases to preserve resource URNs when migrating resources under component resources. */
   aliases?: pulumi.Alias[];
+  /** Optional container port to authorize Ingress Controller (Traefik) network traffic. */
+  targetPort?: number;
+  /** Optional pod label selector to authorize Ingress Controller (Traefik) network traffic. */
+  podSelector?: Record<string, string>;
 }
 
-export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.networking.v1.Ingress {
+export interface LetsEncryptIngressResult {
+  ingress: k8s.networking.v1.Ingress;
+  policy?: k8s.networking.v1.NetworkPolicy;
+}
+
+export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncryptIngressResult {
   const {
     name,
     namespace,
@@ -33,7 +42,9 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
     middlewares = [],
     dependencies = [],
     parent,
-    aliases
+    aliases,
+    targetPort,
+    podSelector
   } = args;
 
   const extraAnnotations: Record<string, pulumi.Input<string>> = {};
@@ -74,7 +85,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
     extraAnnotations["traefik.ingress.kubernetes.io/router.middlewares"] = pulumi.all(middlewareRefs).apply(refs => refs.join(","));
   }
 
-  return new k8s.networking.v1.Ingress(`${name}-ingress`, {
+  const ingress = new k8s.networking.v1.Ingress(`${name}-ingress`, {
     metadata: {
       name: `${name}-ingress`,
       namespace,
@@ -108,4 +119,39 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): k8s.netw
       }],
     },
   }, { dependsOn: ingressDependencies, parent, aliases });
+
+  let policy: k8s.networking.v1.NetworkPolicy | undefined;
+
+  // Integrating network policy definition directly with the ingress helper ensures that any exposed app
+  // automatically permits ingress from the controller namespace, eliminating default-deny blocks.
+  if (targetPort && podSelector) {
+    policy = new k8s.networking.v1.NetworkPolicy(`${name}-allow-traefik`, {
+      metadata: {
+        name: `${name}-allow-traefik`,
+        namespace,
+      },
+      spec: {
+        podSelector: {
+          matchLabels: podSelector,
+        },
+        ingress: [
+          {
+            from: [
+              {
+                namespaceSelector: {
+                  matchLabels: {
+                    "kubernetes.io/metadata.name": "kube-system",
+                  },
+                },
+              },
+            ],
+            ports: [{ port: targetPort }],
+          },
+        ],
+        policyTypes: ["Ingress"],
+      },
+    }, { dependsOn: ingressDependencies, parent, aliases });
+  }
+
+  return { ingress, policy };
 }

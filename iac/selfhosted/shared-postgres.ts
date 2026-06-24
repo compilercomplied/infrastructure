@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../library/k8s-pvc";
+import { Labels } from "./labels";
 
 export const postgresClientImage = "postgres:16-alpine";
 
@@ -136,6 +137,36 @@ export function configureSharedPostgres(
       selector: { app: name },
     },
   }, { dependsOn: statefulSet });
+
+  // NetworkPolicy to allow PostgreSQL ingress only from pods with AllowPostgres capability label
+  const postgresPolicy = new k8s.networking.v1.NetworkPolicy("allow-postgres-ingress", {
+    metadata: {
+      name: "allow-postgres-ingress",
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: {
+          app: name,
+        },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowPostgres]: "true",
+                },
+              },
+            },
+          ],
+          ports: [{ port: 5432 }],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: service });
 
   return service;
 }

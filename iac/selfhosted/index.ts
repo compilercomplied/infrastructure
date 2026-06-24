@@ -11,6 +11,7 @@ import { configureGrimmory } from "./grimmory";
 import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureSyncthing } from "./syncthing";
 import { configureFilesystemMcp } from "./filesystem-mcp";
+import { configureNamespaceSecurity } from "./security";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -48,6 +49,11 @@ export function configureSelfhosted() {
   // Declarative SSO Applications & Providers configuration
   const authentikResources = configureAuthentikResources(namespaceName);
 
+  const security = configureNamespaceSecurity({
+    namespace: namespaceName,
+    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment],
+  });
+
   return {
     namespace: namespaceName,
     postgres,
@@ -61,5 +67,8 @@ export function configureSelfhosted() {
     authentikResources,
     syncthing,
     filesystemMcp,
+    defaultDeny: security.defaultDeny,
+    allowMonitoringScrape: security.allowMonitoringScrape,
+    allowCertManagerSolver: security.allowCertManagerSolver,
   };
 }

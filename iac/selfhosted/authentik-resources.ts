@@ -6,6 +6,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { createAuthentikOpenId } from "../library/authentik";
 import { getAuthorizedUsers, getGroupDefinitions } from "./users";
+import { Labels } from "./labels";
 
 export function configureAuthentikResources(
   namespace: pulumi.Input<string>
@@ -180,6 +181,9 @@ export function configureAuthentikResources(
         metadata: {
           annotations: {
             "providers-hash": providersHash,
+          },
+          labels: {
+            [Labels.Network.AllowPostgres]: "true",
           },
         },
         spec: {

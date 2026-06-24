@@ -2,6 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
 import { createBackupJob } from "../maintenance/backup";
+import { Labels } from "./labels";
 
 // Syncthing Deployment & Services Configuration.
 // This sets up a future-proof personal sync service for Obsidian and other vaults.
@@ -46,6 +47,9 @@ export function configureSyncthing(
     containerPort: 8384,
     exposeType: "public",
     host: "syncthing.gdario.dev",
+    labels: {
+      [Labels.Network.AllowAuthentik]: "true",
+    },
     env: [
       { name: "PUID", value: "1000" },
       { name: "PGID", value: "1000" },
@@ -101,9 +105,35 @@ export function configureSyncthing(
     dependencies: [...dependencies, app.deployment],
   });
 
+  // Allowed from any source (from: []) because Syncthing enforces mutual TLS (mTLS) 
+  // authentication using unique, cryptographic Device IDs at the application layer.
+  const syncthingSyncPolicy = new k8s.networking.v1.NetworkPolicy("allow-syncthing-sync", {
+    metadata: {
+      name: "allow-syncthing-sync",
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: {
+          app: name,
+        },
+      },
+      ingress: [
+        {
+          ports: [
+            { protocol: "TCP", port: 22000 },
+            { protocol: "UDP", port: 22000 },
+          ],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: app.deployment });
+
   return {
     ...app,
     syncService,
     filesBackup,
+    syncthingSyncPolicy,
   };
 }

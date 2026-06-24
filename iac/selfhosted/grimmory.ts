@@ -6,6 +6,7 @@ import * as path from "path";
 import { createSelfhostedApp } from "../library/selfhosted-app";
 import { createPVC } from "../library/k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
+import { Labels } from "./labels";
 
 export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.2.0";
 export const grimmoryMariaDbImage = "mariadb:11.4";
@@ -138,6 +139,10 @@ export function configureGrimmory(
     containerPort: 6060,
     exposeType: "public",
     host: "grimmory.gdario.dev",
+    labels: {
+      [Labels.Network.AllowMariaDb]: "true",
+      [Labels.Network.AllowAuthentik]: "true",
+    },
     secrets: {
       "DATABASE_PASSWORD": grimmoryDbPassword,
       "OIDC_CLIENT_SECRET": grimmorySecret,
@@ -260,6 +265,9 @@ export function configureGrimmory(
           annotations: {
             "patch-hash": patchHash,
           },
+          labels: {
+            [Labels.Network.AllowMariaDb]: "true",
+          },
         },
         spec: {
           restartPolicy: "Never",
@@ -309,6 +317,36 @@ export function configureGrimmory(
     deleteBeforeReplace: true,
   });
 
+  // NetworkPolicy to allow MariaDB ingress only from pods with AllowMariaDb capability label
+  const mariadbPolicy = new k8s.networking.v1.NetworkPolicy("allow-mariadb-ingress", {
+    metadata: {
+      name: "allow-mariadb-ingress",
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: {
+          app: dbName,
+        },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowMariaDb]: "true",
+                },
+              },
+            },
+          ],
+          ports: [{ port: 3306 }],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: dbService });
+
   return {
     ...app,
     dbService,
@@ -316,5 +354,6 @@ export function configureGrimmory(
     booksBackup,
     dataBackup,
     patchJob,
+    mariadbPolicy,
   };
 }

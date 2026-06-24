@@ -7,6 +7,7 @@ import { createPVC } from "../../library/k8s-pvc";
 import { getAuthorizedUsers } from "../../selfhosted/users";
 import { createLetsEncryptIngress } from "../../library/ingress";
 import { createAuthentikOpenId } from "../../library/authentik";
+import { Labels } from "../../selfhosted/labels";
 
 export interface HermesAgentArgs {
   namespace: pulumi.Input<string>;
@@ -131,7 +132,12 @@ export class HermesAgent extends pulumi.ComponentResource {
         replicas: 1,
         selector: { matchLabels: { app: name } },
         template: {
-          metadata: { labels: { app: name } },
+          metadata: {
+            labels: {
+              app: name,
+              [Labels.Network.AllowAuthentik]: "true",
+            },
+          },
           spec: {
             initContainers: [{
               name: "sync-config",
@@ -231,55 +237,36 @@ export class HermesAgent extends pulumi.ComponentResource {
     this.service = service;
 
     // 8. Ingress with Forward Auth Annotations for dashboard
-    const ingress = new k8s.networking.v1.Ingress(`${name}-ingress`, {
-      metadata: {
-        name: `${name}-ingress`,
-        namespace,
-        annotations: {
-          "cert-manager.io/cluster-issuer": "letsencrypt-prod",
-          "traefik.ingress.kubernetes.io/router.entrypoints": "websecure",
-          "traefik.ingress.kubernetes.io/router.tls": "true",
-        },
-      },
-      spec: {
-        ingressClassName: "traefik",
-        rules: [{
-          host: host,
-          http: {
-            paths: [{
-              path: "/",
-              pathType: "Prefix",
-              backend: {
-                service: {
-                  name: service.metadata.name,
-                  port: { number: 80 },
-                },
-              },
-            }],
-          },
-        }],
-        tls: [{
-          hosts: [host],
-          secretName: `${name}-tls-cert`,
-        }],
-      },
-    }, { dependsOn: [service], parent: this, aliases: [componentAlias] });
-    this.ingress = ingress;
+    const dashboardExposure = createLetsEncryptIngress({
+      name,
+      namespace,
+      host,
+      serviceName: service.metadata.name,
+      servicePort: 80,
+      targetPort: 9119,
+      podSelector: { app: name },
+      dependencies: [service],
+      parent: this,
+      aliases: [componentAlias],
+    });
+    this.ingress = dashboardExposure.ingress;
 
     // 8b. API Ingress for OpenAI-compatible client API access.
     // We expose this without Authentik forward auth middleware to allow external OpenAI-compatible
     // clients (e.g. Android client apps) to authenticate natively via the API_SERVER_KEY bearer token.
-    const apiIngress = createLetsEncryptIngress({
+    const apiExposure = createLetsEncryptIngress({
       name: `${name}-api`,
       namespace,
       host: "hermes-api.gdario.dev",
       serviceName: service.metadata.name,
       servicePort: 8642,
+      targetPort: 8642,
+      podSelector: { app: name },
       dependencies: [service],
       parent: this,
       aliases: [componentAlias],
     });
-    this.apiIngress = apiIngress;
+    this.apiIngress = apiExposure.ingress;
 
     // 9. Back up the Hermes persistent volume data (databases, config, memories, and skills) daily.
     const dataBackup = createBackupJob({

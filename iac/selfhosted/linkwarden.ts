@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
 import { createBackupJob } from "../maintenance/backup";
+import { Labels } from "./labels";
 
 export function configureLinkwarden(
   namespace: pulumi.Input<string>,
@@ -18,6 +19,10 @@ export function configureLinkwarden(
     containerPort: 3000,
     exposeType: "public",
     host: "linkwarden.gdario.dev",
+    labels: {
+      [Labels.Network.AllowPostgres]: "true",
+      [Labels.Network.AllowAuthentik]: "true",
+    },
     secrets: {
       "NEXTAUTH_SECRET": linkwardenNextAuthSecret,
       "POSTGRES_PASSWORD": linkwardenDbPassword,

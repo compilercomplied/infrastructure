@@ -1,6 +1,8 @@
+import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
 import { createBackupJob } from "../maintenance/backup";
+import { Labels } from "./labels";
 
 export function configureTandoorRecipes(
   namespace: pulumi.Input<string>,
@@ -35,6 +37,10 @@ export function configureTandoorRecipes(
     containerPort: 8080,
     exposeType: "public",
     host: "recipes.gdario.dev",
+    labels: {
+      [Labels.Network.AllowPostgres]: "true",
+      [Labels.Network.AllowAuthentik]: "true",
+    },
     secrets: {
       "SECRET_KEY": tandoorSecretKey,
       "POSTGRES_PASSWORD": tandoorDbPassword,
@@ -58,6 +64,9 @@ export function configureTandoorRecipes(
         size: "10Gi",
         pvcName: "tandoor-recipes-media-pvc",
       },
+    ],
+    allowIngressFrom: [
+      { podSelector: { app: "tandoor-mcp" } },
     ],
     dependencies,
   });
