@@ -124,6 +124,15 @@ export function configureAuthentikResources(
     mode: "forward_single",
     authorizationFlow: "9faae557-fad6-4f95-876c-545adc95b3e4",
     invalidationFlow: "12830a53-f573-488d-bdc2-f12ddc59c0a7",
+    // Explicitly define default fields to eliminate perpetual diff bugs in the Authentik Pulumi provider.
+    interceptHeaderAuth: true,
+    skipPathRegex: "^$",
+    basicAuthEnabled: false,
+    cookieDomain: "",
+    internalHost: "",
+    internalHostSslValidation: true,
+    accessTokenValidity: "minutes=10",
+    refreshTokenValidity: "days=30",
   });
 
   const syncthingApp = new authentik.Application("syncthing", {
