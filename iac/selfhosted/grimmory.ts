@@ -206,11 +206,14 @@ export function configureGrimmory(
     appName: "grimmory",
     namespace,
     source: {
-      type: "pvc",
-      pvcName: `${dbName}-pvc`,
-      mountPath: "/var/lib/mysql",
+      type: "mariadb",
+      databaseName: "grimmory",
+      dbHost: pulumi.interpolate`${dbService.metadata.name}.${namespace}.svc.cluster.local`,
+      dbUser: "grimmory",
+      dbPasswordSecret: grimmoryDbPassword,
+      clientImage: grimmoryMariaDbImage,
     },
-    dependencies: [...dependencies, app.deployment],
+    dependencies: [...dependencies, dbService, app.deployment],
   });
 
   const booksBackup = createBackupJob({

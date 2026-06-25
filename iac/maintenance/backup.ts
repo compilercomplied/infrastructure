@@ -8,6 +8,7 @@ import { Labels } from "../selfhosted/labels";
 // Load the standalone script files to satisfy the script-ownership guidelines.
 // This decouples script logic from the Pulumi infrastructure definition.
 const postgresBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-postgres.sh"), "utf8");
+const mariadbBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-mariadb.sh"), "utf8");
 const pvcBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-pvc.sh"), "utf8");
 
 const config = new pulumi.Config("maintenance");
@@ -20,9 +21,17 @@ export type BackupSource =
   | {
       type: "postgres";
       databaseName: string;
-      dbHost: string;
+      dbHost: pulumi.Input<string>;
       dbUser: string;
       dbPasswordSecret: pulumi.Input<string>;
+    }
+  | {
+      type: "mariadb";
+      databaseName: string;
+      dbHost: pulumi.Input<string>;
+      dbUser: string;
+      dbPasswordSecret: pulumi.Input<string>;
+      clientImage: string;
     }
   | {
       type: "pvc";
@@ -60,6 +69,8 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
 
   const cronJobName = source.type === "postgres"
     ? `${appName}-postgres-${source.databaseName}`
+    : source.type === "mariadb"
+    ? `${appName}-mariadb-${source.databaseName}`
     : `${appName}-pvc-${source.pvcName}`;
 
   // Provision a job-specific ConfigMap to hold the scripts in the target namespace.
@@ -70,6 +81,7 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
     },
     data: {
       "backup-postgres.sh": postgresBackupScript,
+      "backup-mariadb.sh": mariadbBackupScript,
       "backup-pvc.sh": pvcBackupScript,
     },
   }, { dependsOn: dependencies, parent, aliases });
@@ -113,6 +125,17 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       { name: "DB_PASSWORD", value: source.dbPasswordSecret },
       { name: "APP_NAME", value: appName }
     );
+  } else if (source.type === "mariadb") {
+    scriptName = "backup-mariadb.sh";
+    image = source.clientImage;
+
+    env.push(
+      { name: "DB_HOST", value: source.dbHost },
+      { name: "DB_USER", value: source.dbUser },
+      { name: "DB_NAME", value: source.databaseName },
+      { name: "DB_PASSWORD", value: source.dbPasswordSecret },
+      { name: "APP_NAME", value: appName }
+    );
   } else {
     scriptName = "backup-pvc.sh";
     // Use standard Alpine image for simple directory backups.
@@ -145,6 +168,8 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
   const cronJobLabels: Record<string, string> = {};
   if (source.type === "postgres") {
     cronJobLabels[Labels.Network.AllowPostgres] = "true";
+  } else if (source.type === "mariadb") {
+    cronJobLabels[Labels.Network.AllowMariaDb] = "true";
   }
 
   return new k8s.batch.v1.CronJob(cronJobName, {
