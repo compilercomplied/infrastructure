@@ -44,6 +44,17 @@ export function configurePvcExporter(
             image: "python:3.11-alpine",
             command: ["python", "/app/pvc-exporter.py"],
             ports: [{ containerPort: 9123, name: "metrics" }],
+            env: [
+              { name: "PYTHONDONTWRITEBYTECODE", value: "1" },
+            ],
+            securityContext: {
+              allowPrivilegeEscalation: false,
+              readOnlyRootFilesystem: true,
+              capabilities: {
+                drop: ["ALL"],
+                add: ["DAC_READ_SEARCH"],
+              },
+            },
             volumeMounts: [
               {
                 name: "script",
@@ -109,10 +120,58 @@ export function configurePvcExporter(
     },
   }, { dependsOn: [service] });
 
+  // 5. NetworkPolicy to lock down pvc-exporter
+  const policy = new k8s.networking.v1.NetworkPolicy(`${name}-security-policy`, {
+    metadata: {
+      name: `${name}-security-policy`,
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: { app: name },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "monitoring",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  "app.kubernetes.io/name": "prometheus",
+                },
+              },
+            },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "monitoring",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  "app.kubernetes.io/name": "alloy",
+                },
+              },
+            },
+          ],
+          ports: [{ port: 9123 }],
+        },
+      ],
+      // Deny all egress (block pod outgoing connections)
+      egress: [],
+      policyTypes: ["Ingress", "Egress"],
+    },
+  }, { dependsOn: daemonSet });
+
   return {
     configMap,
     daemonSet,
     service,
     serviceMonitor,
+    policy,
   };
 }
