@@ -73,3 +73,5 @@ config:
     secure: v1:9MfiHEJS8eqhn3HU:o8eGTkJWSXMQSKEbTEJ2qNpmd1WRiTm5LRDVDo8/F9BZT2byGmZcezhMath6kNqF
   selfhosted:grimmory-secret:
     secure: v1:KPOwOrdSP6GxZP+B:BwhkePXcEa8p7bEHpwAk6j7l3i860kDkJV5yyEF6LmvzqG8P1TITJKI8FpSJ+hQa
+  selfhosted:authentikRedisPassword:
+    secure: v1:8vxIhfqylXKZnJVo:WdH1BdgkJjSFwHysMJ0lMVvGSDVGzeK6x4RAv9zsl2Z2NitdWV2mcdvD3Nt5DivI

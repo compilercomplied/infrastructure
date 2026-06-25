@@ -228,6 +228,15 @@ export function configureAuthentikResources(
                     },
                   },
                 },
+                {
+                  name: "AUTHENTIK_REDIS__PASSWORD",
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: "authentik-secrets",
+                      key: "AUTHENTIK_REDIS__PASSWORD",
+                    },
+                  },
+                },
               ],
               volumeMounts: [
                 {

@@ -14,6 +14,7 @@ export function configureAuthentik(
   const authentikDbPassword = config.requireSecret("authentikDbPassword");
   const acmeEmail = config.requireSecret("acmeEmail");
   const authentikAdminPassword = config.requireSecret("authentikAdminPassword");
+  const authentikRedisPassword = config.requireSecret("authentikRedisPassword");
 
   const name = "authentik";
   const image = "ghcr.io/goauthentik/server:2026.5.2";
@@ -42,6 +43,7 @@ export function configureAuthentik(
       "AUTHENTIK_POSTGRESQL__PASSWORD": authentikDbPassword,
       "AUTHENTIK_BOOTSTRAP_PASSWORD": authentikAdminPassword,
       "AUTHENTIK_BOOTSTRAP_EMAIL": acmeEmail,
+      "AUTHENTIK_REDIS__PASSWORD": authentikRedisPassword,
     },
   }, { dependsOn: dependencies });
 
@@ -63,11 +65,21 @@ export function configureAuthentik(
             name: "redis",
             image: "redis:7-alpine",
             ports: [{ containerPort: 6379, name: "redis" }],
+            args: ["--requirepass", "$(REDIS_PASSWORD)"],
+            env: [{
+              name: "REDIS_PASSWORD",
+              valueFrom: {
+                secretKeyRef: {
+                  name: secrets.metadata.name,
+                  key: "AUTHENTIK_REDIS__PASSWORD",
+                },
+              },
+            }],
           }],
         },
       },
     },
-  }, { dependsOn: dependencies });
+  }, { dependsOn: [...dependencies, secrets] });
 
   const redisService = new k8s.core.v1.Service(redisName, {
     metadata: {
@@ -120,6 +132,15 @@ export function configureAuthentik(
         secretKeyRef: {
           name: secrets.metadata.name,
           key: "AUTHENTIK_BOOTSTRAP_EMAIL",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_REDIS__PASSWORD",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_REDIS__PASSWORD",
         },
       },
     },
