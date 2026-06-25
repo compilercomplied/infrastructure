@@ -81,6 +81,8 @@ export class HermesAgent extends pulumi.ComponentResource {
         "DEEPSEEK_API_KEY": deepseekApiKey,
         "TELEGRAM_BOT_TOKEN": telegramBotToken,
         "API_SERVER_KEY": hermesSecret,
+        // The dashboard OIDC client secret is sensitive and must not be exposed in pod environment details.
+        "HERMES_DASHBOARD_OIDC_CLIENT_SECRET": hermesSecret,
       },
     }, { dependsOn: dependencies, parent: this, aliases: [componentAlias] });
 
@@ -162,10 +164,10 @@ export class HermesAgent extends pulumi.ComponentResource {
                 { name: "HERMES_DASHBOARD_PUBLIC_URL", value: `https://${host}` },
                 { name: "HERMES_DASHBOARD_OIDC_ISSUER", value: "https://auth.gdario.dev/application/o/hermes/" },
                 { name: "HERMES_DASHBOARD_OIDC_CLIENT_ID", value: "hermes-client-id" },
-                { name: "HERMES_DASHBOARD_OIDC_CLIENT_SECRET", value: hermesSecret },
                 { name: "API_SERVER_ENABLED", value: "true" },
                 { name: "API_SERVER_HOST", value: "0.0.0.0" },
-                { name: "API_SERVER_CORS_ORIGINS", value: "*" },
+                // CORS origins are restricted to the dashboard host to prevent cross-origin request forgery.
+                { name: "API_SERVER_CORS_ORIGINS", value: `https://${host}` },
                 { name: "CUSTOM_BASE_URL", value: "https://api.deepseek.com/v1" },
                 {
                   name: "CUSTOM_API_KEY",
@@ -204,6 +206,15 @@ export class HermesAgent extends pulumi.ComponentResource {
                   },
                 },
                 { name: "TELEGRAM_ALLOWED_USERS", value: allowedUsersString },
+                {
+                  name: "HERMES_DASHBOARD_OIDC_CLIENT_SECRET",
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: secrets.metadata.name,
+                      key: "HERMES_DASHBOARD_OIDC_CLIENT_SECRET",
+                    },
+                  },
+                },
               ],
               volumeMounts: [
                 { name: "data", mountPath: "/opt/data" },
@@ -217,7 +228,14 @@ export class HermesAgent extends pulumi.ComponentResource {
           },
         },
       },
-    }, { dependsOn: [pvc, secrets, configMap, scriptsConfigMap, ...dependencies], parent: this, aliases: [componentAlias] });
+    }, {
+      dependsOn: [pvc, secrets, configMap, scriptsConfigMap, ...dependencies],
+      parent: this,
+      aliases: [componentAlias],
+      // We must delete the old deployment before replacing to prevent Kubernetes strategic merge patch from
+      // failing with a validation error when an environment variable transitions from value to valueFrom.
+      deleteBeforeReplace: true,
+    });
     this.deployment = deployment;
 
     // 6. Service exposing the dashboard and API
