@@ -8,8 +8,9 @@ set -e
 # to safely enforce OIDC-only logins.
 # Wait for database connectivity to handle slow pod startup and CNI NetworkPolicy programming delay.
 echo "Waiting for database connectivity to $DB_HOST..."
+export MYSQL_PWD="$DB_PASSWORD"
 for i in $(seq 1 30); do
-  if mariadb -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "SELECT 1;" >/dev/null 2>&1; then
+  if mariadb -h "$DB_HOST" -u "$DB_USER" -e "SELECT 1;" >/dev/null 2>&1; then
     echo "Database connectivity established."
     break
   fi
@@ -17,7 +18,7 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-mariadb -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" -e "
+mariadb -h "$DB_HOST" -u "$DB_USER" -e "
   UPDATE grimmory.app_settings
   SET val = '{\"providerName\":\"Authentik\",\"clientId\":\"grimmory-client-id\",\"clientSecret\":\"$OIDC_CLIENT_SECRET\",\"issuerUri\":\"https://auth.gdario.dev/application/o/grimmory/\",\"scopes\":\"\",\"claimMapping\":{\"email\":\"email\",\"groups\":\"\",\"name\":\"given_name\",\"username\":\"preferred_username\"}}'
   WHERE name = 'oidc_provider_details';
