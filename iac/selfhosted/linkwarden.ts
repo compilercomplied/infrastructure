@@ -29,12 +29,9 @@ export function configureLinkwarden(
       "AUTHENTIK_CLIENT_SECRET": linkwardenSecret,
       "NEXT_PUBLIC_DISABLE_REGISTRATION": "true",
       "NEXT_PUBLIC_CREDENTIALS_ENABLED": "false",
+      "DATABASE_URL": pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/linkwarden`,
     },
     env: [
-      {
-        name: "DATABASE_URL",
-        value: pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/linkwarden`,
-      },
       {
         name: "NEXTAUTH_URL",
         value: "https://linkwarden.gdario.dev/api/v1/auth",
