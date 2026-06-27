@@ -11,7 +11,6 @@ import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureSyncthing } from "./syncthing";
 import { configureFilesystemMcp } from "./filesystem-mcp";
 import { configureNamespaceSecurity } from "./security";
-import { configureWireguard } from "./wireguard";
 import { configureCoreDnsCustom } from "./coredns";
 import { configureCloudflared } from "./cloudflared";
 
@@ -49,20 +48,16 @@ export function configureSelfhosted() {
     dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service, filesystemMcp.service],
   });
 
-  // Deploy WireGuard VPN for private remote cluster access.
-  const wireguard = configureWireguard("wireguard", {
-    namespace: namespaceName,
-    dependencies: [postgres],
-  });
-
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, wireguard.deployment],
+    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment],
   });
 
   const cloudflared = configureCloudflared(namespaceName, cloudflareTunnelToken, [security.defaultDeny]);
 
-  const corednsCustom = configureCoreDnsCustom([wireguard.deployment]);
+  // Configure custom CoreDNS overrides for gdario.dev routing inside the cluster.
+  // This depends on no explicit resources as Traefik is pre-installed by the K3s runtime.
+  const corednsCustom = configureCoreDnsCustom([]);
 
   return {
     namespace: namespaceName,
@@ -76,7 +71,6 @@ export function configureSelfhosted() {
     hermes,
     syncthing,
     filesystemMcp,
-    wireguard,
     corednsCustom,
     cloudflared,
     defaultDeny: security.defaultDeny,

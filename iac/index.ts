@@ -15,6 +15,5 @@ configureMonitoring();
 configureCertManager();
 configureMaintenance();
 const selfhosted = configureSelfhosted();
-export const clientVpnConfig = selfhosted.wireguard.clientConfig;
 
 
