@@ -13,6 +13,8 @@ import { configureSyncthing } from "./syncthing";
 import { configureFilesystemMcp } from "./filesystem-mcp";
 import { configureNamespaceSecurity } from "./security";
 import { configureWireguard } from "./wireguard";
+import { configureCoreDnsCustom } from "./coredns";
+import { configureCloudflared } from "./cloudflared";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -25,6 +27,7 @@ export function configureSelfhosted() {
   const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
   const authentikDbPassword = config.requireSecret("authentikDbPassword");
   const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
+  const cloudflareTunnelToken = config.requireSecret("cloudflareTunnelToken");
 
 	// Deployments
   const postgres = configureSharedPostgres(namespaceName, [
@@ -47,18 +50,25 @@ export function configureSelfhosted() {
     dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service, filesystemMcp.service],
   });
 
+  // Deploy WireGuard VPN for private remote cluster access.
   const wireguard = configureWireguard("wireguard", {
     namespace: namespaceName,
     dependencies: [postgres],
   });
 
+  const bootstrapMode = config.getBoolean("bootstrapMode") || false;
+
   // Declarative SSO Applications & Providers configuration
-  const authentikResources = configureAuthentikResources(namespaceName);
+  const authentikResources = !bootstrapMode ? configureAuthentikResources(namespaceName) : undefined;
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
     dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, wireguard.deployment],
   });
+
+  const cloudflared = configureCloudflared(namespaceName, cloudflareTunnelToken, [security.defaultDeny]);
+
+  const corednsCustom = configureCoreDnsCustom([wireguard.deployment]);
 
   return {
     namespace: namespaceName,
@@ -74,6 +84,8 @@ export function configureSelfhosted() {
     syncthing,
     filesystemMcp,
     wireguard,
+    corednsCustom,
+    cloudflared,
     defaultDeny: security.defaultDeny,
     allowMonitoringScrape: security.allowMonitoringScrape,
     allowCertManagerSolver: security.allowCertManagerSolver,

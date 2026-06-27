@@ -58,11 +58,17 @@ export function configurePrometheus(
       
       // These are core exporters provided by the stack chart
       // We keep them here because they are the "standard" feed for Prometheus
-      nodeExporter: {
+      "prometheus-node-exporter": {
         enabled: true,
+        serviceAccount: {
+          create: true,
+        },
       },
-      kubeStateMetrics: {
+      "kube-state-metrics": {
         enabled: true,
+        serviceAccount: {
+          create: true,
+        },
       },
     },
   },

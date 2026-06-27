@@ -87,3 +87,10 @@ config:
     secure: v1:dXiAAsylPdmSmX/n:v30+nJrDyuYmib9ebAk6jpzaDLgjExcItslFIJiHRKIjz8zix2d0iXjyuRBnZxc9iErILm93aGe01cNR
   selfhosted:vpnClientPublicKey:
     secure: v1:E52Ur7G62yOc1DyY:C+bdFXwUVqqmroyKlhCEteFDdFbMw6Y9+thq5d3oRcSe0qWvNGKuTm9v7G+TiwCSIkY3thOKo2Fdxgmn
+  selfhosted:bootstrapMode: "false"
+  authentik:insecure: "true"
+  grafana:insecureSkipVerify: "true"
+  selfhosted:cloudflareApiToken:
+    secure: v1:ql7KrP+spN74vmoS:SnI8GEUbcJE3KgO+DTe9lm3OI06GLp5HHNXO5S9UbpCrntgaXZ+8/zSfNek4il51bn8WlnWw6r1prVL0JgBTyV+w9vCk
+  selfhosted:cloudflareTunnelToken:
+    secure: v1:7zSWRgwT8cBuKN+C:CS/NxqwfEn/k4EyMjM97R6gv6SNyT0RsfDS27HQyv1ONNox4jNfHwWXfCOl0VuhaRlshE09+J7zqLWcCntogy3hUl7kJD5Mn2A/cO1JknVa5plq3nYFTIwu+luGeamdbg+MywgmuuZWcE5/Nb5JoWhkRQJ/kBDM8Jw7YsambfVugvQpvJj5tVIgu3Tcnv8CaAxK1fjzEc3w1L8mjPqnlWPDIsjEElKNcO+QemKo1HCB6McS3Iaj/V+w5wiGRnNjd80ASk2ZC5Uw=

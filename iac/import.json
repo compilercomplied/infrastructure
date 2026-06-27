@@ -1,0 +1,108 @@
+{
+    "nameTable": {
+        "grafana-provider": "urn:pulumi:local::infrastructure::pulumi:providers:grafana::grafana-provider",
+        "hermes-agent": "urn:pulumi:local::infrastructure::custom:selfhosted:HermesAgent::hermes-agent",
+        "kube-prometheus-stack": "urn:pulumi:local::infrastructure::kubernetes:helm.sh/v3:Chart::kube-prometheus-stack"
+    },
+    "resources": [
+        {
+            "type": "authentik:index/user:User",
+            "name": "Andrea",
+            "id": "7",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/sourceOauth:SourceOauth",
+            "name": "google-source",
+            "id": "425c1c44-44f4-41a7-a3d4-af8eb1b9023a",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/providerProxy:ProviderProxy",
+            "name": "syncthing",
+            "id": "8",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/application:Application",
+            "name": "syncthingApplication",
+            "id": "035e2bfa-ef66-4cc2-a947-51c15142de39",
+            "version": "2026.2.0",
+            "logicalName": "syncthing"
+        },
+        {
+            "type": "authentik:index/group:Group",
+            "name": "grafana-admins",
+            "id": "ddfca622-8554-47ad-b03c-a7f42c6dc8aa",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/group:Group",
+            "name": "hermes-users",
+            "id": "1f512aa8-a966-438e-963e-03ec1afc1fa4",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/providerOauth2:ProviderOauth2",
+            "name": "grimmory-provider",
+            "id": "7",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/providerOauth2:ProviderOauth2",
+            "name": "tandoor-recipes-provider",
+            "id": "4",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/providerOauth2:ProviderOauth2",
+            "name": "hermes-provider",
+            "id": "5",
+            "parent": "hermes-agent",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/providerOauth2:ProviderOauth2",
+            "name": "grafana-provider",
+            "id": "6",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/providerOauth2:ProviderOauth2",
+            "name": "linkwarden-provider",
+            "id": "3",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/application:Application",
+            "name": "grafana-app",
+            "id": "9396638c-4c43-406b-9b78-6f3ed3278179",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/application:Application",
+            "name": "tandoor-recipes-app",
+            "id": "3db89cf1-4855-42e3-83fa-a56bc4a53e0a",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/application:Application",
+            "name": "grimmory-app",
+            "id": "b025d002-04d4-444f-aa98-57d812650371",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/application:Application",
+            "name": "linkwarden-app",
+            "id": "6890b5e8-c5f9-47d3-8fcd-00c36e392dfe",
+            "version": "2026.2.0"
+        },
+        {
+            "type": "authentik:index/application:Application",
+            "name": "hermes-app",
+            "id": "508043a7-0628-42e1-95d9-cbaa0acbfabf",
+            "parent": "hermes-agent",
+            "version": "2026.2.0"
+        }
+    ]
+}

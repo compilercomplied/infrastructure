@@ -79,7 +79,7 @@ export function createAuthentikOpenId(args: AuthentikOpenIdArgs) {
     protocolProvider: provider.id.apply(id => parseInt(id)),
     metaLaunchUrl: args.launchUrl,
     metaPublisher: "GDario Labs",
-  }, { parent, aliases });
+  }, { parent, aliases, replaceOnChanges: ["metaLaunchUrl"], deleteBeforeReplace: true });
 
   return { provider, app };
 }

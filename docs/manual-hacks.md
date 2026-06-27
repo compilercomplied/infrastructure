@@ -114,3 +114,132 @@ Instead of writing a complex Kubernetes Job to handle idempotency, we manually e
 kubectl exec -n selfhosted statefulset/shared-postgres -- psql -U postgres -f /docker-entrypoint-initdb.d/03-init-linkwarden.sql
 ```
 
+
+
+---
+
+## 🏠 Local Cluster Migration (Hetzner → Baremetal)
+
+This section documents the manual steps, quirks, and known limitations discovered during the migration from the Hetzner VPS to the homelab `baremetal` cluster.
+
+### 1. Two-Phase `pulumi up` (Bootstrap Mode)
+
+Pulumi providers for Authentik and Grafana attempt to connect to those services at plan time. Since those services cannot be running before the cluster exists, the first `pulumi up` will always deadlock unless bootstrap mode is enabled.
+
+**The required two-phase approach:**
+
+**Phase 1 — Bootstrap (cluster shell only):**
+```bash
+# Set bootstrapMode: true in iac/index.ts (or the relevant stack config) to skip
+# Authentik/Grafana provider resources that require live services.
+pulumi up --stack local --cwd iac
+```
+
+**Phase 2 — Full deployment (after restore):**
+```bash
+# Set bootstrapMode: false and run again to wire up SSO/OIDC integrations.
+pulumi up --stack local --cwd iac
+```
+
+> [!IMPORTANT]
+> `bootstrapMode` is currently a hardcoded boolean in `iac/index.ts`, not a Pulumi stack config value. A future improvement would be to expose it as `pulumi config set selfhosted:bootstrapMode true` so it can be toggled without a code change.
+
+---
+
+### 2. Disaster Recovery: `restore-cluster.sh`
+
+The [restore-cluster.sh](file:///Users/gdario/code/infrastructure/scripts/restore-cluster.sh) script is the single automated entry point for hydrating a fresh cluster from the Restic/R2 backups. Run it once after Phase 1 `pulumi up` and before Phase 2.
+
+```bash
+./scripts/restore-cluster.sh
+```
+
+#### Known Quirks
+
+**a) Interactive "press enter" prompts during PVC restoration**
+
+The PVC restore phase uses `kubectl run --attach` to stream restic output. When the container starts faster than the attach handshake, `kubectl` prints:
+
+```
+warning: couldn't attach to pod/..., falling back to streaming logs
+If you don't see a command prompt, try pressing enter.
+```
+
+This is cosmetic noise — the restore is running correctly in the background. The script requires a human to press Enter at each PVC boundary to unblock the next iteration. This is a limitation of `kubectl run --attach` and not a sign of failure.
+
+**Workaround to avoid this in the future:** replace `--attach=true --rm=true` with a `kubectl wait --for=condition=Succeeded` poll loop after `kubectl run --restart=Never`, which avoids the interactive attach entirely.
+
+**b) Database restores use `kubectl exec` into StatefulSet pods**
+
+Database restoration runs directly inside `shared-postgres-0` and `grimmory-db-0` via `kubectl exec`. Restic is bootstrapped inside those pods at restore time (downloaded from GitHub) and is **not** cleaned up afterward. The binary persists in `/usr/local/bin/restic` until the pod is recycled.
+
+This is intentional — the restore is a one-time migration operation and the pods will eventually restart, cleaning up the ephemeral binary.
+
+**c) The script is destructive by design**
+
+`restore-cluster.sh` drops and recreates each database before restoring. Running it twice will destroy any data written between runs. It is intended to be run exactly once per migration, against a fresh cluster.
+
+---
+
+### 3. MariaDB 11.x Binary Rename
+
+MariaDB 11.4 renamed its client binary from `mysql` to `mariadb`. Any scripts or documentation referencing the old binary name will fail silently with `command not found`. This affects the backup CronJob, the restore script, and any manual debugging commands.
+
+**Correct client for `grimmory-db` (MariaDB 11.4+):**
+```bash
+# Connect as root
+kubectl exec -n selfhosted statefulset/grimmory-db -- mariadb -u root -p
+
+# Run a one-liner
+kubectl exec -n selfhosted statefulset/grimmory-db -- \
+  mariadb -u grimmory -p"$GRIMMORY_DB_PASS" grimmory -e "SHOW TABLES;"
+```
+
+---
+
+### 4. Restic Tag Filtering: AND vs OR Semantics
+
+When using `restic dump` or `restic restore` with multiple `--tag` flags, restic uses **OR** semantics — it matches any snapshot that has *at least one* of the specified tags. This resolves to the most recent snapshot globally, not necessarily the one you want.
+
+Use **comma-separated** tags within a single `--tag` flag to enforce **AND** semantics (all tags must be present):
+
+```bash
+# WRONG — resolves to the latest snapshot with ANY of these tags (could be a PVC backup)
+restic dump --tag database --tag postgres --tag tandoor-recipes latest tandoor.sql
+
+# CORRECT — resolves to the latest snapshot that has ALL three tags
+restic dump --tag database,postgres,tandoor-recipes latest tandoor.sql
+```
+
+---
+
+### 5. Local DNS Resolution & TLS Skip Verification
+
+Because `.home.arpa` domains only exist inside the cluster DNS, the local machine running the Pulumi CLI cannot resolve them or verify their TLS certificates by default.
+
+**a) Local `/etc/hosts` Setup**
+Map the domain names to the Traefik LoadBalancer/Node IP (`192.168.50.200`):
+```bash
+sudo sh -c 'echo "192.168.50.200 auth.home.arpa tandoor.home.arpa linkwarden.home.arpa grimmory.home.arpa syncthing.home.arpa grafana.home.arpa hermes.home.arpa" >> /etc/hosts'
+```
+
+**b) Bypassing TLS Verification**
+- **Authentik Provider:** Pass `authentik:insecure` in Pulumi config:
+  ```bash
+  pulumi config set authentik:insecure true --cwd iac --stack local
+  ```
+- **Grafana Provider:** The code defines an explicit provider constructor (in `iac/selfhosted/grafana-mcp.ts`). Ensure `insecureSkipVerify: true` is passed to the `grafana.Provider` instantiation.
+
+---
+
+### 6. Authentik `pulumi import` ID Schema
+
+When importing existing Authentik configurations into Pulumi after a database restore, the import ID schema varies by resource type. Using an incorrect format causes 404s, resulting in Pulumi deleting the resources from the state.
+
+- **Users:** Internal database primary key (integer ID, e.g. `5` or `7`).
+- **Groups:** UUID of the group (e.g. `ddfca622-8554-47ad-b03c-a7f42c6dc8aa`).
+- **OAuth2 Providers:** Internal database primary key (integer ID, e.g. `4` or `6`).
+- **Proxy Providers:** Internal database primary key (integer ID, e.g. `8`).
+- **Applications:** The **slug** of the application (e.g. `grimmory`, `syncthing`), **not** the UUID.
+- **OAuth Sources:** The **slug** of the source (e.g. `google`), **not** the UUID.
+

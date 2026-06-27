@@ -4,6 +4,7 @@ import * as pulumi from "@pulumi/pulumi";
 export function configureCertManager() {
     const config = new pulumi.Config("selfhosted");
     const acmeEmail = config.require("acmeEmail");
+    const cloudflareToken = config.requireSecret("cloudflareApiToken");
 
     // Define the cert-manager namespace
     const namespace = new k8s.core.v1.Namespace("cert-manager", {
@@ -20,6 +21,24 @@ export function configureCertManager() {
         },
         values: {
             installCRDs: true, // Crucial to register ClusterIssuer and Certificate CRDs
+            extraArgs: [
+                "--dns01-recursive-nameservers-only",
+                "--dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53"
+            ]
+        },
+    }, { dependsOn: namespace });
+
+    // Get the cert-manager-webhook deployment resource to wait for its physical readiness
+    const webhookDeployment = certManagerChart.getResource("apps/v1/Deployment", "cert-manager/cert-manager-webhook");
+
+    // Create the Cloudflare API token Kubernetes secret in the cert-manager namespace
+    const cloudflareSecret = new k8s.core.v1.Secret("cloudflare-api-token-secret", {
+        metadata: {
+            name: "cloudflare-api-token-secret",
+            namespace: namespace.metadata.name,
+        },
+        stringData: {
+            "api-token": cloudflareToken,
         },
     }, { dependsOn: namespace });
 
@@ -39,16 +58,19 @@ export function configureCertManager() {
                 },
                 solvers: [
                     {
-                        http01: {
-                            ingress: {
-                                class: "traefik",
+                        dns01: {
+                            cloudflare: {
+                                apiTokenSecretRef: {
+                                    name: "cloudflare-api-token-secret",
+                                    key: "api-token",
+                                },
                             },
                         },
                     },
                 ],
             },
         },
-    }, { dependsOn: certManagerChart });
+    }, { dependsOn: [certManagerChart, webhookDeployment, cloudflareSecret] });
 
     return {
         namespace: namespace.metadata.name,

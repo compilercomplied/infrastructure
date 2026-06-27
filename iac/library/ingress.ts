@@ -90,7 +90,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncr
       name: `${name}-ingress`,
       namespace,
       annotations: {
-        "cert-manager.io/cluster-issuer": "letsencrypt-prod",
+        ...(host.endsWith(".home.arpa") ? {} : { "cert-manager.io/cluster-issuer": "letsencrypt-prod" }),
         "traefik.ingress.kubernetes.io/router.entrypoints": "websecure",
         "traefik.ingress.kubernetes.io/router.tls": "true",
         ...extraAnnotations,

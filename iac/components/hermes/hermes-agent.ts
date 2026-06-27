@@ -45,20 +45,27 @@ export class HermesAgent extends pulumi.ComponentResource {
     // (which was the root stack). This preserves resource URNs.
     const componentAlias = { parent: pulumi.rootStackResource };
 
-    // 1. Create OIDC Provider and Application in Authentik using library wrapper
-    const sso = createAuthentikOpenId({
-      name: "Hermes Agent",
-      slug: "hermes",
-      clientId: "hermes-client-id",
-      clientSecret: hermesSecret,
-      clientType: "public",
-      redirectUris: [`https://${host}/auth/callback`],
-      launchUrl: `https://${host}`,
-      parent: this,
-      aliases: [componentAlias],
-    });
-    this.provider = sso.provider;
-    this.app = sso.app;
+    // 1. Create OIDC Provider and Application in Authentik using library wrapper (if not bootstrapping)
+    const bootstrapMode = new pulumi.Config("selfhosted").getBoolean("bootstrapMode") || false;
+    let sso: any;
+    if (!bootstrapMode) {
+      sso = createAuthentikOpenId({
+        name: "Hermes Agent",
+        slug: "hermes",
+        clientId: "hermes-client-id",
+        clientSecret: hermesSecret,
+        clientType: "public",
+        redirectUris: [`https://${host}/auth/callback`],
+        launchUrl: `https://${host}`,
+        parent: this,
+        aliases: [componentAlias],
+      });
+      this.provider = sso.provider;
+      this.app = sso.app;
+    } else {
+      this.provider = undefined;
+      this.app = undefined;
+    }
 
     // 2. Kubernetes Persistent Volume Claim
     const pvc = createPVC({

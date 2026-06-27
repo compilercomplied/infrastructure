@@ -72,6 +72,24 @@ export function configureSyncthing(
       },
     ],
     middlewares: [pulumi.interpolate`${namespace}-${authMiddleware.metadata.name}@kubernetescrd`],
+    affinity: {
+      podAffinity: {
+        requiredDuringSchedulingIgnoredDuringExecution: [
+          {
+            labelSelector: {
+              matchExpressions: [
+                {
+                  key: "app",
+                  operator: "In",
+                  values: ["grimmory"],
+                },
+              ],
+            },
+            topologyKey: "kubernetes.io/hostname",
+          },
+        ],
+      },
+    },
     dependencies: [...dependencies, authMiddleware],
   });
 

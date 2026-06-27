@@ -133,7 +133,7 @@ export function configureAuthentikResources(
     internalHostSslValidation: true,
     accessTokenValidity: "minutes=10",
     refreshTokenValidity: "days=30",
-  });
+  }, { replaceOnChanges: ["externalHost"], deleteBeforeReplace: true });
 
   const syncthingApp = new authentik.Application("syncthing", {
     name: "Syncthing",
@@ -141,7 +141,7 @@ export function configureAuthentikResources(
     protocolProvider: syncthingProvider.id.apply(id => parseInt(id)),
     metaLaunchUrl: "https://syncthing.gdario.dev",
     metaPublisher: "GDario Labs",
-  });
+  }, { replaceOnChanges: ["metaLaunchUrl"], deleteBeforeReplace: true });
 
   const embeddedOutpost = authentik.getOutpostOutput({ name: "authentik Embedded Outpost" });
   new authentik.OutpostProviderAttachment("syncthing-outpost-attachment", {
