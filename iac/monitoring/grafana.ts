@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "../library/ingress";
+import { createBackupJob } from "../maintenance/backup";
 
 /**
  * Standalone Grafana Visualization Layer
@@ -26,7 +27,7 @@ export function configureGrafana(
       assertNoLeakedSecrets: false,
       adminPassword: adminPassword,
       persistence: { enabled: true, size: "10Gi", storageClassName: "local-path" },
-      
+
       plugins: [
         "grafana-lokiexplore-app"
       ],
@@ -82,7 +83,7 @@ export function configureGrafana(
               jsonData: {
                 maxLines: 1000,
               },
-            },          ],
+            },],
         },
       },
       sidecar: {
@@ -108,6 +109,18 @@ export function configureGrafana(
     host: "grafana.gdario.dev",
     serviceName: "grafana",
     servicePort: 80,
+    dependencies: [grafana],
+  });
+
+  // Back up the Grafana SQLite database and dashboard configuration files
+  createBackupJob({
+    appName: "grafana",
+    namespace: namespace,
+    source: {
+      type: "pvc",
+      pvcName: "grafana",
+      mountPath: "/var/lib/grafana",
+    },
     dependencies: [grafana],
   });
 
