@@ -6,7 +6,6 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "@pulumi/authentik": "file:sdks/authentik",
         "@pulumi/kubernetes": "^4.0.0",
         "@pulumi/pulumi": "^3.113.0",
         "@pulumiverse/grafana": "^2.32.0"

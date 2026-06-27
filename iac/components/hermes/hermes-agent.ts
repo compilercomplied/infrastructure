@@ -6,7 +6,6 @@ import { createBackupJob } from "../../maintenance/backup";
 import { createPVC } from "../../library/k8s-pvc";
 import { getAuthorizedUsers } from "../../selfhosted/users";
 import { createLetsEncryptIngress } from "../../library/ingress";
-import { createAuthentikOpenId } from "../../library/authentik";
 import { Labels } from "../../selfhosted/labels";
 
 export interface HermesAgentArgs {
@@ -24,8 +23,6 @@ export class HermesAgent extends pulumi.ComponentResource {
   public readonly service: k8s.core.v1.Service;
   public readonly ingress: k8s.networking.v1.Ingress;
   public readonly apiIngress: k8s.networking.v1.Ingress;
-  public readonly provider: any;
-  public readonly app: any;
   public readonly dataBackup: k8s.batch.v1.CronJob;
 
   constructor(name: string, args: HermesAgentArgs, opts?: pulumi.ComponentResourceOptions) {
@@ -44,28 +41,6 @@ export class HermesAgent extends pulumi.ComponentResource {
     // this refactoring, we define an alias mapping that points to the previous parent
     // (which was the root stack). This preserves resource URNs.
     const componentAlias = { parent: pulumi.rootStackResource };
-
-    // 1. Create OIDC Provider and Application in Authentik using library wrapper (if not bootstrapping)
-    const bootstrapMode = new pulumi.Config("selfhosted").getBoolean("bootstrapMode") || false;
-    let sso: any;
-    if (!bootstrapMode) {
-      sso = createAuthentikOpenId({
-        name: "Hermes Agent",
-        slug: "hermes",
-        clientId: "hermes-client-id",
-        clientSecret: hermesSecret,
-        clientType: "public",
-        redirectUris: [`https://${host}/auth/callback`],
-        launchUrl: `https://${host}`,
-        parent: this,
-        aliases: [componentAlias],
-      });
-      this.provider = sso.provider;
-      this.app = sso.app;
-    } else {
-      this.provider = undefined;
-      this.app = undefined;
-    }
 
     // 2. Kubernetes Persistent Volume Claim
     const pvc = createPVC({

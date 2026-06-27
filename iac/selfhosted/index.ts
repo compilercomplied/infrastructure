@@ -3,7 +3,6 @@ import * as pulumi from "@pulumi/pulumi";
 import { configureSharedPostgres } from "./shared-postgres";
 import { configureTandoorRecipes } from "./tandoor-recipes";
 import { configureAuthentik } from "./authentik";
-import { configureAuthentikResources } from "./authentik-resources";
 import { configureLinkwarden } from "./linkwarden";
 import { HermesAgent } from "../components/hermes/hermes-agent";
 import { configureTandoorMcp } from "./tandoor-mcp";
@@ -56,11 +55,6 @@ export function configureSelfhosted() {
     dependencies: [postgres],
   });
 
-  const bootstrapMode = config.getBoolean("bootstrapMode") || false;
-
-  // Declarative SSO Applications & Providers configuration
-  const authentikResources = !bootstrapMode ? configureAuthentikResources(namespaceName) : undefined;
-
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
     dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, wireguard.deployment],
@@ -80,7 +74,6 @@ export function configureSelfhosted() {
     grimmory,
     grafanaMcp,
     hermes,
-    authentikResources,
     syncthing,
     filesystemMcp,
     wireguard,

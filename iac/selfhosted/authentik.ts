@@ -1,5 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import * as fs from "fs";
+import * as path from "path";
 import { createLetsEncryptIngress } from "../library/ingress";
 import { createPVC } from "../library/k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
@@ -15,6 +17,18 @@ export function configureAuthentik(
   const acmeEmail = config.requireSecret("acmeEmail");
   const authentikAdminPassword = config.requireSecret("authentikAdminPassword");
   const authentikRedisPassword = config.requireSecret("authentikRedisPassword");
+
+  // Read secrets needed for client OIDC credentials and user profiles in the blueprints.
+  // We manage these values centrally in Pulumi to ensure credential strength and consistency.
+  const tandooriSecret = config.requireSecret("tandoori-secret");
+  const linkwardenSecret = config.requireSecret("linkwarden-secret");
+  const grafanaSecret = config.requireSecret("grafana-secret");
+  const grimmorySecret = config.requireSecret("grimmory-secret");
+  const hermesSecret = config.requireSecret("hermesSecret");
+  const googleClientId = config.require("googleClientId");
+  const googleClientSecret = config.requireSecret("googleClientSecret");
+  const userGdarioEmail = config.requireSecret("user-gdario-email");
+  const userAndreaEmail = config.requireSecret("user-andrea-email");
 
   const name = "authentik";
   const image = "ghcr.io/goauthentik/server:2026.5.2";
@@ -44,6 +58,15 @@ export function configureAuthentik(
       "AUTHENTIK_BOOTSTRAP_PASSWORD": authentikAdminPassword,
       "AUTHENTIK_BOOTSTRAP_EMAIL": acmeEmail,
       "AUTHENTIK_REDIS__PASSWORD": authentikRedisPassword,
+      "AUTHENTIK_TANDOOR_CLIENT_SECRET": tandooriSecret,
+      "AUTHENTIK_LINKWARDEN_CLIENT_SECRET": linkwardenSecret,
+      "AUTHENTIK_GRAFANA_CLIENT_SECRET": grafanaSecret,
+      "AUTHENTIK_GRIMMORY_CLIENT_SECRET": grimmorySecret,
+      "AUTHENTIK_HERMES_CLIENT_SECRET": hermesSecret,
+      "AUTHENTIK_GOOGLE_CLIENT_ID": googleClientId,
+      "AUTHENTIK_GOOGLE_CLIENT_SECRET": googleClientSecret,
+      "AUTHENTIK_USER_GDARIO_EMAIL": userGdarioEmail,
+      "AUTHENTIK_USER_ANDREA_EMAIL": userAndreaEmail,
     },
   }, { dependsOn: dependencies });
 
@@ -144,7 +167,100 @@ export function configureAuthentik(
         },
       },
     },
+    {
+      name: "AUTHENTIK_TANDOOR_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_TANDOOR_CLIENT_SECRET",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_LINKWARDEN_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_LINKWARDEN_CLIENT_SECRET",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_GRAFANA_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_GRAFANA_CLIENT_SECRET",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_GRIMMORY_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_GRIMMORY_CLIENT_SECRET",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_HERMES_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_HERMES_CLIENT_SECRET",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_GOOGLE_CLIENT_ID",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_GOOGLE_CLIENT_ID",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_GOOGLE_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_GOOGLE_CLIENT_SECRET",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_USER_GDARIO_EMAIL",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_USER_GDARIO_EMAIL",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_USER_ANDREA_EMAIL",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_USER_ANDREA_EMAIL",
+        },
+      },
+    },
   ];
+
+  // Load the standalone declarative YAML blueprint and package it in a ConfigMap.
+  // This complies with the Tenets for Script Management (keeping blueprints out of code string blocks).
+  const blueprintsConfigMap = new k8s.core.v1.ConfigMap(`${name}-blueprints`, {
+    metadata: {
+      name: `${name}-blueprints`,
+      namespace,
+    },
+    data: {
+      "cluster-bootstrap.yaml": fs.readFileSync(path.join(__dirname, "templates", "authentik-blueprints.yaml"), "utf-8"),
+    },
+  }, { dependsOn: dependencies });
 
   const serverName = `${name}-server`;
   const serverDeployment = new k8s.apps.v1.Deployment(serverName, {
@@ -172,16 +288,18 @@ export function configureAuthentik(
             volumeMounts: [
               { name: "media", mountPath: "/media" },
               { name: "custom-templates", mountPath: "/templates" },
+              { name: "blueprints", mountPath: "/blueprints/custom" },
             ],
           }],
           volumes: [
             { name: "media", persistentVolumeClaim: { claimName: mediaPvc.metadata.name } },
             { name: "custom-templates", persistentVolumeClaim: { claimName: templatesPvc.metadata.name } },
+            { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
           ],
         },
       },
     },
-  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService] });
+  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap] });
 
   const serverService = new k8s.core.v1.Service(serverName, {
     metadata: {
@@ -219,16 +337,18 @@ export function configureAuthentik(
             volumeMounts: [
               { name: "media", mountPath: "/media" },
               { name: "custom-templates", mountPath: "/templates" },
+              { name: "blueprints", mountPath: "/blueprints/custom" },
             ],
           }],
           volumes: [
             { name: "media", persistentVolumeClaim: { claimName: mediaPvc.metadata.name } },
             { name: "custom-templates", persistentVolumeClaim: { claimName: templatesPvc.metadata.name } },
+            { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
           ],
         },
       },
     },
-  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService] });
+  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap] });
 
   const exposure = createLetsEncryptIngress({
     name,

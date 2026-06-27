@@ -1,0 +1,255 @@
+version: 1
+metadata:
+  name: cluster-bootstrap
+entries:
+  # ---------------------------------------------------------------------------
+  # Users & Groups
+  # ---------------------------------------------------------------------------
+
+  - model: authentik_core.user
+    identifiers:
+      username: gdario
+    attrs:
+      name: gdario
+      email: !Env AUTHENTIK_USER_GDARIO_EMAIL
+      is_active: true
+
+  - model: authentik_core.user
+    identifiers:
+      username: Andrea
+    attrs:
+      name: Andrea
+      email: !Env AUTHENTIK_USER_ANDREA_EMAIL
+      is_active: true
+
+  - model: authentik_core.group
+    identifiers:
+      name: hermes-users
+    attrs:
+      users:
+        - !Find [authentik_core.user, [username, gdario]]
+        - !Find [authentik_core.user, [username, Andrea]]
+
+  - model: authentik_core.group
+    identifiers:
+      name: grafana-admins
+    attrs:
+      users:
+        - !Find [authentik_core.user, [username, gdario]]
+
+  # ---------------------------------------------------------------------------
+  # Google OAuth Source
+  # ---------------------------------------------------------------------------
+  - model: authentik_sources_oauth.oauthsource
+    identifiers:
+      slug: google
+    attrs:
+      name: Google
+      provider_type: google
+      consumer_key: !Env AUTHENTIK_GOOGLE_CLIENT_ID
+      consumer_secret: !Env AUTHENTIK_GOOGLE_CLIENT_SECRET
+      access_token_url: https://oauth2.googleapis.com/token
+      authorization_url: https://accounts.google.com/o/oauth2/v2/auth
+      oidc_jwks_url: https://www.googleapis.com/oauth2/v3/certs
+      profile_url: https://openidconnect.googleapis.com/v1/userinfo
+      authentication_flow: !Find [authentik_flows.flow, [pk, a7c56c41-379d-417c-9885-f0d55e174317]]
+      enrollment_flow: null
+      user_matching_mode: email_link
+
+  # ---------------------------------------------------------------------------
+  # Tandoor Recipes SSO (OIDC)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_oauth2.oauth2provider
+    id: tandoor-provider
+    identifiers:
+      name: Tandoor Recipes SSO
+    attrs:
+      client_id: tandoor-recipes-client-id
+      client_secret: !Env AUTHENTIK_TANDOOR_CLIENT_SECRET
+      client_type: confidential
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://recipes.gdario.dev/accounts/oidc/authentik/login/callback/
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      access_token_validity: hours=1
+      refresh_token_validity: days=30
+
+  - model: authentik_core.application
+    identifiers:
+      slug: tandoor-recipes
+    attrs:
+      name: Tandoor Recipes
+      provider: !KeyOf tandoor-provider
+      meta_launch_url: https://recipes.gdario.dev
+      meta_publisher: GDario Labs
+
+  # ---------------------------------------------------------------------------
+  # Linkwarden SSO (OIDC)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_oauth2.oauth2provider
+    id: linkwarden-provider
+    identifiers:
+      name: Linkwarden SSO
+    attrs:
+      client_id: linkwarden-client-id
+      client_secret: !Env AUTHENTIK_LINKWARDEN_CLIENT_SECRET
+      client_type: confidential
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://linkwarden.gdario.dev/api/v1/auth/callback/authentik
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      access_token_validity: hours=1
+      refresh_token_validity: days=30
+
+  - model: authentik_core.application
+    identifiers:
+      slug: linkwarden
+    attrs:
+      name: Linkwarden
+      provider: !KeyOf linkwarden-provider
+      meta_launch_url: https://linkwarden.gdario.dev
+      meta_publisher: GDario Labs
+
+  # ---------------------------------------------------------------------------
+  # Grafana SSO (OIDC)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_oauth2.oauth2provider
+    id: grafana-provider
+    identifiers:
+      name: Grafana SSO
+    attrs:
+      client_id: grafana-client-id
+      client_secret: !Env AUTHENTIK_GRAFANA_CLIENT_SECRET
+      client_type: confidential
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://grafana.gdario.dev/login/generic_oauth
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      access_token_validity: hours=1
+      refresh_token_validity: days=30
+
+  - model: authentik_core.application
+    identifiers:
+      slug: grafana
+    attrs:
+      name: Grafana
+      provider: !KeyOf grafana-provider
+      meta_launch_url: https://grafana.gdario.dev
+      meta_publisher: GDario Labs
+
+  # ---------------------------------------------------------------------------
+  # Grimmory SSO (OIDC)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_oauth2.oauth2provider
+    id: grimmory-provider
+    identifiers:
+      name: Grimmory SSO
+    attrs:
+      client_id: grimmory-client-id
+      client_secret: !Env AUTHENTIK_GRIMMORY_CLIENT_SECRET
+      client_type: confidential
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://grimmory.gdario.dev/oauth2-callback
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      access_token_validity: hours=1
+      refresh_token_validity: days=30
+
+  - model: authentik_core.application
+    identifiers:
+      slug: grimmory
+    attrs:
+      name: Grimmory
+      provider: !KeyOf grimmory-provider
+      meta_launch_url: https://grimmory.gdario.dev
+      meta_publisher: GDario Labs
+
+  # ---------------------------------------------------------------------------
+  # Hermes Agent SSO (OIDC)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_oauth2.oauth2provider
+    id: hermes-provider
+    identifiers:
+      name: Hermes Agent SSO
+    attrs:
+      client_id: hermes-client-id
+      client_secret: !Env AUTHENTIK_HERMES_CLIENT_SECRET
+      client_type: public
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://hermes.gdario.dev/auth/callback
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      access_token_validity: hours=1
+      refresh_token_validity: days=30
+
+  - model: authentik_core.application
+    identifiers:
+      slug: hermes
+    attrs:
+      name: Hermes Agent
+      provider: !KeyOf hermes-provider
+      meta_launch_url: https://hermes.gdario.dev
+      meta_publisher: GDario Labs
+
+  # ---------------------------------------------------------------------------
+  # Syncthing SSO (Forward Proxy)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_proxy.proxyprovider
+    id: syncthing-provider
+    identifiers:
+      name: Syncthing SSO
+    attrs:
+      external_host: https://syncthing.gdario.dev
+      mode: forward_single
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      intercept_header_auth: true
+      access_token_validity: minutes=10
+      refresh_token_validity: days=30
+
+  - model: authentik_core.application
+    identifiers:
+      slug: syncthing
+    attrs:
+      name: Syncthing
+      provider: !KeyOf syncthing-provider
+      meta_launch_url: https://syncthing.gdario.dev
+      meta_publisher: GDario Labs
+
+  # Attach the Syncthing proxy provider to the Embedded Outpost
+  - model: authentik_outposts.outpost
+    identifiers:
+      name: authentik Embedded Outpost
+    attrs:
+      providers:
+        - !KeyOf syncthing-provider
