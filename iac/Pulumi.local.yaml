@@ -75,3 +75,15 @@ config:
     secure: v1:KPOwOrdSP6GxZP+B:BwhkePXcEa8p7bEHpwAk6j7l3i860kDkJV5yyEF6LmvzqG8P1TITJKI8FpSJ+hQa
   selfhosted:authentikRedisPassword:
     secure: v1:8vxIhfqylXKZnJVo:WdH1BdgkJjSFwHysMJ0lMVvGSDVGzeK6x4RAv9zsl2Z2NitdWV2mcdvD3Nt5DivI
+  selfhosted:wgEasyPassword:
+    secure: v1:3bjEtBIkkx8cY9Ko:yXQVdo7xQrHVFrVocxKtSfv7Pv+aAoOQpTZasxQQ/LSAZBlSpIGE9d3ap1iA2ILt
+  selfhosted:wgEasyPasswordHash:
+    secure: v1:r4MWoFgP/KC7QzuO:vDZtGx7JyMRzyRf5Oh8IOvIccEDsD1B8YUW21LkmXNnuMQkSTF188O86hAeeORiYsXV1u1RXJJCwyJs+6oqEausTt6BiBzbPLs7Gwg==
+  selfhosted:vpnServerPrivateKey:
+    secure: v1:4Od6Dv8LvyNxAWWo:jmmvYU8snYopQjjYSSVHrEzIja2EYBPfvcxqU/qfFJSRxtqGPVQGGKoqbtCN870x1/G8FXYxgz8iStGI
+  selfhosted:vpnServerPublicKey:
+    secure: v1:rDqoKwptKAsk/WcV:c4Bq7lq+5Ah6fxNw6No4OTZSK96GMCwR6nHkWJyMqn1ZnuoLAXqx9UkSQ0AkpU5XLpa0BgEpKnsmV8dz
+  selfhosted:vpnClientPrivateKey:
+    secure: v1:dXiAAsylPdmSmX/n:v30+nJrDyuYmib9ebAk6jpzaDLgjExcItslFIJiHRKIjz8zix2d0iXjyuRBnZxc9iErILm93aGe01cNR
+  selfhosted:vpnClientPublicKey:
+    secure: v1:E52Ur7G62yOc1DyY:C+bdFXwUVqqmroyKlhCEteFDdFbMw6Y9+thq5d3oRcSe0qWvNGKuTm9v7G+TiwCSIkY3thOKo2Fdxgmn

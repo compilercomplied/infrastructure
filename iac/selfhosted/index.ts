@@ -12,6 +12,7 @@ import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureSyncthing } from "./syncthing";
 import { configureFilesystemMcp } from "./filesystem-mcp";
 import { configureNamespaceSecurity } from "./security";
+import { configureWireguard } from "./wireguard";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -46,12 +47,17 @@ export function configureSelfhosted() {
     dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service, filesystemMcp.service],
   });
 
+  const wireguard = configureWireguard("wireguard", {
+    namespace: namespaceName,
+    dependencies: [postgres],
+  });
+
   // Declarative SSO Applications & Providers configuration
   const authentikResources = configureAuthentikResources(namespaceName);
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment],
+    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, wireguard.deployment],
   });
 
   return {
@@ -67,6 +73,7 @@ export function configureSelfhosted() {
     authentikResources,
     syncthing,
     filesystemMcp,
+    wireguard,
     defaultDeny: security.defaultDeny,
     allowMonitoringScrape: security.allowMonitoringScrape,
     allowCertManagerSolver: security.allowCertManagerSolver,

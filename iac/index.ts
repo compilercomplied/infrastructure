@@ -14,6 +14,7 @@ configureMonitoring();
 // configureTailscale();
 configureCertManager();
 configureMaintenance();
-configureSelfhosted();
+const selfhosted = configureSelfhosted();
+export const clientVpnConfig = selfhosted.wireguard.clientConfig;
 
 
