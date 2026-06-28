@@ -72,5 +72,13 @@ if ! su-exec git forgejo admin user list | grep -q "[[:space:]]dario[[:space:]]"
     --admin
 fi
 
+# Ensure Gitea API access token exists for the MCP server.
+if [ ! -f /data/gitea/hermes-token.txt ]; then
+  echo "Generating access token for dario..."
+  token=$(su-exec git forgejo admin user generate-access-token --username dario --token-name hermes-mcp --raw)
+  echo "$token" > /data/gitea/hermes-token.txt
+  chown git:git /data/gitea/hermes-token.txt
+fi
+
 # Wait for the background Forgejo web process to keep the container running
 wait $pid

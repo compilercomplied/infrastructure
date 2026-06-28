@@ -18,6 +18,12 @@ mcp_servers:
   filesystem:
     url: "http://filesystem-mcp.selfhosted.svc.cluster.local:3000/sse"
     transport: "sse"
+  kubernetes:
+    url: "http://kubernetes-mcp.selfhosted.svc.cluster.local:8000/sse"
+    transport: "sse"
+  forgejo:
+    url: "http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse"
+    transport: "sse"
 skills:
   disabled:
     - airtable

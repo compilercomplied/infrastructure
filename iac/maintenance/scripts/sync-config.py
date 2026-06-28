@@ -76,6 +76,56 @@ else:
                 content += "\nmcp_servers:\n  filesystem:\n    url: http://filesystem-mcp.selfhosted.svc.cluster.local:3000/sse\n    transport: sse\n"
                 print("Successfully appended mcp_servers block with filesystem-mcp to persistent configuration.")
 
+        # Check if kubernetes mcp server is configured
+        if "kubernetes-mcp.selfhosted.svc.cluster.local" not in content:
+            # We insert the kubernetes MCP config under mcp_servers:
+            lines = content.splitlines()
+            mcp_index = -1
+            for i, line in enumerate(lines):
+                if line.strip().startswith("mcp_servers:"):
+                    mcp_index = i
+                    break
+            
+            if mcp_index != -1:
+                # Insert the kubernetes definition right under mcp_servers:
+                kubernetes_config = [
+                    "  kubernetes:",
+                    "    url: http://kubernetes-mcp.selfhosted.svc.cluster.local:8000/sse",
+                    "    transport: sse"
+                ]
+                lines = lines[:mcp_index + 1] + kubernetes_config + lines[mcp_index + 1:]
+                content = "\n".join(lines) + "\n"
+                print("Successfully added kubernetes-mcp to persistent configuration.")
+            else:
+                # If mcp_servers block was missing entirely, append it
+                content += "\nmcp_servers:\n  kubernetes:\n    url: http://kubernetes-mcp.selfhosted.svc.cluster.local:8000/sse\n    transport: sse\n"
+                print("Successfully appended mcp_servers block with kubernetes-mcp to persistent configuration.")
+
+        # Check if forgejo mcp server is configured
+        if "forgejo-mcp.selfhosted.svc.cluster.local" not in content:
+            # We insert the forgejo MCP config under mcp_servers:
+            lines = content.splitlines()
+            mcp_index = -1
+            for i, line in enumerate(lines):
+                if line.strip().startswith("mcp_servers:"):
+                    mcp_index = i
+                    break
+            
+            if mcp_index != -1:
+                # Insert the forgejo definition right under mcp_servers:
+                forgejo_config = [
+                    "  forgejo:",
+                    "    url: http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse",
+                    "    transport: sse"
+                ]
+                lines = lines[:mcp_index + 1] + forgejo_config + lines[mcp_index + 1:]
+                content = "\n".join(lines) + "\n"
+                print("Successfully added forgejo-mcp to persistent configuration.")
+            else:
+                # If mcp_servers block was missing entirely, append it
+                content += "\nmcp_servers:\n  forgejo:\n    url: http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse\n    transport: sse\n"
+                print("Successfully appended mcp_servers block with forgejo-mcp to persistent configuration.")
+
         with open(dest_path, "w") as f:
             f.write(content)
 

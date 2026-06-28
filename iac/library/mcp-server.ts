@@ -17,6 +17,7 @@ export interface MCPServerArgs {
   containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
   affinity?: k8s.types.input.core.v1.Affinity;
   labels?: Record<string, string>;
+  serviceAccountName?: pulumi.Input<string>;
 }
 
 export interface MCPServerResult {
@@ -84,6 +85,7 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
           labels: { app: name, ...labels },
         },
         spec: {
+          serviceAccountName: args.serviceAccountName,
           securityContext: args.securityContext,
           affinity: args.affinity,
           containers: [{
