@@ -25,6 +25,7 @@ export function configureAuthentik(
   const grafanaSecret = config.requireSecret("grafana-secret");
   const grimmorySecret = config.requireSecret("grimmory-secret");
   const hermesSecret = config.requireSecret("hermesSecret");
+  const forgejoSecret = config.requireSecret("forgejo-secret");
   const googleClientId = config.require("googleClientId");
   const googleClientSecret = config.requireSecret("googleClientSecret");
   const userGdarioEmail = config.requireSecret("user-gdario-email");
@@ -63,6 +64,7 @@ export function configureAuthentik(
       "AUTHENTIK_GRAFANA_CLIENT_SECRET": grafanaSecret,
       "AUTHENTIK_GRIMMORY_CLIENT_SECRET": grimmorySecret,
       "AUTHENTIK_HERMES_CLIENT_SECRET": hermesSecret,
+      "AUTHENTIK_FORGEJO_CLIENT_SECRET": forgejoSecret,
       "AUTHENTIK_GOOGLE_CLIENT_ID": googleClientId,
       "AUTHENTIK_GOOGLE_CLIENT_SECRET": googleClientSecret,
       "AUTHENTIK_USER_GDARIO_EMAIL": userGdarioEmail,
@@ -245,6 +247,15 @@ export function configureAuthentik(
         secretKeyRef: {
           name: secrets.metadata.name,
           key: "AUTHENTIK_USER_ANDREA_EMAIL",
+        },
+      },
+    },
+    {
+      name: "AUTHENTIK_FORGEJO_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_FORGEJO_CLIENT_SECRET",
         },
       },
     },

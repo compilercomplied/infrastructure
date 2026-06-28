@@ -11,6 +11,7 @@ export interface VolumeConfig {
   accessModes?: string[]; // defaults to ["ReadWriteOnce"]
   pvcName?: string; // custom name to map to existing persistent volume claims
   external?: boolean; // if true, does not create the PVC resource, assuming it is declared elsewhere
+  configMap?: k8s.types.input.core.v1.ConfigMapVolumeSource;
 }
 
 export interface IngressRuleConfig {
@@ -44,6 +45,11 @@ export type SelfhostedAppArgs = {
   affinity?: k8s.types.input.core.v1.Affinity;
   labels?: Record<string, string>;
   allowIngressFrom?: IngressRuleConfig[];
+  command?: string[];
+  args?: string[];
+  strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
+  readinessProbe?: k8s.types.input.core.v1.Probe;
+  livenessProbe?: k8s.types.input.core.v1.Probe;
 } & ExposeConfig;
 
 // Configures standard Kubernetes resources for self-hosted apps to eliminate boilerplate.
@@ -60,6 +66,8 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
     volumes,
     dependencies = [],
     labels = {},
+    command,
+    args: containerArgs,
   } = args;
 
   let secretResource: k8s.core.v1.Secret | undefined;
@@ -90,26 +98,33 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
   // Automates volume provision and mounting parameters. Each volume gets a unique PVC.
   if (volumes) {
     for (const vol of volumes) {
-      const pvcName = vol.pvcName || `${name}-${vol.name}-pvc`;
-      
-      if (!vol.external) {
-        const pvc = createPVC({
-          name: pvcName,
-          namespace,
-          size: vol.size,
-          storageClassName: vol.storageClassName,
-          accessModes: vol.accessModes,
-          dependencies,
+      if (vol.configMap) {
+        k8sVolumes.push({
+          name: vol.name,
+          configMap: vol.configMap,
         });
-        pvcs.push(pvc);
-      }
+      } else {
+        const pvcName = vol.pvcName || `${name}-${vol.name}-pvc`;
+        
+        if (!vol.external) {
+          const pvc = createPVC({
+            name: pvcName,
+            namespace,
+            size: vol.size,
+            storageClassName: vol.storageClassName,
+            accessModes: vol.accessModes,
+            dependencies,
+          });
+          pvcs.push(pvc);
+        }
 
-      k8sVolumes.push({
-        name: vol.name,
-        persistentVolumeClaim: {
-          claimName: pvcName,
-        },
-      });
+        k8sVolumes.push({
+          name: vol.name,
+          persistentVolumeClaim: {
+            claimName: pvcName,
+          },
+        });
+      }
 
       k8sVolumeMounts.push({
         name: vol.name,
@@ -130,6 +145,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
     },
     spec: {
       replicas: 1,
+      strategy: args.strategy,
       selector: {
         matchLabels: { app: name },
       },
@@ -145,6 +161,10 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
             envFrom,
             env,
             volumeMounts: k8sVolumeMounts,
+            command,
+            args: containerArgs,
+            readinessProbe: args.readinessProbe,
+            livenessProbe: args.livenessProbe,
           }],
           volumes: k8sVolumes,
           affinity: args.affinity,
