@@ -35,16 +35,20 @@ TANDOOR_DB_PASS=$(pulumi config get selfhosted:tandoorDbPassword --cwd iac --sta
 AUTHENTIK_DB_PASS=$(pulumi config get selfhosted:authentikDbPassword --cwd iac --stack local)
 LINKWARDEN_DB_PASS=$(pulumi config get selfhosted:linkwardenDbPassword --cwd iac --stack local)
 GRIMMORY_DB_PASS=$(pulumi config get selfhosted:grimmoryDbPassword --cwd iac --stack local)
+FORGEJO_DB_PASS=$(pulumi config get selfhosted:forgejoDbPassword --cwd iac --stack local)
 # MariaDB root password is the same as the user password (by design in grimmory.ts).
 MARIADB_ROOT_PASS="$GRIMMORY_DB_PASS"
 
 # ==========================================
 # 0. SCALE DOWN APPS
 # ==========================================
-echo "=== Phase 0: Scaling down apps to quiesce DB connections ==="
-kubectl scale deployment authentik-server authentik-worker linkwarden tandoor-recipes grimmory -n selfhosted --replicas=0
-echo "Waiting 10s for connections to close..."
-sleep 10
+echo "=== Phase 0: Scaling down apps to quiesce DB connections and release PVC locks ==="
+# We scale down all deployments that mount PVCs. Scaling them down is necessary to release 
+# the locks on ReadWriteOnce (RWO) volumes, allowing the restore pods to mount them. It also 
+# prevents active applications from writing back in-memory configs and overwriting the restored files.
+kubectl scale deployment authentik-server authentik-worker linkwarden tandoor-recipes grimmory syncthing filesystem-mcp hermes-agent forgejo -n selfhosted --replicas=0
+echo "Waiting 15s for connections to close and PVCs to release..."
+sleep 15
 
 # ==========================================
 # 1. DATABASE RESTORATION PHASE
@@ -131,6 +135,7 @@ restore_postgres_db "tandoor-recipes" "tandoor" "tandoor" "$TANDOOR_DB_PASS"
 restore_postgres_db "authentik" "authentik" "authentik" "$AUTHENTIK_DB_PASS"
 restore_postgres_db "linkwarden" "linkwarden" "linkwarden" "$LINKWARDEN_DB_PASS"
 restore_mariadb_db "grimmory" "grimmory" "grimmory" "$GRIMMORY_DB_PASS"
+restore_postgres_db "forgejo" "forgejo" "forgejo" "$FORGEJO_DB_PASS"
 
 # ==========================================
 # 2. PERSISTENT VOLUME RESTORATION PHASE
@@ -191,11 +196,12 @@ restore_pvc_volume "grimmory" "grimmory-books-pvc" "/books"
 restore_pvc_volume "grimmory" "grimmory-data-pvc" "/app/data"
 restore_pvc_volume "syncthing" "syncthing-data-pvc" "/var/syncthing"
 restore_pvc_volume "hermes-agent" "hermes-agent-pvc" "/opt/data"
+restore_pvc_volume "forgejo" "forgejo-pvc" "/data"
 
 # ==========================================
 # 3. SCALE APPS BACK UP
 # ==========================================
 echo "=== Phase 3: Scaling apps back up ==="
-kubectl scale deployment authentik-server authentik-worker linkwarden tandoor-recipes grimmory -n selfhosted --replicas=1
+kubectl scale deployment authentik-server authentik-worker linkwarden tandoor-recipes grimmory syncthing filesystem-mcp hermes-agent forgejo -n selfhosted --replicas=1
 
 echo "=== Restoration Completed Successfully ==="
