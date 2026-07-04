@@ -93,3 +93,9 @@ config:
     secure: v1:k4YXpLr7ubmD21CE:ggvOlgaC3bM20avZzTV//knQAAXotMqSNbub1uQTQMMJPASB0cKCo7wb/USM5l7qEclQS0xx2fx7WnVv/hVwfA==
   selfhosted:forgejo-secret:
     secure: v1:Je98u7WflKYZcHQq:DvRz73inxk8VutYmn3foa/bUnLsNrLuULrTCorXQ2kJE0U91hBkImS8wcLezptNgr/wlk+EFmXH8STDhRxNw8/6/3cAfX/OIkkSpGLOXD4o=
+  selfhosted:karakeepNextAuthSecret:
+    secure: v1:wyhyf6C8QPeTx1tw:wL3Qflca3LaPlmkWyB/tqw+FeQ+50LCM37mnc/np1Ad6KPpaTQDLjNoiiCF75R5au1lu5L2TpJlC6lHdrZGKNQ==
+  selfhosted:karakeepMeiliMasterKey:
+    secure: v1:qLBK7EMBIkjj/D2F:1MveYgeqwqdwGeE4Sd7YKZO2N7L+QjqCgZ9czNxWxl+skGZ4p7ycvuC6JoFQZPy8/RjYGeBnvTsO61tHMw==
+  selfhosted:karakeep-secret:
+    secure: v1:ioeWsW/ni9tSerG1:Qtx9xmMImICmSUVr/50PDcH8a+4D8+QGZMD4igTx9ROVyUd8REvfSadjfktDGoZ6UhAZmvHvxDvTh8fVf3f4Qg==
