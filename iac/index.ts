@@ -5,6 +5,7 @@ import { configureAgents } from "./modules/agents";
 import { configureMaintenance } from "./modules/maintenance";
 import { configureSelfhosted } from "./selfhosted";
 import { configureCertManager } from "./modules/cert-manager";
+import { configureInfrastructure } from "./infrastructure";
 
 const { namespace } = configureAgents();
 
@@ -15,5 +16,6 @@ configureMonitoring();
 configureCertManager();
 configureMaintenance();
 const selfhosted = configureSelfhosted();
+const infrastructure = configureInfrastructure();
 
 

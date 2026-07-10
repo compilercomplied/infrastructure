@@ -4,6 +4,12 @@ import * as pulumi from "@pulumi/pulumi";
 export interface NamespaceSecurityArgs {
   namespace: pulumi.Input<string>;
   dependencies?: pulumi.Resource[];
+  namePrefix?: string;
+  aliases?: {
+    defaultDeny?: pulumi.Alias[];
+    monitoring?: pulumi.Alias[];
+    certManager?: pulumi.Alias[];
+  };
 }
 
 /**
@@ -12,11 +18,11 @@ export interface NamespaceSecurityArgs {
  * infrastructure integrations (e.g., Prometheus scraping, cert-manager solvers).
  */
 export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
-  const { namespace, dependencies = [] } = args;
+  const { namespace, dependencies = [], namePrefix = "", aliases = {} } = args;
 
   // Baseline zero-trust policy. Restricting lateral movement requires denying all ingress
   // by default, forcing components to explicitly declare their inbound permission rules.
-  const defaultDeny = new k8s.networking.v1.NetworkPolicy("default-deny-ingress", {
+  const defaultDeny = new k8s.networking.v1.NetworkPolicy(`${namePrefix}default-deny-ingress`, {
     metadata: {
       name: "default-deny-ingress",
       namespace,
@@ -25,11 +31,11 @@ export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
       podSelector: {}, // Empty matches all pods in the namespace
       policyTypes: ["Ingress"],
     },
-  }, { dependsOn: dependencies });
+  }, { dependsOn: dependencies, aliases: aliases.defaultDeny });
 
   // Centralized monitoring scrapers (like Alloy or Prometheus in the monitoring namespace)
   // require ingress access to fetch metrics endpoints exposed by self-hosted applications.
-  const allowMonitoringScrape = new k8s.networking.v1.NetworkPolicy("allow-monitoring-scrape", {
+  const allowMonitoringScrape = new k8s.networking.v1.NetworkPolicy(`${namePrefix}allow-monitoring-scrape`, {
     metadata: {
       name: "allow-monitoring-scrape",
       namespace,
@@ -51,11 +57,11 @@ export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
       ],
       policyTypes: ["Ingress"],
     },
-  }, { dependsOn: [defaultDeny] });
+  }, { dependsOn: [defaultDeny], aliases: aliases.monitoring });
 
   // Cert-manager automatically spawns temporary HTTP-01 solver pods in the application's
   // namespace. Traefik must be allowed to reach these pods to solve ACME challenges.
-  const allowCertManagerSolver = new k8s.networking.v1.NetworkPolicy("allow-cert-manager-solver", {
+  const allowCertManagerSolver = new k8s.networking.v1.NetworkPolicy(`${namePrefix}allow-cert-manager-solver`, {
     metadata: {
       name: "allow-cert-manager-solver",
       namespace,
@@ -82,7 +88,7 @@ export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
       ],
       policyTypes: ["Ingress"],
     },
-  }, { dependsOn: [defaultDeny] });
+  }, { dependsOn: [defaultDeny], aliases: aliases.certManager });
 
   return {
     defaultDeny,

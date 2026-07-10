@@ -26,6 +26,7 @@ export function configureAuthentik(
   const grimmorySecret = config.requireSecret("grimmory-secret");
   const hermesSecret = config.requireSecret("hermesSecret");
   const forgejoSecret = config.requireSecret("forgejo-secret");
+  const litellmSecret = config.requireSecret("litellmSecret");
   const googleClientId = config.require("googleClientId");
   const googleClientSecret = config.requireSecret("googleClientSecret");
   const userGdarioEmail = config.requireSecret("user-gdario-email");
@@ -65,6 +66,7 @@ export function configureAuthentik(
       "AUTHENTIK_GRIMMORY_CLIENT_SECRET": grimmorySecret,
       "AUTHENTIK_HERMES_CLIENT_SECRET": hermesSecret,
       "AUTHENTIK_FORGEJO_CLIENT_SECRET": forgejoSecret,
+      "AUTHENTIK_LITELLM_CLIENT_SECRET": litellmSecret,
       "AUTHENTIK_GOOGLE_CLIENT_ID": googleClientId,
       "AUTHENTIK_GOOGLE_CLIENT_SECRET": googleClientSecret,
       "AUTHENTIK_USER_GDARIO_EMAIL": userGdarioEmail,
@@ -259,6 +261,15 @@ export function configureAuthentik(
         },
       },
     },
+    {
+      name: "AUTHENTIK_LITELLM_CLIENT_SECRET",
+      valueFrom: {
+        secretKeyRef: {
+          name: secrets.metadata.name,
+          key: "AUTHENTIK_LITELLM_CLIENT_SECRET",
+        },
+      },
+    },
   ];
 
   // Load the standalone declarative YAML blueprint and package it in a ConfigMap.
@@ -428,6 +439,18 @@ export function configureAuthentik(
         {
           from: [
             {
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowAuthentik]: "true",
+                },
+              },
+            },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "infrastructure",
+                },
+              },
               podSelector: {
                 matchLabels: {
                   [Labels.Network.AllowAuthentik]: "true",

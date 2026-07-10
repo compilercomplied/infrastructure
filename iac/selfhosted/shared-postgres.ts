@@ -160,6 +160,18 @@ export function configureSharedPostgres(
                 },
               },
             },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "infrastructure",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowPostgres]: "true",
+                },
+              },
+            },
           ],
           ports: [{ port: 5432 }],
         },

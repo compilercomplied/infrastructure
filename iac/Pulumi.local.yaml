@@ -93,3 +93,9 @@ config:
     secure: v1:k4YXpLr7ubmD21CE:ggvOlgaC3bM20avZzTV//knQAAXotMqSNbub1uQTQMMJPASB0cKCo7wb/USM5l7qEclQS0xx2fx7WnVv/hVwfA==
   selfhosted:forgejo-secret:
     secure: v1:Je98u7WflKYZcHQq:DvRz73inxk8VutYmn3foa/bUnLsNrLuULrTCorXQ2kJE0U91hBkImS8wcLezptNgr/wlk+EFmXH8STDhRxNw8/6/3cAfX/OIkkSpGLOXD4o=
+  selfhosted:litellmDbPassword:
+    secure: v1:RoojImbgd/hgqV7J:GHC+soPNvkd+cL785p6adyoe/XE4Loq1oiJCzuZrXxNMBRGOAioGfw==
+  selfhosted:litellmSecret:
+    secure: v1:dEuoKp9oavkUo9o/:IlLonGFNmPYa8b5qePbtM88teFEuD/xdgjCOuEs4P2yYMhVrIc3oF+AeZ1TkrarPF3fY7RK8YIEWbh3ZdutpIw==
+  selfhosted:litellmMasterKey:
+    secure: v1:P0tYiOMOAkm+mKKb:qiIxEti/7FOBqt0x33Myp4fp6QHMLFTtAW4z0xIfws8xF89pgPdpQv3Vzfl9GOgSx7iISP7CV3zFyKtGtGz9ZEH5Ag==

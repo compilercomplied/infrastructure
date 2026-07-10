@@ -29,6 +29,7 @@ export function configureSelfhosted() {
   const authentikDbPassword = config.requireSecret("authentikDbPassword");
   const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
   const forgejoDbPassword = config.requireSecret("forgejoDbPassword");
+  const litellmDbPassword = config.requireSecret("litellmDbPassword");
   const cloudflareTunnelToken = config.requireSecret("cloudflareTunnelToken");
 
 	// Deployments
@@ -37,6 +38,7 @@ export function configureSelfhosted() {
     { name: "authentik", password: authentikDbPassword },
     { name: "linkwarden", password: linkwardenDbPassword },
     { name: "forgejo", password: forgejoDbPassword },
+    { name: "litellm", password: litellmDbPassword },
   ]);
   const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
   const tandoorMcp = configureTandoorMcp(namespaceName, [postgres, tandoor.deployment]);
@@ -59,6 +61,12 @@ export function configureSelfhosted() {
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
     dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, forgejo.deployment, kubernetesMcp.deployment, forgejoMcp.deployment],
+    namePrefix: "selfhosted-",
+    aliases: {
+      defaultDeny: [{ name: "default-deny-ingress" }],
+      monitoring: [{ name: "allow-monitoring-scrape" }],
+      certManager: [{ name: "allow-cert-manager-solver" }],
+    },
   });
 
   const cloudflared = configureCloudflared(namespaceName, cloudflareTunnelToken, [security.defaultDeny]);
