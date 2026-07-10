@@ -16,7 +16,6 @@ import { configureNamespaceSecurity } from "./security";
 import { configureCoreDnsCustom } from "./coredns";
 import { configureCloudflared } from "./cloudflared";
 import { configureForgejo } from "./forgejo";
-import { configureKarakeep } from "./karakeep";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -45,7 +44,6 @@ export function configureSelfhosted() {
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, [postgres]);
   const forgejo = configureForgejo(namespaceName, [postgres]);
-  const karakeep = configureKarakeep(namespaceName, []);
   const grafanaMcp = configureGrafanaMcp(namespaceName, [postgres]);
   // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency
   // on Grimmory's volume being created first. We pass grimmory.deployment as a dependency.
@@ -60,7 +58,7 @@ export function configureSelfhosted() {
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, forgejo.deployment, kubernetesMcp.deployment, forgejoMcp.deployment, karakeep.deployment, karakeep.meiliDeployment, karakeep.chromeDeployment],
+    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, forgejo.deployment, kubernetesMcp.deployment, forgejoMcp.deployment],
   });
 
   const cloudflared = configureCloudflared(namespaceName, cloudflareTunnelToken, [security.defaultDeny]);
@@ -84,7 +82,6 @@ export function configureSelfhosted() {
     filesystemMcp,
     kubernetesMcp,
     forgejoMcp,
-    karakeep,
     corednsCustom,
     cloudflared,
     defaultDeny: security.defaultDeny,
