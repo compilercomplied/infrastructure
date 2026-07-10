@@ -171,6 +171,10 @@ export function configureForgejo(
       { name: "FORGEJO__oauth2_client__ENABLE_AUTO_REGISTRATION", value: "true" },
       { name: "FORGEJO__oauth2_client__ACCOUNT_LINKING", value: "auto" },
       { name: "FORGEJO__actions__ENABLED", value: "true" },
+      // Enabling push-to-create allows automation pipelines to provision repositories on the fly
+      // during their initial push, removing any manual UI interaction (ClickOps) for repo creation.
+      { name: "FORGEJO__repository__ENABLE_PUSH_CREATE_USER", value: "true" },
+      { name: "FORGEJO__repository__ENABLE_PUSH_CREATE_ORG", value: "true" },
     ],
     volumes: [
       {
