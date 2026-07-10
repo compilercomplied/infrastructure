@@ -238,6 +238,8 @@ export function configureKarakeep(
       { name: "DISABLE_PASSWORD_AUTH", value: "true" },
       { name: "DISABLE_SIGNUPS", value: "true" },
       { name: "OAUTH_AUTO_REDIRECT", value: "true" },
+      // Optional: Path to JSON cookie file for the headless browser to bypass login walls
+      { name: "BROWSER_COOKIE_PATH", value: "/data/cookies.json" },
     ],
     volumes: [{
       name: "karakeep-data",
