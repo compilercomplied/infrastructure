@@ -21,6 +21,46 @@ else:
         with open(dest_path, "r") as f:
             content = f.read()
 
+        # Synchronize model configuration block from template to keep OIDC keys and base URLs aligned.
+        try:
+            with open(src_path, "r") as f:
+                src_lines = f.read().splitlines()
+            
+            src_model_block = []
+            in_model = False
+            for line in src_lines:
+                if line.strip().startswith("model:"):
+                    in_model = True
+                    src_model_block.append(line)
+                elif in_model:
+                    if line.startswith(" ") or line.startswith("\t") or line.strip() == "":
+                        src_model_block.append(line)
+                    else:
+                        in_model = False
+            
+            dest_lines = content.splitlines()
+            dest_model_start = -1
+            dest_model_end = -1
+            in_model = False
+            for i, line in enumerate(dest_lines):
+                if line.strip().startswith("model:"):
+                    in_model = True
+                    dest_model_start = i
+                elif in_model:
+                    if line.startswith(" ") or line.startswith("\t") or line.strip() == "":
+                        dest_model_end = i
+                    else:
+                        in_model = False
+                        break
+            
+            if dest_model_start != -1:
+                end_idx = dest_model_end if dest_model_end != -1 else dest_model_start
+                dest_lines = dest_lines[:dest_model_start] + src_model_block + dest_lines[end_idx + 1:]
+                content = "\n".join(dest_lines) + "\n"
+                print("Successfully synced model configuration block from template.")
+        except Exception as e:
+            print(f"Error syncing model configuration: {e}")
+
         # Migrate tandoor-mcp port if necessary
         if "tandoor-mcp.selfhosted.svc.cluster.local:8000" in content:
             content = content.replace("tandoor-mcp.selfhosted.svc.cluster.local:8000", "tandoor-mcp.selfhosted.svc.cluster.local:8080")

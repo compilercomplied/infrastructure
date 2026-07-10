@@ -23,6 +23,7 @@ export function configureInfrastructure() {
   const litellmSecret = config.requireSecret("litellmSecret");
   const litellmMasterKey = config.requireSecret("litellmMasterKey");
   const postgresPassword = config.requireSecret("postgresPassword");
+  const deepseekApiKey = config.requireSecret("deepseekApiKey");
 
   // Read the generic database initialization script. Reusing this script avoids
   // duplicating script files in the codebase.
@@ -132,7 +133,11 @@ export function configureInfrastructure() {
     },
     data: {
       "config.yaml": `
-model_list: []
+model_list:
+  - model_name: deepseek-chat
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: "os.environ/DEEPSEEK_API_KEY"
 general_settings:
   master_key: "os.environ/LITELLM_MASTER_KEY"
 `
@@ -159,6 +164,7 @@ general_settings:
       "DATABASE_URL": pulumi.interpolate`postgresql://litellm:${litellmDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/litellm`,
       "LITELLM_MASTER_KEY": litellmMasterKey,
       "GENERIC_CLIENT_SECRET": litellmSecret,
+      "DEEPSEEK_API_KEY": deepseekApiKey,
     },
     env: [
       { name: "GENERIC_CLIENT_ID", value: "litellm-client-id" },
@@ -206,6 +212,40 @@ general_settings:
     },
     dependencies: [app.deployment],
   });
+
+  // Allow Hermes Agent in the selfhosted namespace to access the LiteLLM service
+  // in the infrastructure namespace securely.
+  const allowHermesToLiteLLM = new k8s.networking.v1.NetworkPolicy("litellm-allow-hermes", {
+    metadata: {
+      name: "litellm-allow-hermes",
+      namespace: namespaceName,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: { app: "litellm" },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "selfhosted",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  app: "hermes-agent",
+                },
+              },
+            },
+          ],
+          ports: [{ port: 4000 }],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: [app.deployment] });
 
   return {
     namespace: namespaceName,

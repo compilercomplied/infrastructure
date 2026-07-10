@@ -34,6 +34,7 @@ export class HermesAgent extends pulumi.ComponentResource {
     const deepseekApiKey = config.requireSecret("deepseekApiKey");
     const telegramBotToken = config.requireSecret("telegramBotToken");
     const hermesSecret = config.requireSecret("hermesSecret");
+    const litellmMasterKey = config.requireSecret("litellmMasterKey");
 
     const host = "hermes.gdario.dev";
 
@@ -59,7 +60,7 @@ export class HermesAgent extends pulumi.ComponentResource {
         namespace,
       },
       stringData: {
-        "CUSTOM_API_KEY": deepseekApiKey,
+        "CUSTOM_API_KEY": litellmMasterKey,
         "DEEPSEEK_API_KEY": deepseekApiKey,
         "TELEGRAM_BOT_TOKEN": telegramBotToken,
         "API_SERVER_KEY": hermesSecret,
@@ -87,9 +88,11 @@ export class HermesAgent extends pulumi.ComponentResource {
         namespace,
       },
       data: {
-        "config.yaml": allowedChats.apply(chats => {
+        "config.yaml": pulumi.all([allowedChats, litellmMasterKey]).apply(([chats, key]) => {
           const chatLines = chats.map(chat => `    - "${chat}"`).join("\n");
-          return configTemplate.replace("    # {{ALLOWED_CHATS}}", chatLines);
+          let content = configTemplate.replace("    # {{ALLOWED_CHATS}}", chatLines);
+          content = content.replace("{{CUSTOM_API_KEY}}", key);
+          return content;
         }),
       },
     }, { dependsOn: dependencies, parent: this, aliases: [componentAlias] });
@@ -150,7 +153,7 @@ export class HermesAgent extends pulumi.ComponentResource {
                 { name: "API_SERVER_HOST", value: "0.0.0.0" },
                 // CORS origins are restricted to the dashboard host to prevent cross-origin request forgery.
                 { name: "API_SERVER_CORS_ORIGINS", value: `https://${host}` },
-                { name: "CUSTOM_BASE_URL", value: "https://api.deepseek.com/v1" },
+                { name: "CUSTOM_BASE_URL", value: "http://litellm.infrastructure.svc.cluster.local/v1" },
                 {
                   name: "CUSTOM_API_KEY",
                   valueFrom: {

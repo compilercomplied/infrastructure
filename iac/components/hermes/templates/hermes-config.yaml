@@ -1,6 +1,7 @@
 model:
   provider: "custom"
-  base_url: "https://api.deepseek.com/v1"
+  base_url: "http://litellm.infrastructure.svc.cluster.local/v1"
+  api_key: "{{CUSTOM_API_KEY}}"
   default: "deepseek-chat"
 
 telegram:
