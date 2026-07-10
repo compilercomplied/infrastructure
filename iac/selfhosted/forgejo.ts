@@ -26,6 +26,13 @@ export function configureForgejo(
   const userGdarioEmail = config.requireSecret("user-gdario-email");
   const postgresPassword = config.requireSecret("postgresPassword");
 
+  // Derive a deterministic 40-character hex secret for offline runner registration.
+  // Using a deterministic hash of the main forgejoSecret ensures the registration is stable
+  // and does not change across Pulumi runs.
+  const runnerSecret = pulumi.secret(forgejoSecret.apply(s =>
+    crypto.createHash("sha256").update(s + "runner-salt-v1").digest("hex").substring(0, 40)
+  ));
+
   // 1. ConfigMaps for Database Init and Container Bootstrap Scripts
   const dbScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-db-init-scripts`, {
     metadata: {
@@ -151,6 +158,7 @@ export function configureForgejo(
       "FORGEJO__database__PASSWD": forgejoDbPassword,
       "AUTHENTIK_CLIENT_SECRET": forgejoSecret,
       "USER_EMAIL": userGdarioEmail,
+      "RUNNER_SECRET": runnerSecret,
     },
     env: [
       { name: "FORGEJO__database__DB_TYPE", value: "postgres" },
@@ -256,6 +264,46 @@ export function configureForgejo(
     },
   }, { dependsOn: app.deployment });
 
+  // 5a. NetworkPolicy for internal HTTP traffic (e.g. from forgejo-mcp and forgejo-runner)
+  // This explicitly permits cluster-internal HTTP traffic to Forgejo from its associated tooling.
+  const internalHttpPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-allow-internal-http`, {
+    metadata: {
+      name: `${name}-allow-internal-http`,
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: {
+          app: name,
+        },
+      },
+      ingress: [
+        {
+          from: [
+            {
+              podSelector: {
+                matchLabels: {
+                  app: "forgejo-mcp",
+                },
+              },
+            },
+            {
+              podSelector: {
+                matchLabels: {
+                  app: "forgejo-runner",
+                },
+              },
+            },
+          ],
+          ports: [
+            { protocol: "TCP", port: 3000 },
+          ],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: app.deployment });
+
   // 6. Restic Backups (Database stream and PVC files copy)
   const dbBackup = createBackupJob({
     appName: name,
@@ -285,7 +333,9 @@ export function configureForgejo(
     ...app,
     sshService,
     sshPolicy,
+    internalHttpPolicy,
     dbBackup,
     filesBackup,
+    runnerSecret,
   };
 }

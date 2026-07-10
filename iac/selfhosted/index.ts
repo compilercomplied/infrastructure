@@ -16,6 +16,7 @@ import { configureNamespaceSecurity } from "./security";
 import { configureCoreDnsCustom } from "./coredns";
 import { configureCloudflared } from "./cloudflared";
 import { configureForgejo } from "./forgejo";
+import { configureForgejoRunner } from "./forgejo-runner";
 
 export function configureSelfhosted() {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -53,6 +54,7 @@ export function configureSelfhosted() {
   const filesystemMcp = configureFilesystemMcp(namespaceName, [syncthing.deployment]);
   const kubernetesMcp = configureKubernetesMcp(namespaceName, [postgres]);
   const forgejoMcp = configureForgejoMcp(namespaceName, [postgres, forgejo.deployment]);
+  const forgejoRunner = configureForgejoRunner(namespaceName, forgejo.runnerSecret, [forgejo.deployment]);
   const hermes = new HermesAgent("hermes-agent", {
     namespace: namespaceName,
     dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service, filesystemMcp.service, kubernetesMcp.service, forgejoMcp.service],
@@ -60,7 +62,7 @@ export function configureSelfhosted() {
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, forgejo.deployment, kubernetesMcp.deployment, forgejoMcp.deployment],
+    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, forgejo.deployment, kubernetesMcp.deployment, forgejoMcp.deployment, forgejoRunner.deployment],
     namePrefix: "selfhosted-",
     aliases: {
       defaultDeny: [{ name: "default-deny-ingress" }],
@@ -84,6 +86,7 @@ export function configureSelfhosted() {
     linkwarden,
     grimmory,
     forgejo,
+    forgejoRunner,
     grafanaMcp,
     hermes,
     syncthing,

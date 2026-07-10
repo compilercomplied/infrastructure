@@ -80,5 +80,16 @@ if [ ! -f /data/gitea/hermes-token.txt ]; then
   chown git:git /data/gitea/hermes-token.txt
 fi
 
+# Register the offline runner using the pre-shared secret.
+# This runs idempotently on every bootstrap.
+if [ -n "${RUNNER_SECRET}" ]; then
+  echo "Registering offline runner 'k8s-runner'..."
+  su-exec git forgejo forgejo-cli actions register \
+    --name "k8s-runner" \
+    --secret "${RUNNER_SECRET}"
+else
+  echo "RUNNER_SECRET not set, skipping runner registration."
+fi
+
 # Wait for the background Forgejo web process to keep the container running
 wait $pid
