@@ -7,9 +7,9 @@ until wget -qO- http://forgejo.selfhosted.svc.cluster.local:80/ >/dev/null 2>&1;
   sleep 2
 done
 
-# We copy the config to /tmp so we can dynamically inject the host IP
+# We copy the config to /tmp so we can dynamically inject it
 cp /config/config.yaml /tmp/config.yaml
-sed -i "s/DOCKER_HOST_REPLACE_ME/tcp:\/\/${HOST_IP}:2375/g" /tmp/config.yaml
+sed -i "s|DOCKER_HOST_REPLACE_ME|unix:///var/run/docker.sock|g" /tmp/config.yaml
 
 # Initialize the runner credentials if they don't exist yet.
 # We do this in a persistent volume so that the registration is preserved across pod restarts.
@@ -21,9 +21,9 @@ if [ ! -f /data/.runner ]; then
     --name "${HOSTNAME}"
 fi
 
-# Wait for the Docker daemon to be fully ready before starting the runner daemon.
+# Wait for the Docker daemon UNIX socket to be fully ready before starting the runner daemon.
 echo "Waiting for Docker daemon to be ready..."
-until wget -qO- http://localhost:2375/_ping >/dev/null 2>&1; do
+while [ ! -S /var/run/docker.sock ]; do
   sleep 1
 done
 echo "Docker daemon is ready!"
