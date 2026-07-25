@@ -96,6 +96,9 @@ container:
             {
               name: "runner",
               image: runnerImage,
+              securityContext: {
+                runAsUser: 0,
+              },
               command: ["/bin/bash", "/scripts/bootstrap-forgejo-runner.sh"],
               env: [
                 {
