@@ -251,11 +251,35 @@ general_settings:
     },
   }, { dependsOn: [app.deployment] });
 
+  // Kata Containers Deployment (kata-deploy)
+  // This Helm chart deploys a privileged DaemonSet that installs the Kata Containers runtime
+  // onto the host nodes and configures k3s' containerd to use it. It also automatically creates
+  // the `kata` RuntimeClass. 
+  // 
+  // NOTE: This approach was chosen to respect the "Zero ClickOps" rule and keep all cluster
+  // configuration centralized in the IaC. If managing host-level binaries via DaemonSet becomes
+  // problematic, consider migrating this setup to the `ansible-playbook` host setup directly 
+  // (installing kata packages and templating config.toml.tmpl via Ansible) and only keep the 
+  // RuntimeClass definition here.
+  const kataDeploy = new k8s.helm.v3.Release("kata-deploy", {
+    chart: "kata-deploy",
+    repositoryOpts: {
+      repo: "https://fgiudici.github.io/kata-containers/",
+    },
+    namespace: "kube-system",
+    values: {
+      kubernetes: {
+        distribution: "k3s",
+      },
+    },
+  });
+
   return {
     namespace: namespaceName,
     app,
     security,
     dbBackup,
     dbInitJob,
+    kataDeploy,
   };
 }

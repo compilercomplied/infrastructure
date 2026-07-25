@@ -65,7 +65,7 @@ export function configureGrafanaMcp(
     name,
     namespace,
     image: "grafana/mcp-grafana:latest",
-    args: ["-t", "sse", "--address", ":8000"],
+    args: ["-t", "sse", "--address", ":8000", "-allowed-hosts", "*"],
     containerPort: 8000,
     env: [
       {
