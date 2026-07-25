@@ -2,7 +2,7 @@ model:
   provider: "custom"
   base_url: "http://litellm.infrastructure.svc.cluster.local/v1"
   api_key: "{{CUSTOM_API_KEY}}"
-  default: "deepseek-chat"
+  default: "deepseek-v4-flash"
 
 telegram:
   enabled: true
