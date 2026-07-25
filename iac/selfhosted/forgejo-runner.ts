@@ -108,16 +108,8 @@ container:
                   },
                 },
                 {
-                  name: "HOST_IP",
-                  valueFrom: {
-                    fieldRef: {
-                      fieldPath: "status.hostIP",
-                    },
-                  },
-                },
-                {
                   name: "DOCKER_HOST",
-                  value: "tcp://$(HOST_IP):2375",
+                  value: "unix:///var/run/docker.sock",
                 },
               ],
               volumeMounts: [
@@ -133,11 +125,16 @@ container:
                   name: "bootstrap-scripts",
                   mountPath: "/scripts",
                 },
+                {
+                  name: "dind-socket",
+                  mountPath: "/var/run",
+                },
               ],
             },
             {
               name: "dind",
               image: dindImage,
+              args: ["dockerd", "--host=unix:///var/run/docker.sock"],
               securityContext: {
                 privileged: true,
               },
@@ -151,6 +148,10 @@ container:
                 {
                   name: "docker-storage",
                   mountPath: "/var/lib/docker",
+                },
+                {
+                  name: "dind-socket",
+                  mountPath: "/var/run",
                 },
               ],
             },
@@ -177,6 +178,10 @@ container:
             },
             {
               name: "docker-storage",
+              emptyDir: {},
+            },
+            {
+              name: "dind-socket",
               emptyDir: {},
             },
           ],
