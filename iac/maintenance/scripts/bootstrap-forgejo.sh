@@ -86,7 +86,8 @@ if [ -n "${RUNNER_SECRET}" ]; then
   echo "Registering offline runner 'k8s-runner'..."
   su-exec git forgejo forgejo-cli actions register \
     --name "k8s-runner" \
-    --secret "${RUNNER_SECRET}"
+    --secret "${RUNNER_SECRET}" \
+    --labels "ubuntu-latest,ubuntu-22.04,ubuntu-20.04"
 else
   echo "RUNNER_SECRET not set, skipping runner registration."
 fi

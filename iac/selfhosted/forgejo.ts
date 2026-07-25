@@ -12,6 +12,7 @@ import { postgresClientImage } from "./shared-postgres";
 // This decouples script logic from the Pulumi infrastructure definition.
 const dbInitScriptContent = fs.readFileSync(path.join(__dirname, "../maintenance/scripts/init-forgejo-db.sh"), "utf8");
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "../maintenance/scripts/bootstrap-forgejo.sh"), "utf8");
+const pruneScriptContent = fs.readFileSync(path.join(__dirname, "../maintenance/scripts/prune-forgejo-history.py"), "utf8");
 
 export function configureForgejo(
   namespace: pulumi.Input<string>,
@@ -294,6 +295,13 @@ export function configureForgejo(
                 },
               },
             },
+            {
+              podSelector: {
+                matchLabels: {
+                  app: `${name}-prune`,
+                },
+              },
+            },
           ],
           ports: [
             { protocol: "TCP", port: 3000 },
@@ -328,6 +336,87 @@ export function configureForgejo(
     },
     dependencies: [...dependencies, app.deployment],
   });
+
+  // 7. Prune CronJob (Keeps last 5 actions and packages)
+  const pruneScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-prune-scripts`, {
+    metadata: {
+      name: `${name}-prune-scripts`,
+      namespace,
+    },
+    data: {
+      "prune-forgejo-history.py": pruneScriptContent,
+    },
+  }, { dependsOn: dependencies });
+
+  const pruneCronJob = new k8s.batch.v1.CronJob(`${name}-prune`, {
+    metadata: {
+      name: `${name}-prune`,
+      namespace,
+    },
+    spec: {
+      schedule: "0 3 * * *", // Run every night at 3 AM
+      concurrencyPolicy: "Forbid",
+      jobTemplate: {
+        spec: {
+          template: {
+            metadata: {
+              labels: {
+                app: `${name}-prune`,
+              },
+            },
+            spec: {
+              restartPolicy: "OnFailure",
+              containers: [{
+                name: "pruner",
+                image: "python:3.11-alpine",
+                command: ["/usr/local/bin/python", "/scripts/prune-forgejo-history.py"],
+                env: [
+                  { name: "GITEA_HOST", value: `http://${name}.selfhosted.svc.cluster.local:3000` },
+                ],
+                volumeMounts: [
+                  { name: "scripts", mountPath: "/scripts" },
+                  { name: "forgejo-data", mountPath: "/forgejo-data", readOnly: true },
+                ],
+              }],
+              volumes: [
+                {
+                  name: "scripts",
+                  configMap: {
+                    name: pruneScriptsConfigMap.metadata.name,
+                    defaultMode: 0o755,
+                  },
+                },
+                {
+                  name: "forgejo-data",
+                  persistentVolumeClaim: {
+                    claimName: "forgejo-pvc",
+                  },
+                },
+              ],
+              affinity: {
+                podAffinity: {
+                  requiredDuringSchedulingIgnoredDuringExecution: [
+                    {
+                      labelSelector: {
+                        matchExpressions: [
+                          {
+                            key: "app",
+                            operator: "In",
+                            values: [name],
+                          },
+                        ],
+                      },
+                      topologyKey: "kubernetes.io/hostname",
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  }, { dependsOn: [...dependencies, app.deployment, pruneScriptsConfigMap] });
 
   return {
     ...app,

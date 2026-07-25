@@ -39,17 +39,20 @@ export function configureForgejoRunner(
 runner:
   file: /data/.runner
   capacity: 2
+  envs:
+    DOCKER_HOST: DOCKER_HOST_REPLACE_ME
   labels:
-    - "ubuntu-latest:docker://node:20-bullseye"
-    - "ubuntu-22.04:docker://node:20-bullseye"
-    - "ubuntu-20.04:docker://node:20-bullseye"
+    - "custom-runner:docker://catthehacker/ubuntu:act-latest"
+    - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
+    - "ubuntu-22.04:docker://catthehacker/ubuntu:act-latest"
+    - "ubuntu-20.04:docker://catthehacker/ubuntu:act-latest"
 
 container:
-  docker_host: tcp://localhost:2375
+  docker_host: DOCKER_HOST_REPLACE_ME
 `,
     },
   }, { dependsOn: dependencies });
-
+  
   // 2. Secret containing the pre-shared registration secret
   const secrets = new k8s.core.v1.Secret(`${name}-secrets`, {
     metadata: {
@@ -87,6 +90,8 @@ container:
           labels: { app: name },
         },
         spec: {
+          hostNetwork: true,
+          dnsPolicy: "ClusterFirstWithHostNet",
           containers: [
             {
               name: "runner",
@@ -103,8 +108,16 @@ container:
                   },
                 },
                 {
+                  name: "HOST_IP",
+                  valueFrom: {
+                    fieldRef: {
+                      fieldPath: "status.hostIP",
+                    },
+                  },
+                },
+                {
                   name: "DOCKER_HOST",
-                  value: "tcp://localhost:2375",
+                  value: "tcp://$(HOST_IP):2375",
                 },
               ],
               volumeMounts: [
