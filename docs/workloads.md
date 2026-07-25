@@ -11,7 +11,13 @@ personal git repositories.
 - [discord-agent-bridge](https://github.com/compilercomplied/discord-agent-bridge). Discord bot used to send tasks and prompts to the llm engine.
 - [agent-hub](https://github.com/compilercomplied/agent-hub). Integrates with
 	third party llm APIs using ReACT pattern to enable complex workflows.
-- [agent-dev-environment](https://github.com/compilercomplied/agent-dev-environment). Sandboxed coding environment for secure and isolated coding workflows.
+- [agent-dev-environment](https://github.com/compilercomplied/agent-dev-environment). Sandboxed coding environment for secure and isolated coding workflows. It leverages **Kata Containers** to provide secure virtual machine isolation for untrusted agent-generated code.
+
+## Kata Containers Configuration
+To support the sandboxing for `agent-dev-environment`, the cluster is configured with the `kata` RuntimeClass. 
+Currently, Kata is deployed completely through the IaC (Zero ClickOps) using the **kata-deploy** Helm chart, which injects host binaries and patches the K3s `containerd` configuration via a privileged DaemonSet.
+
+> **Architecture Decision Note:** We chose to use the Helm chart in Pulumi to keep all cluster configurations in one place. However, if using a privileged DaemonSet to modify host binaries ever becomes unreliable or creates issues with K3s upgrades, it is highly recommended to move the Kata binary installation and `config.toml.tmpl` templating directly into the **ansible-playbook** (host setup), and only keep the `RuntimeClass` resource definition in the Pulumi IaC.
 
 ## Hermes Agent Workload
 

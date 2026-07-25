@@ -262,10 +262,7 @@ general_settings:
   // (installing kata packages and templating config.toml.tmpl via Ansible) and only keep the 
   // RuntimeClass definition here.
   const kataDeploy = new k8s.helm.v3.Release("kata-deploy", {
-    chart: "kata-deploy",
-    repositoryOpts: {
-      repo: "https://fgiudici.github.io/kata-containers/",
-    },
+    chart: "./infrastructure/kata-deploy",
     namespace: "kube-system",
     values: {
       kubernetes: {
