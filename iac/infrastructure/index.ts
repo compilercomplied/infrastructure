@@ -144,6 +144,10 @@ model_list:
       api_key: "os.environ/DEEPSEEK_API_KEY"
 general_settings:
   master_key: "os.environ/LITELLM_MASTER_KEY"
+  store_model_in_db: true
+  store_prompts_in_spend_logs: true
+  maximum_spend_logs_retention_period: "30d"
+  maximum_spend_logs_retention_interval: "1d"
 `
     }
   }, { dependsOn: [namespace] });

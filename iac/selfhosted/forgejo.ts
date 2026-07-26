@@ -371,7 +371,11 @@ export function configureForgejo(
                 image: "python:3.11-alpine",
                 command: ["/usr/local/bin/python", "/scripts/prune-forgejo-history.py"],
                 env: [
-                  { name: "GITEA_HOST", value: `http://${name}.selfhosted.svc.cluster.local:3000` },
+                  // Port 80 is the Kubernetes Service port, not the container port (3000).
+                  // Pod-to-pod traffic must go through the Service, so :3000 would be refused.
+                  { name: "GITEA_HOST", value: `http://${name}.selfhosted.svc.cluster.local:80` },
+                  // Explicit token path so a future mountPath rename doesn't silently break auth.
+                  { name: "GITEA_TOKEN_FILE", value: "/forgejo-data/gitea/hermes-token.txt" },
                 ],
                 volumeMounts: [
                   { name: "scripts", mountPath: "/scripts" },
@@ -426,5 +430,7 @@ export function configureForgejo(
     dbBackup,
     filesBackup,
     runnerSecret,
+    pruneCronJob,
+    pruneScriptsConfigMap,
   };
 }
