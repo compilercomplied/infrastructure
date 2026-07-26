@@ -134,21 +134,13 @@ export function configureInfrastructure() {
     data: {
       "config.yaml": `
 model_list:
-  - model_name: deepseek/deepseek-v4-pro
+  - model_name: deepseek-v4-pro
     litellm_params:
       model: deepseek/deepseek-v4-pro
       api_key: "os.environ/DEEPSEEK_API_KEY"
-  - model_name: deepseek/deepseek-v4-flash
+  - model_name: deepseek-v4-flash
     litellm_params:
       model: deepseek/deepseek-v4-flash
-      api_key: "os.environ/DEEPSEEK_API_KEY"
-  - model_name: deepseek/deepseek-chat
-    litellm_params:
-      model: deepseek/deepseek-chat
-      api_key: "os.environ/DEEPSEEK_API_KEY"
-  - model_name: deepseek/deepseek-reasoner
-    litellm_params:
-      model: deepseek/deepseek-reasoner
       api_key: "os.environ/DEEPSEEK_API_KEY"
 general_settings:
   master_key: "os.environ/LITELLM_MASTER_KEY"
