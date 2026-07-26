@@ -221,11 +221,11 @@ general_settings:
     dependencies: [app.deployment],
   });
 
-  // Allow Hermes Agent in the selfhosted namespace to access the LiteLLM service
-  // in the infrastructure namespace securely.
-  const allowHermesToLiteLLM = new k8s.networking.v1.NetworkPolicy("litellm-allow-hermes", {
+  // Allow Hermes Agent in the selfhosted namespace and autonomous-agent in the default namespace
+  // to access the LiteLLM service in the infrastructure namespace securely.
+  const allowAgentsToLiteLLM = new k8s.networking.v1.NetworkPolicy("litellm-allow-agents", {
     metadata: {
-      name: "litellm-allow-hermes",
+      name: "litellm-allow-agents",
       namespace: namespaceName,
     },
     spec: {
@@ -244,6 +244,18 @@ general_settings:
               podSelector: {
                 matchLabels: {
                   app: "hermes-agent",
+                },
+              },
+            },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "default",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  app: "autonomous-agent",
                 },
               },
             },
