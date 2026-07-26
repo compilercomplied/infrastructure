@@ -265,8 +265,9 @@ general_settings:
     chart: "./infrastructure/kata-deploy",
     namespace: "kube-system",
     values: {
-      kubernetes: {
-        distribution: "k3s",
+      k8sDistribution: "k3s",
+      runtimeClasses: {
+        createDefault: true,
       },
     },
   });
