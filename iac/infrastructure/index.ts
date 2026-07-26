@@ -142,6 +142,14 @@ model_list:
     litellm_params:
       model: deepseek/deepseek-v4-flash
       api_key: "os.environ/DEEPSEEK_API_KEY"
+  - model_name: deepseek/deepseek-chat
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: "os.environ/DEEPSEEK_API_KEY"
+  - model_name: deepseek/deepseek-reasoner
+    litellm_params:
+      model: deepseek/deepseek-reasoner
+      api_key: "os.environ/DEEPSEEK_API_KEY"
 general_settings:
   master_key: "os.environ/LITELLM_MASTER_KEY"
   store_model_in_db: true
