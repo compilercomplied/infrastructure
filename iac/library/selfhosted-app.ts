@@ -19,18 +19,10 @@ export interface IngressRuleConfig {
   port?: number;
 }
 
-export type ExposeConfig =
-  | {
-      exposeType: "tailscale";
-      tailscale?: {
-        hostname?: string; // defaults to name
-        tags?: string[]; // defaults to ["tag:kubernetes"]
-      };
-    }
-  | {
-      exposeType: "public";
-      host: string;
-    };
+export type ExposeConfig = {
+  exposeType: "public";
+  host: string;
+};
 
 export type SelfhostedAppArgs = {
   name: string;
@@ -53,7 +45,7 @@ export type SelfhostedAppArgs = {
 } & ExposeConfig;
 
 // Configures standard Kubernetes resources for self-hosted apps to eliminate boilerplate.
-// Establishes consistent naming, label selectors, Tailscale integration, and TLS ingress.
+// Establishes consistent naming, label selectors, and TLS ingress.
 export function createSelfhostedApp(args: SelfhostedAppArgs) {
   const {
     name,
@@ -174,15 +166,6 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
   }, { dependsOn: deploymentDeps });
 
   const serviceAnnotations: Record<string, string> = {};
-  // Exposes the service securely over Tailscale using the cluster's Tailscale operator.
-  if (args.exposeType === "tailscale") {
-    const tsConfig = args.tailscale || {};
-    const tsHostname = tsConfig.hostname || name;
-    const tsTags = tsConfig.tags || ["tag:kubernetes"];
-    serviceAnnotations["tailscale.com/expose"] = "true";
-    serviceAnnotations["tailscale.com/hostname"] = tsHostname;
-    serviceAnnotations["tailscale.com/tags"] = tsTags.join(",");
-  }
 
   const service = new k8s.core.v1.Service(name, {
     metadata: {

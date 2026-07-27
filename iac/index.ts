@@ -11,8 +11,7 @@ const { namespace } = configureAgents();
 
 configureDocker(namespace);
 configureMonitoring();
-// Tailscale resources removed since it is not being used at the moment.
-// configureTailscale();
+
 configureCertManager();
 configureMaintenance();
 const selfhosted = configureSelfhosted();

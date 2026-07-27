@@ -4,9 +4,6 @@ config:
   infrastructure:ghcrPassword:
     secure: v1:Wbm+o2sm1mq7YSqH:Imvne8o343PeCb+zic6W/N5A7Jr1jFqoPp2SH0LeET2v0WsvedPmG8ngH6/eT6aef21g8Lpp3QE=
   infrastructure:ghcrEmail: 8614035+compilercomplied@users.noreply.github.com
-  tailscale:clientId: k3DUmg4Dak11CNTRL
-  tailscale:clientSecret:
-    secure: v1:ffrJIArvFbpI9zQN:Ln/YJ1irgfKWQ563Fnq766nR/XQ7/UYTbFZ3MJjopTc0kJCL02pUSiI7WGxQXjq1uOAS/ss4aW2bDf0VuYmHkujv7BTME7IckodmiHD2pMA=
   infrastructure:grafanaAdminPassword:
     secure: v1:QaCZfqJc6EYwAyrU:pGOOHK7FU/Ysq2NSk3gRuxhO0o0DJAn4HBiMzaaXnVtKKRytAUgNh5mhy4iofmbQL+0Z2pM2cZk=
   agents:anthropicApiKey:

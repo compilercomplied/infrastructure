@@ -38,18 +38,20 @@ A recipe manager and meal planner application.
 
 ## Deployment & Configuration Guidelines
 
-### 1. Tailscale Exposure
-Services can be exposed securely on your tailnet using the Tailscale Kubernetes Operator. 
-* **Allowed Tags**: The Tailscale Operator is configured with a default tag policy defined in [tailscale.ts](file:///Users/gdario/code/infrastructure/iac/modules/tailscale.ts). Only `tag:kubernetes` is permitted.
-* **Service Annotations**: To expose a service, annotate the Kubernetes Service definition:
-  ```typescript
-  annotations: {
-    "tailscale.com/expose": "true",
-    "tailscale.com/hostname": "service-name",
-    "tailscale.com/tags": "tag:kubernetes",
-  }
-  ```
-  Adding other tags that are not explicitly authorized on the Tailscale OAuth/Operator client will cause a `400` provisioning error.
+### 1. Public Exposure via Cloudflare Tunnel
+Services are exposed publicly through a **Cloudflare Tunnel** (`cloudflared`) combined with **Traefik** ingress and automatic **Let's Encrypt** TLS certificates.
+
+To expose a new service publicly, use `exposeType: "public"` in `createSelfhostedApp`:
+```typescript
+createSelfhostedApp({
+  name: "my-app",
+  exposeType: "public",
+  host: "my-app.gdario.dev",
+  // ...
+});
+```
+The `host` value must have a corresponding CNAME in Cloudflare DNS pointing to the tunnel, and a route configured in [`cloudflared.ts`](file:///Users/gdario/code/homelab-iac/iac/selfhosted/cloudflared.ts).
+
 
 ### 2. Kubernetes Service Environment Variable Conflicts
 Kubernetes automatically injects environment variables for all services active in a namespace into all pods running within that same namespace.
