@@ -19,7 +19,7 @@ export function configureForgejo(
   dependencies: pulumi.Resource[] = []
 ) {
   const name = "forgejo";
-  const image = "codeberg.org/forgejo/forgejo:15.0.3";
+  const image = "codeberg.org/forgejo/forgejo:16.0.1";
 
   const config = new pulumi.Config("selfhosted");
   const forgejoDbPassword = config.requireSecret("forgejoDbPassword");

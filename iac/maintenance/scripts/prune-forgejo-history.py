@@ -3,12 +3,17 @@ import os
 import sys
 import urllib.request
 import urllib.error
+import urllib.parse
 import json
 from collections import defaultdict
+from datetime import datetime, timezone
 
 GITEA_HOST = os.environ.get("GITEA_HOST", "http://forgejo.selfhosted.svc.cluster.local:80")
 TOKEN_FILE = os.environ.get("GITEA_TOKEN_FILE", "/forgejo-data/gitea/hermes-token.txt")
 KEEP_COUNT = 5
+# Items beyond KEEP_COUNT are only deleted once they exceed this age,
+# so a burst of recent runs never accidentally removes fresh history.
+MIN_AGE_DAYS = 30
 
 try:
     with open(TOKEN_FILE, "r") as f:
@@ -21,6 +26,17 @@ HEADERS = {
     "Authorization": f"token {TOKEN}",
     "Accept": "application/json"
 }
+
+def is_old(created_at_str):
+    """Returns True if the ISO-8601 timestamp is older than MIN_AGE_DAYS."""
+    try:
+        # Forgejo returns timestamps like "2024-01-15T10:30:00Z"
+        dt = datetime.fromisoformat(created_at_str.replace("Z", "+00:00"))
+        age = datetime.now(timezone.utc) - dt
+        return age.days >= MIN_AGE_DAYS
+    except Exception:
+        # If we can't parse the date, err on the side of caution and keep it.
+        return False
 
 def make_request(method, endpoint):
     url = f"{GITEA_HOST}{endpoint}"
@@ -68,10 +84,15 @@ def prune_actions():
             runs_by_workflow[r.get("name", "unknown")].append(r)
             
         for wf_name, wf_runs in runs_by_workflow.items():
-            # Sort by created_at descending
+            # Sort by created_at descending so index 0 is the most recent.
             wf_runs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-            to_delete = wf_runs[KEEP_COUNT:]
-            
+            # Only delete runs that are both beyond the keep window AND old enough,
+            # so a sudden burst of runs doesn't wipe recent history.
+            to_delete = [
+                r for r in wf_runs[KEEP_COUNT:]
+                if is_old(r.get("created_at", ""))
+            ]
+
             for run in to_delete:
                 run_id = run["id"]
                 print(f"  Deleting run {run_id} ({wf_name}) from {owner}/{name}...")
@@ -97,16 +118,24 @@ def prune_packages():
             pkgs_by_name[key].append(pkg)
             
         for key, pkgs in pkgs_by_name.items():
-            # Sort by created_at descending
+            # Sort by created_at descending so index 0 is the most recent.
             pkgs.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-            to_delete = pkgs[KEEP_COUNT:]
-            
+            # Only delete packages that are both beyond the keep window AND old enough.
+            to_delete = [
+                p for p in pkgs[KEEP_COUNT:]
+                if is_old(p.get("created_at", ""))
+            ]
+
             for pkg in to_delete:
                 ptype = pkg["type"]
                 pname = pkg["name"]
                 pversion = pkg["version"]
+                # Container image names (and others) can contain slashes, which would be
+                # misinterpreted as extra path segments. Percent-encoding collapses them to %2F.
+                encoded_name = urllib.parse.quote(pname, safe="")
+                encoded_version = urllib.parse.quote(pversion, safe="")
                 print(f"  Deleting package {ptype} {pname} {pversion} from {owner}...")
-                make_request("DELETE", f"/api/v1/packages/{owner}/{ptype}/{pname}/{pversion}")
+                make_request("DELETE", f"/api/v1/packages/{owner}/{ptype}/{encoded_name}/{encoded_version}")
 
 if __name__ == "__main__":
     print(f"Starting prune job. Keeping last {KEEP_COUNT} items.")
