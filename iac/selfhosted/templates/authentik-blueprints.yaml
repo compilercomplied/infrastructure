@@ -327,6 +327,41 @@ entries:
       meta_launch_url: https://syncthing.gdario.dev
       meta_publisher: GDario Labs
 
+  # ---------------------------------------------------------------------------
+  # Outline (OIDC Native)
+  # ---------------------------------------------------------------------------
+  - model: authentik_providers_oauth2.oauth2provider
+    id: outline-provider
+    identifiers:
+      name: Outline OIDC
+    attrs:
+      client_type: confidential
+      client_id: outline-client-id
+      # This secret must match 'outlineOidcClientSecret' in Pulumi Config.
+      client_secret: dummy-outline-oidc-client-secret
+      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
+      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
+      grant_types:
+        - authorization_code
+        - refresh_token
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+      redirect_uris:
+        - matching_mode: strict
+          url: https://outline.gdario.dev/auth/oidc.callback
+
+  - model: authentik_core.application
+    identifiers:
+      slug: outline
+    attrs:
+      name: Outline Wiki
+      provider: !KeyOf outline-provider
+      meta_launch_url: https://outline.gdario.dev
+      meta_publisher: GDario Labs
+
   # Attach the Syncthing proxy provider to the Embedded Outpost
   - model: authentik_outposts.outpost
     identifiers:

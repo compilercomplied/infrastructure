@@ -25,6 +25,9 @@ mcp_servers:
   forgejo:
     url: "http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse"
     transport: "sse"
+  outline:
+    url: "http://outline-mcp.selfhosted.svc.cluster.local:8000/sse"
+    transport: "sse"
 skills:
   disabled:
     - airtable

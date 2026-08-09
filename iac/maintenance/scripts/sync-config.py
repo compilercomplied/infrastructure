@@ -66,6 +66,11 @@ else:
             content = content.replace("tandoor-mcp.selfhosted.svc.cluster.local:8000", "tandoor-mcp.selfhosted.svc.cluster.local:8080")
             print("Successfully migrated tandoor-mcp port from 8000 to 8080.")
 
+        # Migrate forgejo-mcp path if necessary
+        if "forgejo-mcp.selfhosted.svc.cluster.local:8000/sse" in content:
+            content = content.replace("forgejo-mcp.selfhosted.svc.cluster.local:8000/sse", "forgejo-mcp.selfhosted.svc.cluster.local:8000/mcp")
+            print("Successfully migrated forgejo-mcp path from /sse to /mcp.")
+
         # Check if grafana mcp server is configured
         if "grafana-mcp.selfhosted.svc.cluster.local" not in content:
             # We insert the grafana MCP config under mcp_servers:
@@ -155,7 +160,7 @@ else:
                 # Insert the forgejo definition right under mcp_servers:
                 forgejo_config = [
                     "  forgejo:",
-                    "    url: http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse",
+                    "    url: http://forgejo-mcp.selfhosted.svc.cluster.local:8000/mcp",
                     "    transport: sse"
                 ]
                 lines = lines[:mcp_index + 1] + forgejo_config + lines[mcp_index + 1:]
@@ -163,8 +168,33 @@ else:
                 print("Successfully added forgejo-mcp to persistent configuration.")
             else:
                 # If mcp_servers block was missing entirely, append it
-                content += "\nmcp_servers:\n  forgejo:\n    url: http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse\n    transport: sse\n"
+                content += "\nmcp_servers:\n  forgejo:\n    url: http://forgejo-mcp.selfhosted.svc.cluster.local:8000/mcp\n    transport: sse\n"
                 print("Successfully appended mcp_servers block with forgejo-mcp to persistent configuration.")
+
+        # Check if outline mcp server is configured
+        if "outline-mcp.selfhosted.svc.cluster.local" not in content:
+            # We insert the outline MCP config under mcp_servers:
+            lines = content.splitlines()
+            mcp_index = -1
+            for i, line in enumerate(lines):
+                if line.strip().startswith("mcp_servers:"):
+                    mcp_index = i
+                    break
+            
+            if mcp_index != -1:
+                # Insert the outline definition right under mcp_servers:
+                outline_config = [
+                    "  outline:",
+                    "    url: http://outline-mcp.selfhosted.svc.cluster.local:8000/sse",
+                    "    transport: sse"
+                ]
+                lines = lines[:mcp_index + 1] + outline_config + lines[mcp_index + 1:]
+                content = "\n".join(lines) + "\n"
+                print("Successfully added outline-mcp to persistent configuration.")
+            else:
+                # If mcp_servers block was missing entirely, append it
+                content += "\nmcp_servers:\n  outline:\n    url: http://outline-mcp.selfhosted.svc.cluster.local:8000/sse\n    transport: sse\n"
+                print("Successfully appended mcp_servers block with outline-mcp to persistent configuration.")
 
         with open(dest_path, "w") as f:
             f.write(content)

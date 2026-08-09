@@ -42,7 +42,9 @@ export type SelfhostedAppArgs = {
   strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
-} & ExposeConfig;
+  ipFamilyPolicy?: string;
+  ipFamilies?: string[];
+} & (ExposeConfig | { exposeType: "private"; host?: never });
 
 // Configures standard Kubernetes resources for self-hosted apps to eliminate boilerplate.
 // Establishes consistent naming, label selectors, and TLS ingress.
@@ -174,8 +176,8 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
       annotations: serviceAnnotations,
     },
     spec: {
-      ipFamilyPolicy: "PreferDualStack",
-      ipFamilies: ["IPv4", "IPv6"],
+      ipFamilyPolicy: args.ipFamilyPolicy || "PreferDualStack",
+      ipFamilies: args.ipFamilies || ["IPv4", "IPv6"],
       ports: [{ port: 80, targetPort: containerPort, protocol: "TCP", name: "http" }],
       selector: { app: name },
     },

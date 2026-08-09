@@ -14,14 +14,14 @@ export function configureForgejoMcp(
   return createMCPServer({
     name,
     namespace,
-    image: "node:20-alpine",
+    image: "node:24-alpine",
     containerPort: 8000,
     // We fetch the generated access token from Gitea's volume before launching
-    // the stdio-only gitea-mcp server wrapped in supergateway.
+    // the native SSE endpoint for gitea-mcp.
     command: [
       "/bin/sh",
       "-c",
-      "export GITEA_ACCESS_TOKEN=$(cat /forgejo-data/gitea/hermes-token.txt) && exec npx -y supergateway --stdio \"npx -y gitea-mcp\" --port 8000",
+      "export GITEA_ACCESS_TOKEN=$(cat /forgejo-data/gitea/hermes-token.txt) && npm i -g gitea-mcp && export PORT=8000 && exec node /usr/local/lib/node_modules/gitea-mcp/dist/sse.js",
     ],
     env: [
       {

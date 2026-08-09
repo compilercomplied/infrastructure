@@ -96,3 +96,15 @@ config:
     secure: v1:dEuoKp9oavkUo9o/:IlLonGFNmPYa8b5qePbtM88teFEuD/xdgjCOuEs4P2yYMhVrIc3oF+AeZ1TkrarPF3fY7RK8YIEWbh3ZdutpIw==
   selfhosted:litellmMasterKey:
     secure: v1:P0tYiOMOAkm+mKKb:qiIxEti/7FOBqt0x33Myp4fp6QHMLFTtAW4z0xIfws8xF89pgPdpQv3Vzfl9GOgSx7iISP7CV3zFyKtGtGz9ZEH5Ag==
+  selfhosted:outlineDbPassword:
+    secure: v1:zGVlEpacljhYJzpK:tYJRhdgoE8mA8oeYmzkxX4OvjlDOgTgqmz0pZj6OwOUqZCKt1HvBGh0=
+  selfhosted:outlineSecretKey:
+    secure: v1:s22KWo5tP28z4oZD:y3Bu2G2JuZF82drmvuuz+nMJLKQMaxIre8rpD/84cy5ESYUlH+A2LUg2IYxuuywIJaA0xpTlmo/udb4DRRiPTkpDIRgRbVgZXYj7w6iJ8bg=
+  selfhosted:outlineUtilsSecret:
+    secure: v1:Vy2gOa3S7Ud8Ooi1:3CL+HpqqB9B3KA3+uNLX+QYiaXSl7wvXB+EPTDOiiyfgoBSD/djWivLFEn2/WgS9JzSGk+t4rNMHstfE7Xu1V43rAaroZc5Qs++uflaKres=
+  selfhosted:outlineMinioPassword:
+    secure: v1:aR7Qyz5TzScgts7q:1QFuI0D7KrV1+XJAAz3nro8NaGHQ/9FNeRdsS4Cfpx1VYJMDGvtl9OkSIqs=
+  selfhosted:outlineOidcClientSecret:
+    secure: v1:7ieJrdboSwnwQy59:agtauwiIB/+i83iVWAukfnwQ3gr9eZCe+H8kyScxkamJkEb5FGAKiq736BsyQdQg
+  selfhosted:outlineMcpToken:
+    secure: v1:dnXZpCFjBwVNpgCO:hu7PLAMGjRwHeRSEiZjzTidyQKnAsKZyV5+9yevKNUIoIrvgiZ+t1AbGYvm6U8DujLRain2sRkOAb+N3SA==
