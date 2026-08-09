@@ -174,6 +174,8 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
       annotations: serviceAnnotations,
     },
     spec: {
+      ipFamilyPolicy: "PreferDualStack",
+      ipFamilies: ["IPv4", "IPv6"],
       ports: [{ port: 80, targetPort: containerPort, protocol: "TCP", name: "http" }],
       selector: { app: name },
     },
