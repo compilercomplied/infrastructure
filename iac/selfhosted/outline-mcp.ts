@@ -13,12 +13,12 @@ export function configureOutlineMcp(
   // The user should generate this inside Outline (Settings -> API Keys) and store it in Pulumi secrets.
   const outlineMcpToken = config.requireSecret("outlineMcpToken");
 
-  // Since outline-mcp uses stdio, we must wrap it using supergateway to expose it over SSE.
+  // Since outline-mcp uses the Python SDK, we can expose it natively over Streamable HTTP.
   // We use a node base image with Python installed since mcp-outline is Python-based.
   return createMCPServer({
     name,
     namespace,
-    // Python MCP SDK natively supports SSE transport via environment variables.
+    // Python MCP SDK natively supports Streamable HTTP transport via environment variables.
     image: "node:22-alpine",
     containerPort: 8000,
     command: ["/bin/sh", "-c"],
@@ -28,7 +28,7 @@ export function configureOutlineMcp(
     env: [
       {
         name: "MCP_TRANSPORT",
-        value: "sse",
+        value: "streamable-http",
       },
       {
         name: "MCP_PORT",

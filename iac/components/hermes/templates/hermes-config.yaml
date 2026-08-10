@@ -14,20 +14,20 @@ mcp_servers:
     url: "http://tandoor-mcp.selfhosted.svc.cluster.local:8080/sse"
     transport: "sse"
   grafana:
-    url: "http://grafana-mcp.selfhosted.svc.cluster.local:8000/sse"
-    transport: "sse"
+    url: "http://grafana-mcp.selfhosted.svc.cluster.local:8000/mcp"
+    transport: "streamable-http"
   filesystem:
     url: "http://filesystem-mcp.selfhosted.svc.cluster.local:3000/sse"
     transport: "sse"
   kubernetes:
-    url: "http://kubernetes-mcp.selfhosted.svc.cluster.local:8000/sse"
-    transport: "sse"
+    url: "http://kubernetes-mcp.selfhosted.svc.cluster.local:8000/mcp"
+    transport: "streamable-http"
   forgejo:
-    url: "http://forgejo-mcp.selfhosted.svc.cluster.local:8000/sse"
-    transport: "sse"
+    url: "http://forgejo-mcp.selfhosted.svc.cluster.local:8000/mcp"
+    transport: "streamable-http"
   outline:
-    url: "http://outline-mcp.selfhosted.svc.cluster.local:8000/sse"
-    transport: "sse"
+    url: "http://outline-mcp.selfhosted.svc.cluster.local:8000/mcp"
+    transport: "streamable-http"
 skills:
   disabled:
     - airtable

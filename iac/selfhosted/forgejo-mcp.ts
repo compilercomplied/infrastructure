@@ -17,11 +17,11 @@ export function configureForgejoMcp(
     image: "node:24-alpine",
     containerPort: 8000,
     // We fetch the generated access token from Gitea's volume before launching
-    // the native SSE endpoint for gitea-mcp.
+    // the native Streamable HTTP endpoint for gitea-mcp.
     command: [
       "/bin/sh",
       "-c",
-      "export GITEA_ACCESS_TOKEN=$(cat /forgejo-data/gitea/hermes-token.txt) && npm i -g gitea-mcp && export PORT=8000 && exec node /usr/local/lib/node_modules/gitea-mcp/dist/sse.js",
+      "export GITEA_ACCESS_TOKEN=$(cat /forgejo-data/gitea/hermes-token.txt) && npm i -g gitea-mcp && export PORT=8000 && exec node /usr/local/lib/node_modules/gitea-mcp/dist/streamableHttp.js",
     ],
     env: [
       {
