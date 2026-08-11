@@ -99,11 +99,15 @@ export function configureOutline(
       [Labels.Network.AllowAuthentik]: "true",
       [Labels.Network.AllowPostgres]: "true",
     },
+    allowIngressFrom: [
+      { podSelector: { app: "outline-mcp" } },
+    ],
     env: [
       { name: "NODE_ENV", value: "production" },
       { name: "PORT", value: "3000" },
       { name: "HOST", value: "::" },
       { name: "URL", value: "https://outline.gdario.dev" },
+      { name: "FORCE_HTTPS", value: "false" },
       { name: "SECRET_KEY", value: secretKey },
       { name: "UTILS_SECRET", value: utilsSecret },
       { name: "DATABASE_URL", value: pulumi.interpolate`postgres://outline:${dbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/outline` },

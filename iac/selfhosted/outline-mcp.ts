@@ -44,7 +44,7 @@ export function configureOutlineMcp(
       },
       {
         name: "OUTLINE_API_URL",
-        value: "https://outline.gdario.dev/api",
+        value: "http://outline.selfhosted.svc.cluster.local:80/api",
       }
     ],
     dependencies,
