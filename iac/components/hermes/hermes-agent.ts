@@ -34,7 +34,8 @@ export class HermesAgent extends pulumi.ComponentResource {
     const deepseekApiKey = config.requireSecret("deepseekApiKey");
     const telegramBotToken = config.requireSecret("telegramBotToken");
     const hermesSecret = config.requireSecret("hermesSecret");
-    const litellmMasterKey = config.requireSecret("litellmMasterKey");
+    // Dedicated virtual API key generated in LiteLLM specifically for Hermes Agent.
+    const hermesLitellmApiKey = config.requireSecret("hermesLitellmApiKey");
 
     const host = "hermes.gdario.dev";
 
@@ -60,7 +61,7 @@ export class HermesAgent extends pulumi.ComponentResource {
         namespace,
       },
       stringData: {
-        "CUSTOM_API_KEY": litellmMasterKey,
+        "CUSTOM_API_KEY": hermesLitellmApiKey,
         "DEEPSEEK_API_KEY": deepseekApiKey,
         "TELEGRAM_BOT_TOKEN": telegramBotToken,
         "API_SERVER_KEY": hermesSecret,
@@ -88,7 +89,7 @@ export class HermesAgent extends pulumi.ComponentResource {
         namespace,
       },
       data: {
-        "config.yaml": pulumi.all([allowedChats, litellmMasterKey]).apply(([chats, key]) => {
+        "config.yaml": pulumi.all([allowedChats, hermesLitellmApiKey]).apply(([chats, key]) => {
           const chatLines = chats.map(chat => `    - "${chat}"`).join("\n");
           let content = configTemplate.replace("    # {{ALLOWED_CHATS}}", chatLines);
           content = content.replace("{{CUSTOM_API_KEY}}", key);

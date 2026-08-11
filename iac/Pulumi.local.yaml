@@ -108,3 +108,7 @@ config:
     secure: v1:7ieJrdboSwnwQy59:agtauwiIB/+i83iVWAukfnwQ3gr9eZCe+H8kyScxkamJkEb5FGAKiq736BsyQdQg
   selfhosted:outlineMcpToken:
     secure: v1:dnXZpCFjBwVNpgCO:hu7PLAMGjRwHeRSEiZjzTidyQKnAsKZyV5+9yevKNUIoIrvgiZ+t1AbGYvm6U8DujLRain2sRkOAb+N3SA==
+  selfhosted:kimiApiKey:
+    secure: v1:oUAHdJFX7/RQg8dM:tXDuUiKZ5PA3UeSjVAjseRq4VeVUV1TkUWllJ9QjRPf5DHPhtLtztLHTyE3fzx0d/U+HrDljezrUQezz0cskD3sVrQ==
+  selfhosted:hermesLitellmApiKey:
+    secure: v1:VmE7hU/BjaWyYFwt:jEesTfx4EfVwaJeUSCNJqkXC202EDVYE8o1fQozb5ySU3eNPnL+0O+g=

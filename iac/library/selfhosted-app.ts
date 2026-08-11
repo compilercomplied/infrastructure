@@ -42,6 +42,7 @@ export type SelfhostedAppArgs = {
   strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
+  rateLimit?: false | { average?: number; burst?: number; period?: string };
   ipFamilyPolicy?: string;
   ipFamilies?: string[];
 } & (ExposeConfig | { exposeType: "private"; host?: never });
@@ -195,6 +196,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
       servicePort: 80,
       targetPort: containerPort,
       podSelector: { app: name },
+      rateLimit: args.rateLimit,
       middlewares: args.middlewares,
       dependencies: [service],
     });

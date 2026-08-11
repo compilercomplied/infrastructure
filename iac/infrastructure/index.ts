@@ -24,6 +24,7 @@ export function configureInfrastructure() {
   const litellmMasterKey = config.requireSecret("litellmMasterKey");
   const postgresPassword = config.requireSecret("postgresPassword");
   const deepseekApiKey = config.requireSecret("deepseekApiKey");
+  const kimiApiKey = config.requireSecret("kimiApiKey");
 
   // Read the generic database initialization script. Reusing this script avoids
   // duplicating script files in the codebase.
@@ -134,22 +135,35 @@ export function configureInfrastructure() {
     data: {
       "config.yaml": `
 model_list:
-  - model_name: deepseek-v4-pro
+  # Provider-Prefixed Aliases (Stable names for your apps)
+  - model_name: kimi-code
+    litellm_params:
+      model: openai/kimi-k2.7-code
+      api_key: "os.environ/KIMI_API_KEY"
+      api_base: "https://api.moonshot.ai/v1"
+  - model_name: kimi-thinking
+    litellm_params:
+      model: openai/kimi-k2.7-code
+      api_key: "os.environ/KIMI_API_KEY"
+      api_base: "https://api.moonshot.ai/v1"
+      extra_body:
+        thinking:
+          type: "enabled"
+  - model_name: kimi-fast
+    litellm_params:
+      model: openai/kimi-k2.6
+      api_key: "os.environ/KIMI_API_KEY"
+      api_base: "https://api.moonshot.ai/v1"
+  - model_name: deepseek-pro
     litellm_params:
       model: deepseek/deepseek-v4-pro
       api_key: "os.environ/DEEPSEEK_API_KEY"
-  - model_name: deepseek-v4-flash
+      drop_params: true
+  - model_name: deepseek-fast
     litellm_params:
       model: deepseek/deepseek-v4-flash
       api_key: "os.environ/DEEPSEEK_API_KEY"
-  - model_name: deepseek/deepseek-v4-pro
-    litellm_params:
-      model: deepseek/deepseek-v4-pro
-      api_key: "os.environ/DEEPSEEK_API_KEY"
-  - model_name: deepseek/deepseek-v4-flash
-    litellm_params:
-      model: deepseek/deepseek-v4-flash
-      api_key: "os.environ/DEEPSEEK_API_KEY"
+      drop_params: true
 general_settings:
   master_key: "os.environ/LITELLM_MASTER_KEY"
   store_model_in_db: true
@@ -169,6 +183,28 @@ general_settings:
     containerPort: 4000,
     exposeType: "public",
     host: "litellm.gdario.dev",
+    rateLimit: false,
+    // uvicorn binds to 0.0.0.0 (IPv4 only). The default dual-stack service policy
+    // generates an IPv6 endpoint alongside the IPv4 one, which Traefik round-robins
+    // to — causing every other request to fail with connection refused → 502.
+    ipFamilyPolicy: "SingleStack",
+    ipFamilies: ["IPv4"],
+    // Without these probes, Kubernetes marks the pod Ready as soon as the
+    // process starts — before Prisma migrations and uvicorn finish initializing.
+    // This causes Traefik to forward requests to an unready pod, which
+    // Cloudflare reports as a 502 on every rolling deployment.
+    readinessProbe: {
+      httpGet: { path: "/health/readiness", port: 4000 },
+      initialDelaySeconds: 5,
+      periodSeconds: 10,
+      failureThreshold: 3,
+    },
+    livenessProbe: {
+      httpGet: { path: "/health/liveness", port: 4000 },
+      initialDelaySeconds: 30,
+      periodSeconds: 30,
+      failureThreshold: 3,
+    },
     labels: {
       // Require network access to the PostgreSQL server in the selfhosted namespace
       [Labels.Network.AllowPostgres]: "true",
@@ -181,6 +217,9 @@ general_settings:
       "LITELLM_MASTER_KEY": litellmMasterKey,
       "GENERIC_CLIENT_SECRET": litellmSecret,
       "DEEPSEEK_API_KEY": deepseekApiKey,
+      // Moonshot AI / Kimi provider key. Exposed under both KIMI_API_KEY and MOONSHOT_API_KEY so LiteLLM supports either model alias convention.
+      "KIMI_API_KEY": kimiApiKey,
+      "MOONSHOT_API_KEY": kimiApiKey,
     },
     env: [
       { name: "GENERIC_CLIENT_ID", value: "litellm-client-id" },
@@ -188,6 +227,7 @@ general_settings:
       { name: "GENERIC_TOKEN_ENDPOINT", value: "https://auth.gdario.dev/application/o/token/" },
       { name: "GENERIC_USERINFO_ENDPOINT", value: "https://auth.gdario.dev/application/o/userinfo/" },
       { name: "PROXY_BASE_URL", value: "https://litellm.gdario.dev" },
+      { name: "FORWARDED_ALLOW_IPS", value: "*" },
       { name: "GENERIC_ROLE_MAPPINGS_GROUP_CLAIM", value: "groups" },
       // Maps the Authentik group "litellm-admins" to LiteLLM's internal "proxy_admin" role.
       { name: "GENERIC_ROLE_MAPPINGS_ROLES", value: '{"proxy_admin": ["litellm-admins"]}' },
@@ -330,6 +370,17 @@ general_settings:
     },
   });
 
+  // Declaratively enforce the Kata Containers runtime node label on the worker node
+  // so that node resets or re-initializations preserve the katacontainers.io/kata-runtime label.
+  const kataNodeLabel = new k8s.core.v1.NodePatch("kata-node-label-debian", {
+    metadata: {
+      name: "debian",
+      labels: {
+        "katacontainers.io/kata-runtime": "true",
+      },
+    },
+  }, { dependsOn: [kataDeploy] });
+
   return {
     namespace: namespaceName,
     app,
@@ -337,6 +388,7 @@ general_settings:
     dbBackup,
     dbInitJob,
     kataDeploy,
+    kataNodeLabel,
     sysctlTuner,
   };
 }
