@@ -13,7 +13,7 @@ TOKEN_FILE = os.environ.get("GITEA_TOKEN_FILE", "/forgejo-data/gitea/hermes-toke
 KEEP_COUNT = 5
 # Items beyond KEEP_COUNT are only deleted once they exceed this age,
 # so a burst of recent runs never accidentally removes fresh history.
-MIN_AGE_DAYS = 30
+MIN_AGE_DAYS = 14
 
 try:
     with open(TOKEN_FILE, "r") as f:
