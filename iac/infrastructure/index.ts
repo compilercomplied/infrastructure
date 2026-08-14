@@ -170,6 +170,14 @@ general_settings:
   store_prompts_in_spend_logs: true
   maximum_spend_logs_retention_period: "30d"
   maximum_spend_logs_retention_interval: "1d"
+litellm_settings:
+  # Disable auth on /metrics so Prometheus can scrape inside the cluster without credentials.
+  # This setting is only honored under litellm_settings, not general_settings.
+  require_auth_for_metrics_endpoint: false
+  # Activates the prometheus_client /metrics endpoint with LLM cost and usage counters.
+  # Must be nested under litellm_settings — top-level callbacks key is ignored by LiteLLM.
+  callbacks:
+    - prometheus
 `
     }
   }, { dependsOn: [namespace] });
@@ -232,6 +240,10 @@ general_settings:
       // Maps the Authentik group "litellm-admins" to LiteLLM's internal "proxy_admin" role.
       { name: "GENERIC_ROLE_MAPPINGS_ROLES", value: '{"proxy_admin": ["litellm-admins"]}' },
       { name: "GENERIC_ROLE_MAPPINGS_DEFAULT_ROLE", value: "internal_user" },
+      // prometheus_client uses this directory to aggregate per-worker counters.
+      // Without it, each uvicorn worker maintains an isolated registry and only
+      // one worker's metrics surface on any given scrape — making cost totals unreliable.
+      { name: "PROMETHEUS_MULTIPROC_DIR", value: "/tmp/prometheus-multiproc" },
     ],
     volumes: [
       {
@@ -241,11 +253,48 @@ general_settings:
           name: litellmConfigMap.metadata.name,
         },
       },
+      {
+        name: "prometheus-multiproc",
+        mountPath: "/tmp/prometheus-multiproc",
+        emptyDir: {},
+      },
     ],
     command: ["litellm"],
     args: ["--config", "/app/config/config.yaml", "--port", "4000"],
     dependencies: [litellmConfigMap, dbInitJob],
   });
+
+  // Block external access to /metrics at the Traefik ingress layer.
+  // LiteLLM's prometheus callback disables auth on /metrics so Prometheus can scrape
+  // inside the cluster without credentials. Without this route, the same unauthenticated
+  // endpoint would be reachable publicly via Traefik at https://litellm.gdario.dev/metrics.
+  //
+  // A higher-priority IngressRoute intercepts PathPrefix('/metrics') before the main
+  // catch-all route (priority 10 set by Traefik by default) and routes it to
+  // noop@internal — Traefik's built-in sink that returns 418 with no body.
+  // Prometheus scrapes the pod IP directly and is unaffected by this rule.
+  const blockMetricsRoute = new k8s.apiextensions.CustomResource("litellm-block-metrics-route", {
+    apiVersion: "traefik.io/v1alpha1",
+    kind: "IngressRoute",
+    metadata: {
+      name: "litellm-block-metrics",
+      namespace: namespaceName,
+    },
+    spec: {
+      entryPoints: ["websecure"],
+      routes: [{
+        match: "Host(`litellm.gdario.dev`) && PathPrefix(`/metrics`)",
+        // Priority must exceed the default catch-all route priority (rule length = ~25)
+        // to ensure this rule is evaluated first by Traefik's router.
+        priority: 1000,
+        kind: "Rule",
+        services: [{
+          name: "noop@internal",
+          kind: "TraefikService",
+        }],
+      }],
+    },
+  }, { dependsOn: [app.service] });
 
   // Zero-trust baseline policy for the new namespace to block lateral traffic movement,
   // while allowing cert-manager and prometheus metric collection.
@@ -254,6 +303,33 @@ general_settings:
     dependencies: [app.deployment],
     namePrefix: "infrastructure-",
   });
+
+  // ServiceMonitor for Prometheus Operator to scrape LiteLLM's native /metrics endpoint.
+  // LiteLLM exposes prometheus_client metrics on the same port as its API (4000), so no
+  // extra sidecar or separate service is needed. The existing allowMonitoringScrape
+  // NetworkPolicy in this namespace already permits ingress from the monitoring namespace.
+  const serviceMonitor = new k8s.apiextensions.CustomResource("litellm-service-monitor", {
+    apiVersion: "monitoring.coreos.com/v1",
+    kind: "ServiceMonitor",
+    metadata: {
+      name: "litellm",
+      namespace: namespaceName,
+      labels: { app: "litellm" },
+    },
+    spec: {
+      selector: { matchLabels: { app: "litellm" } },
+      // Explicitly scope discovery to the infrastructure namespace so Prometheus Operator
+      // resolves this cross-namespace target even when namespaceSelector defaults are restrictive.
+      namespaceSelector: {
+        matchNames: ["infrastructure"],
+      },
+      endpoints: [{
+        port: "http",
+        path: "/metrics",
+        interval: "30s",
+      }],
+    },
+  }, { dependsOn: [app.service, security.allowMonitoringScrape] });
 
   // Backup job running Restic to dump the LiteLLM database to R2 storage daily.
   const dbBackup = createBackupJob({
@@ -385,6 +461,8 @@ general_settings:
     namespace: namespaceName,
     app,
     security,
+    serviceMonitor,
+    blockMetricsRoute,
     dbBackup,
     dbInitJob,
     kataDeploy,

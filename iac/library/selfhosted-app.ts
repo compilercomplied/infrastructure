@@ -12,6 +12,9 @@ export interface VolumeConfig {
   pvcName?: string; // custom name to map to existing persistent volume claims
   external?: boolean; // if true, does not create the PVC resource, assuming it is declared elsewhere
   configMap?: k8s.types.input.core.v1.ConfigMapVolumeSource;
+  // emptyDir is ephemeral and reset on every pod restart — suitable for
+  // in-process scratch dirs (e.g. PROMETHEUS_MULTIPROC_DIR) that must never persist.
+  emptyDir?: k8s.types.input.core.v1.EmptyDirVolumeSource;
 }
 
 export interface IngressRuleConfig {
@@ -98,6 +101,11 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
           name: vol.name,
           configMap: vol.configMap,
         });
+      } else if (vol.emptyDir !== undefined) {
+        k8sVolumes.push({
+          name: vol.name,
+          emptyDir: vol.emptyDir,
+        });
       } else {
         const pvcName = vol.pvcName || `${name}-${vol.name}-pvc`;
         
@@ -175,6 +183,10 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
       name,
       namespace,
       annotations: serviceAnnotations,
+      // Prometheus Operator generates a relabelling `keep` rule that matches on
+      // __meta_kubernetes_service_label_<key> — the Service must carry the same
+      // selector label for any ServiceMonitor targeting it to pass through.
+      labels: { app: name },
     },
     spec: {
       ipFamilyPolicy: args.ipFamilyPolicy || "PreferDualStack",
