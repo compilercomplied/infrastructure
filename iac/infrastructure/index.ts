@@ -136,16 +136,12 @@ export function configureInfrastructure() {
       "config.yaml": `
 model_list:
   # Provider-Prefixed Aliases (Stable names for your apps)
-  - model_name: kimi-code
-    litellm_params:
-      model: openai/kimi-k2.7-code
-      api_key: "os.environ/KIMI_API_KEY"
-      api_base: "https://api.moonshot.ai/v1"
   - model_name: kimi-thinking
     litellm_params:
       model: openai/kimi-k2.7-code
       api_key: "os.environ/KIMI_API_KEY"
       api_base: "https://api.moonshot.ai/v1"
+      drop_params: true
       extra_body:
         thinking:
           type: "enabled"
@@ -154,6 +150,7 @@ model_list:
       model: openai/kimi-k2.6
       api_key: "os.environ/KIMI_API_KEY"
       api_base: "https://api.moonshot.ai/v1"
+      drop_params: true
   - model_name: deepseek-pro
     litellm_params:
       model: deepseek/deepseek-v4-pro
