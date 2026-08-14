@@ -1,5 +1,3 @@
-import * as fs from "fs";
-import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createBackupJob } from "../../maintenance/backup";
@@ -75,41 +73,6 @@ export class HermesAgent extends pulumi.ComponentResource {
     const allowedChats = pulumi.all(users.map(u => u.telegramId));
     const allowedUsersString = allowedChats.apply(chats => chats.join(","));
 
-    const configTemplate = fs.readFileSync(path.resolve(__dirname, "./templates/hermes-config.yaml"), "utf-8");
-
-    // Because Kubernetes ConfigMap subPath volume mounts are read-only and locked at the OS level,
-    // the Hermes Agent UI's atomic config-writing mechanism (which replaces the file via os.replace)
-    // fails with a "Device or resource busy" (Errno 16) error when users try to toggle skills or modify settings.
-    // To solve this, we mount the ConfigMap to a temporary /opt/config-src path and copy it to the writable
-    // PVC volume at /opt/data/config.yaml using an initContainer. The sync-config.py script copies the IaC seed configuration
-    // only if it does not already exist, giving the user full ownership of their config.
-    const configMap = new k8s.core.v1.ConfigMap(`${name}-config`, {
-      metadata: {
-        name: `${name}-config`,
-        namespace,
-      },
-      data: {
-        "config.yaml": pulumi.all([allowedChats, hermesLitellmApiKey]).apply(([chats, key]) => {
-          const chatLines = chats.map(chat => `    - "${chat}"`).join("\n");
-          let content = configTemplate.replace("    # {{ALLOWED_CHATS}}", chatLines);
-          content = content.replace("{{CUSTOM_API_KEY}}", key);
-          return content;
-        }),
-      },
-    }, { dependsOn: dependencies, parent: this, aliases: [componentAlias] });
-
-    const syncConfigScript = fs.readFileSync(path.resolve(__dirname, "../../maintenance/scripts/sync-config.py"), "utf-8");
-
-    const scriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-scripts`, {
-      metadata: {
-        name: `${name}-scripts`,
-        namespace,
-      },
-      data: {
-        "sync-config.py": syncConfigScript,
-      },
-    }, { dependsOn: dependencies, parent: this, aliases: [componentAlias] });
-
     // 5. Deployment for Hermes Agent
     const deployment = new k8s.apps.v1.Deployment(name, {
       metadata: {
@@ -127,16 +90,6 @@ export class HermesAgent extends pulumi.ComponentResource {
             },
           },
           spec: {
-            initContainers: [{
-              name: "sync-config",
-              image: "nousresearch/hermes-agent:latest",
-              command: ["/opt/hermes/.venv/bin/python", "/opt/scripts/sync-config.py"],
-              volumeMounts: [
-                { name: "data", mountPath: "/opt/data" },
-                { name: "config-src", mountPath: "/opt/config-src" },
-                { name: "scripts", mountPath: "/opt/scripts" },
-              ],
-            }],
             containers: [{
               name: "hermes-agent",
               image: "nousresearch/hermes-agent:latest",
@@ -208,14 +161,12 @@ export class HermesAgent extends pulumi.ComponentResource {
             }],
             volumes: [
               { name: "data", persistentVolumeClaim: { claimName: pvc.metadata.name } },
-              { name: "config-src", configMap: { name: configMap.metadata.name } },
-              { name: "scripts", configMap: { name: scriptsConfigMap.metadata.name } },
             ],
           },
         },
       },
     }, {
-      dependsOn: [pvc, secrets, configMap, scriptsConfigMap, ...dependencies],
+      dependsOn: [pvc, secrets, ...dependencies],
       parent: this,
       aliases: [componentAlias],
       // We must delete the old deployment before replacing to prevent Kubernetes strategic merge patch from
