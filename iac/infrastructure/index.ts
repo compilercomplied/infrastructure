@@ -380,6 +380,18 @@ litellm_settings:
                 },
               },
             },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "agent-sidekicks",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  app: "hermes-agent",
+                },
+              },
+            },
           ],
           ports: [{ port: 4000 }],
         },

@@ -8,6 +8,7 @@ import { configureCertManager } from "./modules/cert-manager";
 import { configureInfrastructure } from "./infrastructure";
 import { configureSharedResources } from "./shared-resources";
 import { configureForgejo } from "./forgejo";
+import { configureAgentSidekicks } from "./agent-sidekicks";
 
 const { namespace } = configureAgents();
 
@@ -22,3 +23,6 @@ const infrastructure = configureInfrastructure();
 // Phase 1: Initialize new namespaces (no workloads migrated yet)
 const sharedResources = configureSharedResources();
 const forgejo = configureForgejo();
+
+// Phase 2: Stateless Agent & MCP Migration
+const sidekicks = configureAgentSidekicks(selfhosted);

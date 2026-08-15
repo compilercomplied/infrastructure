@@ -5,15 +5,8 @@ import { configureTandoorRecipes } from "./tandoor-recipes";
 import { configureAuthentik } from "./authentik";
 import { configureLinkwarden } from "./linkwarden";
 import { configureOutline } from "./outline";
-import { configureOutlineMcp } from "./outline-mcp";
-import { HermesAgent } from "../components/hermes/hermes-agent";
-import { configureTandoorMcp } from "./tandoor-mcp";
 import { configureGrimmory } from "./grimmory";
-import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureSyncthing } from "./syncthing";
-import { configureFilesystemMcp } from "./filesystem-mcp";
-import { configureKubernetesMcp } from "./kubernetes-mcp";
-import { configureForgejoMcp } from "./forgejo-mcp";
 import { configureNamespaceSecurity } from "./security";
 import { configureCoreDnsCustom } from "./coredns";
 import { configureCloudflared } from "./cloudflared";
@@ -45,29 +38,19 @@ export function configureSelfhosted() {
     { name: "outline", password: config.requireSecret("outlineDbPassword") },
   ]);
   const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
-  const tandoorMcp = configureTandoorMcp(namespaceName, [postgres, tandoor.deployment]);
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, [postgres]);
   const outline = configureOutline(namespaceName, [postgres]);
-  const outlineMcp = configureOutlineMcp(namespaceName, [outline.outline.deployment]);
   const forgejo = configureForgejo(namespaceName, [postgres]);
-  const grafanaMcp = configureGrafanaMcp(namespaceName, [postgres]);
   // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency
   // on Grimmory's volume being created first. We pass grimmory.deployment as a dependency.
   const syncthing = configureSyncthing(namespaceName, [authentik.serverService, grimmory.deployment]);
-  const filesystemMcp = configureFilesystemMcp(namespaceName, [syncthing.deployment]);
-  const kubernetesMcp = configureKubernetesMcp(namespaceName, [postgres]);
-  const forgejoMcp = configureForgejoMcp(namespaceName, [postgres, forgejo.deployment]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejo.runnerSecret, [forgejo.deployment]);
-  const hermes = new HermesAgent("hermes-agent", {
-    namespace: namespaceName,
-    dependencies: [postgres, authentik.serverService, tandoorMcp.service, grafanaMcp.service, filesystemMcp.service, kubernetesMcp.service, forgejoMcp.service, outlineMcp.service],
-  });
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, hermes.deployment, forgejo.deployment, kubernetesMcp.deployment, forgejoMcp.deployment, forgejoRunner.deployment, outline.outline.deployment, outlineMcp.deployment],
+    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, forgejo.deployment, forgejoRunner.deployment, outline.outline.deployment],
     namePrefix: "selfhosted-",
     aliases: {
       defaultDeny: [{ name: "default-deny-ingress" }],
@@ -86,20 +69,13 @@ export function configureSelfhosted() {
     namespace: namespaceName,
     postgres,
     tandoor,
-    tandoorMcp,
     authentik,
     linkwarden,
     grimmory,
     outline,
-    outlineMcp,
     forgejo,
     forgejoRunner,
-    grafanaMcp,
-    hermes,
     syncthing,
-    filesystemMcp,
-    kubernetesMcp,
-    forgejoMcp,
     corednsCustom,
     cloudflared,
     defaultDeny: security.defaultDeny,
