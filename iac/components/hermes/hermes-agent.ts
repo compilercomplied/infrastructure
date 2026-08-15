@@ -155,13 +155,28 @@ export class HermesAgent extends pulumi.ComponentResource {
                     },
                   },
                 },
+                { name: "DOCKER_HOST", value: "tcp://localhost:2375" },
               ],
               volumeMounts: [
                 { name: "data", mountPath: "/opt/data" },
               ],
+            },
+            {
+              name: "dind",
+              image: "docker:26-dind",
+              securityContext: {
+                privileged: true,
+              },
+              env: [
+                { name: "DOCKER_TLS_CERTDIR", value: "" },
+              ],
+              volumeMounts: [
+                { name: "docker-graph-storage", mountPath: "/var/lib/docker" },
+              ],
             }],
             volumes: [
               { name: "data", persistentVolumeClaim: { claimName: pvc.metadata.name } },
+              { name: "docker-graph-storage", emptyDir: {} },
             ],
           },
         },

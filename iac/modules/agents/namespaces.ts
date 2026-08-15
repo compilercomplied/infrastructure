@@ -1,4 +1,5 @@
 import * as k8s from "@pulumi/kubernetes";
+import { configureNamespaceSecurity } from "../../selfhosted/security";
 
 export function createNamespaces() {
     const agents = new k8s.core.v1.Namespace("agents", {
@@ -9,5 +10,25 @@ export function createNamespaces() {
         metadata: { name: "agents-control-plane" }
     }, { protect: true });
 
-    return { agents, controlPlane };
+    const agentSidekicks = new k8s.core.v1.Namespace("agent-sidekicks", {
+        metadata: { name: "agent-sidekicks" }
+    });
+
+    const agentSandbox = new k8s.core.v1.Namespace("agent-sandbox", {
+        metadata: { name: "agent-sandbox" }
+    });
+
+    configureNamespaceSecurity({
+        namespace: agentSidekicks.metadata.name,
+        dependencies: [agentSidekicks],
+        namePrefix: "agent-sidekicks-",
+    });
+
+    configureNamespaceSecurity({
+        namespace: agentSandbox.metadata.name,
+        dependencies: [agentSandbox],
+        namePrefix: "agent-sandbox-",
+    });
+
+    return { agents, controlPlane, agentSidekicks, agentSandbox };
 }

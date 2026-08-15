@@ -6,6 +6,8 @@ import { configureMaintenance } from "./modules/maintenance";
 import { configureSelfhosted } from "./selfhosted";
 import { configureCertManager } from "./modules/cert-manager";
 import { configureInfrastructure } from "./infrastructure";
+import { configureSharedResources } from "./shared-resources";
+import { configureForgejo } from "./forgejo";
 
 const { namespace } = configureAgents();
 
@@ -17,4 +19,6 @@ configureMaintenance();
 const selfhosted = configureSelfhosted();
 const infrastructure = configureInfrastructure();
 
-
+// Phase 1: Initialize new namespaces (no workloads migrated yet)
+const sharedResources = configureSharedResources();
+const forgejo = configureForgejo();
