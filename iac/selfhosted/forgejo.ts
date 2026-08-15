@@ -302,6 +302,13 @@ export function configureForgejo(
                 },
               },
             },
+            {
+              podSelector: {
+                matchLabels: {
+                  app: "hermes-agent",
+                },
+              },
+            },
           ],
           ports: [
             { protocol: "TCP", port: 3000 },
