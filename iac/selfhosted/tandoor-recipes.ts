@@ -48,7 +48,7 @@ export function configureTandoorRecipes(
     },
     env: [
       { name: "DB_ENGINE", value: "django.db.backends.postgresql" },
-      { name: "POSTGRES_HOST", value: "shared-postgres.selfhosted.svc.cluster.local" },
+      { name: "POSTGRES_HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
       { name: "POSTGRES_PORT", value: "5432" },
       { name: "POSTGRES_DB", value: "tandoor" },
       { name: "POSTGRES_USER", value: "tandoor" },
@@ -77,7 +77,7 @@ export function configureTandoorRecipes(
     source: {
       type: "postgres",
       databaseName: "tandoor",
-      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
       dbUser: "tandoor",
       dbPasswordSecret: tandoorDbPassword,
     },

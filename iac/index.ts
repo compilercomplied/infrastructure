@@ -17,11 +17,13 @@ configureMonitoring();
 
 configureCertManager();
 configureMaintenance();
-const selfhosted = configureSelfhosted();
-const infrastructure = configureInfrastructure();
 
 // Phase 1: Initialize new namespaces (no workloads migrated yet)
 const sharedResources = configureSharedResources();
+
+const selfhosted = configureSelfhosted(sharedResources.postgres, sharedResources.mariadb);
+const infrastructure = configureInfrastructure();
+
 const forgejo = configureForgejo();
 
 // Phase 2: Stateless Agent & MCP Migration

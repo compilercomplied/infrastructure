@@ -2,7 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as path from "path";
-import { postgresClientImage } from "../selfhosted/shared-postgres";
+import { postgresClientImage } from "../shared-resources/shared-postgres";
 import { Labels } from "../selfhosted/labels";
 
 // Load the standalone script files to satisfy the script-ownership guidelines.

@@ -6,7 +6,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
 import { createBackupJob } from "../maintenance/backup";
 import { Labels } from "./labels";
-import { postgresClientImage } from "./shared-postgres";
+import { postgresClientImage } from "../shared-resources/shared-postgres";
 
 // Load the standalone script files to satisfy the script-ownership guidelines.
 // This decouples script logic from the Pulumi infrastructure definition.
@@ -85,7 +85,7 @@ export function configureForgejo(
             image: postgresClientImage,
             command: ["/bin/sh", "/scripts/init-forgejo-db.sh"],
             env: [
-              { name: "DB_HOST", value: "shared-postgres.selfhosted.svc.cluster.local" },
+              { name: "DB_HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
               { name: "DB_NAME", value: name },
               { name: "DB_USER", value: name },
               {
@@ -163,7 +163,7 @@ export function configureForgejo(
     },
     env: [
       { name: "FORGEJO__database__DB_TYPE", value: "postgres" },
-      { name: "FORGEJO__database__HOST", value: "shared-postgres.selfhosted.svc.cluster.local:5432" },
+      { name: "FORGEJO__database__HOST", value: "shared-postgres.shared-resources.svc.cluster.local:5432" },
       { name: "FORGEJO__database__NAME", value: name },
       { name: "FORGEJO__database__USER", value: name },
       { name: "FORGEJO__server__DOMAIN", value: "git.gdario.dev" },
@@ -326,7 +326,7 @@ export function configureForgejo(
     source: {
       type: "postgres",
       databaseName: name,
-      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
       dbUser: name,
       dbPasswordSecret: forgejoDbPassword,
     },

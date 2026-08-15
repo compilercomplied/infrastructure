@@ -1,6 +1,5 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { configureSharedPostgres } from "./shared-postgres";
 import { configureTandoorRecipes } from "./tandoor-recipes";
 import { configureAuthentik } from "./authentik";
 import { configureLinkwarden } from "./linkwarden";
@@ -13,7 +12,7 @@ import { configureCloudflared } from "./cloudflared";
 import { configureForgejo } from "./forgejo";
 import { configureForgejoRunner } from "./forgejo-runner";
 
-export function configureSelfhosted() {
+export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.core.v1.Service) {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
     metadata: { name: "selfhosted" }
   });
@@ -21,26 +20,13 @@ export function configureSelfhosted() {
   const namespaceName = namespace.metadata.name;
 
   const config = new pulumi.Config("selfhosted");
-  const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
-  const authentikDbPassword = config.requireSecret("authentikDbPassword");
-  const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
-  const forgejoDbPassword = config.requireSecret("forgejoDbPassword");
-  const litellmDbPassword = config.requireSecret("litellmDbPassword");
   const cloudflareTunnelToken = config.requireSecret("cloudflareTunnelToken");
 
 	// Deployments
-  const postgres = configureSharedPostgres(namespaceName, [
-    { name: "tandoor", password: tandoorDbPassword },
-    { name: "authentik", password: authentikDbPassword },
-    { name: "linkwarden", password: linkwardenDbPassword },
-    { name: "forgejo", password: forgejoDbPassword },
-    { name: "litellm", password: litellmDbPassword },
-    { name: "outline", password: config.requireSecret("outlineDbPassword") },
-  ]);
   const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
   const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
-  const grimmory = configureGrimmory(namespaceName, [postgres]);
+  const grimmory = configureGrimmory(namespaceName, mariadb, [postgres]);
   const outline = configureOutline(namespaceName, [postgres]);
   const forgejo = configureForgejo(namespaceName, [postgres]);
   // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency

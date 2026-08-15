@@ -1,7 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../library/k8s-pvc";
-import { Labels } from "./labels";
+import { Labels } from "../selfhosted/labels";
 
 export const postgresClientImage = "postgres:16-alpine";
 

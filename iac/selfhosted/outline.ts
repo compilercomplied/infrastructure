@@ -110,7 +110,7 @@ export function configureOutline(
       { name: "FORCE_HTTPS", value: "false" },
       { name: "SECRET_KEY", value: secretKey },
       { name: "UTILS_SECRET", value: utilsSecret },
-      { name: "DATABASE_URL", value: pulumi.interpolate`postgres://outline:${dbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/outline` },
+      { name: "DATABASE_URL", value: pulumi.interpolate`postgres://outline:${dbPassword}@shared-postgres.shared-resources.svc.cluster.local:5432/outline` },
       { name: "PGSSLMODE", value: "disable" },
       { name: "REDIS_URL", value: "redis://outline-redis.selfhosted.svc.cluster.local:80" },
       

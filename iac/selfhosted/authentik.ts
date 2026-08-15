@@ -121,7 +121,7 @@ export function configureAuthentik(
 
   const commonEnv = [
     { name: "AUTHENTIK_REDIS__HOST", value: redisService.metadata.name },
-    { name: "AUTHENTIK_POSTGRESQL__HOST", value: "shared-postgres.selfhosted.svc.cluster.local" },
+    { name: "AUTHENTIK_POSTGRESQL__HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
     { name: "AUTHENTIK_POSTGRESQL__USER", value: "authentik" },
     { name: "AUTHENTIK_POSTGRESQL__NAME", value: "authentik" },
     { name: "AUTHENTIK_POSTGRESQL__PORT", value: "5432" },
@@ -393,7 +393,7 @@ export function configureAuthentik(
     source: {
       type: "postgres",
       databaseName: "authentik",
-      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
       dbUser: "authentik",
       dbPasswordSecret: authentikDbPassword,
     },

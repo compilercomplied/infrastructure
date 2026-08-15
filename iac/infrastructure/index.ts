@@ -7,7 +7,7 @@ import { createSelfhostedApp } from "../library/selfhosted-app";
 import { configureNamespaceSecurity } from "../selfhosted/security";
 import { createBackupJob } from "../maintenance/backup";
 import { Labels } from "../selfhosted/labels";
-import { postgresClientImage } from "../selfhosted/shared-postgres";
+import { postgresClientImage } from "../shared-resources/shared-postgres";
 
 export function configureInfrastructure() {
   // A dedicated namespace is created to isolate core infrastructure components
@@ -82,7 +82,7 @@ export function configureInfrastructure() {
             image: postgresClientImage,
             command: ["/bin/sh", "/scripts/init-forgejo-db.sh"],
             env: [
-              { name: "DB_HOST", value: "shared-postgres.selfhosted.svc.cluster.local" },
+              { name: "DB_HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
               { name: "DB_NAME", value: "litellm" },
               { name: "DB_USER", value: "litellm" },
               {
@@ -218,7 +218,7 @@ litellm_settings:
     },
     secrets: {
       // Connect to PostgreSQL DB in the selfhosted namespace.
-      "DATABASE_URL": pulumi.interpolate`postgresql://litellm:${litellmDbPassword}@shared-postgres.selfhosted.svc.cluster.local:5432/litellm`,
+      "DATABASE_URL": pulumi.interpolate`postgresql://litellm:${litellmDbPassword}@shared-postgres.shared-resources.svc.cluster.local:5432/litellm`,
       "LITELLM_MASTER_KEY": litellmMasterKey,
       "GENERIC_CLIENT_SECRET": litellmSecret,
       "DEEPSEEK_API_KEY": deepseekApiKey,
@@ -335,7 +335,7 @@ litellm_settings:
     source: {
       type: "postgres",
       databaseName: "litellm",
-      dbHost: "shared-postgres.selfhosted.svc.cluster.local",
+      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
       dbUser: "litellm",
       dbPasswordSecret: litellmDbPassword,
     },
