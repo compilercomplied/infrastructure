@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import { configureNamespaceSecurity } from "../selfhosted/security";
+import { configureBridgePolicies } from "./bridge-network-policies";
 
 export function configureSharedResources() {
   const namespace = new k8s.core.v1.Namespace("shared-resources", {
@@ -15,32 +16,19 @@ export function configureSharedResources() {
   });
 
   // Pre-emptive bridge NetworkPolicy allowing other namespaces to connect 
-  // to future databases in shared-resources during the migration.
-  const allowCrossNamespaceTraffic = new k8s.networking.v1.NetworkPolicy("shared-resources-allow-cross-ns", {
-    metadata: {
-      name: "allow-cross-ns-ingress",
-      namespace: namespaceName,
-    },
-    spec: {
-      podSelector: {}, // Matches all pods in shared-resources
-      ingress: [
-        {
-          from: [
-            { namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "selfhosted" } } },
-            { namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "infrastructure" } } },
-            { namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "forgejo" } } },
-            { namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "agents-control-plane" } } },
-            { namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "agent-sidekicks" } } },
-          ],
-        },
-      ],
-      policyTypes: ["Ingress"],
-    },
-  }, { dependsOn: [security.defaultDeny] });
+  // to each other during the migration.
+  const bridgePolicies = configureBridgePolicies([
+    "selfhosted", 
+    "infrastructure", 
+    "forgejo", 
+    "agent-sidekicks", 
+    "shared-resources",
+    "agents-control-plane"
+  ]);
 
   return {
     namespace: namespaceName,
     security,
-    allowCrossNamespaceTraffic,
+    bridgePolicies,
   };
 }
