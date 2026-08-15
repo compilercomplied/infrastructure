@@ -90,6 +90,7 @@ export class HermesAgent extends pulumi.ComponentResource {
             },
           },
           spec: {
+            runtimeClassName: "kata-qemu",
             containers: [{
               name: "hermes-agent",
               image: "nousresearch/hermes-agent:latest",
@@ -171,7 +172,7 @@ export class HermesAgent extends pulumi.ComponentResource {
       aliases: [componentAlias],
       // We must delete the old deployment before replacing to prevent Kubernetes strategic merge patch from
       // failing with a validation error when an environment variable transitions from value to valueFrom.
-      deleteBeforeReplace: true,
+      deleteBeforeReplace: false,
     });
     this.deployment = deployment;
 
