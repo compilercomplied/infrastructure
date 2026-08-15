@@ -1,0 +1,52 @@
+name: Pulumi Infrastructure
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  pulumi:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Pulumi CLI
+        run: curl -fsSL https://get.pulumi.com | sh -s -- --version 3.228.0 && echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
+
+      - name: Install Node Dependencies
+        run: npm ci
+        working-directory: ./iac
+
+      - name: Configure Kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.HOMELAB_KUBECONFIG_B64 }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Run Pulumi Preview
+        if: github.event_name == 'pull_request'
+        run: pulumi preview --diff --stack local
+        working-directory: ./iac
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+
+      - name: Run Pulumi Up
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        run: pulumi up --stack local --yes --skip-preview
+        working-directory: ./iac
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
