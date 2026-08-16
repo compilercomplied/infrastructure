@@ -19,6 +19,7 @@ export interface VolumeConfig {
 
 export interface IngressRuleConfig {
   podSelector: Record<string, string>;
+  namespaceSelector?: Record<string, string>;
   port?: number;
 }
 
@@ -241,6 +242,7 @@ export function createSelfhostedApp(args: SelfhostedAppArgs) {
                   podSelector: {
                     matchLabels: rule.podSelector,
                   },
+                  ...(rule.namespaceSelector ? { namespaceSelector: { matchLabels: rule.namespaceSelector } } : {})
                 },
               ],
               ports: [{ port: rule.port || containerPort }],

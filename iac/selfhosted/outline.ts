@@ -100,7 +100,10 @@ export function configureOutline(
       [Labels.Network.AllowPostgres]: "true",
     },
     allowIngressFrom: [
-      { podSelector: { app: "outline-mcp" } },
+      { 
+        podSelector: { app: "outline-mcp" },
+        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" }
+      },
     ],
     env: [
       { name: "NODE_ENV", value: "production" },

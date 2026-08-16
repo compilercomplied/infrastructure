@@ -66,7 +66,10 @@ export function configureTandoorRecipes(
       },
     ],
     allowIngressFrom: [
-      { podSelector: { app: "tandoor-mcp" } },
+      { 
+        podSelector: { app: "tandoor-mcp" },
+        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" }
+      },
     ],
     dependencies,
   });
