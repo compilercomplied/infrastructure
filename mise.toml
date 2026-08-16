@@ -1,27 +1,26 @@
 [tools]
 pulumi = "latest"
+node = "lts"
 
 [tasks.preview-deployment]
 description = "Perform a Pulumi dry-run (preview)"
 run = """
 pulumi login
-pulumi preview --stack local
+pulumi preview --stack local "$@"
 """
 dir = "iac"
 
 [tasks.project-setup]
 description = "Initialize local Pulumi state and stack"
 run = """
+if [ -z "$PULUMI_CONFIG_PASSPHRASE" ]; then
+  echo "Error: PULUMI_CONFIG_PASSPHRASE is not set. The environment needs configuration provided by a human."
+  exit 1
+fi
+
+npm install
 pulumi install
 pulumi login
 pulumi stack select local
-"""
-dir = "iac"
-
-[tasks.deploy]
-description = "Apply Pulumi changes using local stack"
-run = """
-pulumi login
-pulumi up --stack local
 """
 dir = "iac"
