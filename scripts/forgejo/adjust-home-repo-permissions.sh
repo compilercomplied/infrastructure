@@ -4,7 +4,7 @@ set -euo pipefail
 # Script to adjust repository branch protection permissions for the 'home' organization.
 # This script runs via kubectl exec to perform operations directly inside the running Forgejo pod.
 
-NAMESPACE="selfhosted"
+NAMESPACE="forgejo"
 POD_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=forgejo -o jsonpath='{.items[0].metadata.name}')
 
 echo "Executing branch protection adjustment inside Forgejo pod: $POD_NAME..."
