@@ -3,9 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import { createSelfhostedApp } from "../library/selfhosted-app";
-import { createPVC } from "../library/k8s-pvc";
-import { createBackupJob } from "../maintenance/backup";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { Labels } from "./labels";
 
 export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.2.0";
@@ -20,12 +18,9 @@ export function configureGrimmory(
   const grimmoryDbPassword = config.requireSecret("grimmoryDbPassword");
   const grimmorySecret = config.requireSecret("grimmory-secret");
 
-  
-
-  // Configure the frontend/application using the self-hosted application helper.
+  // Configure the frontend/application using the self-hosted application component.
   // Standard volumes for book storage, watched folder (bookdrop), and application metadata.
-  const app = createSelfhostedApp({
-    name: "grimmory",
+  const app = new SelfhostedApp("grimmory", {
     namespace,
     image: grimmoryImage,
     containerPort: 6060,
@@ -50,6 +45,16 @@ export function configureGrimmory(
       { name: "TZ", value: "Europe/Rome" },
       { name: "DISK_TYPE", value: "LOCAL" },
     ],
+    databases: [
+      {
+        type: "mariadb",
+        databaseName: "grimmory",
+        host: pulumi.interpolate`${mariadbService.metadata.name}.${mariadbService.metadata.namespace}.svc.cluster.local`,
+        username: "grimmory",
+        passwordSecret: grimmoryDbPassword,
+        clientImage: grimmoryMariaDbImage,
+      }
+    ],
     volumes: [
       {
         name: "grimmory-data",
@@ -68,45 +73,10 @@ export function configureGrimmory(
         mountPath: "/bookdrop",
         size: "1Gi",
         pvcName: "grimmory-bookdrop-pvc",
+        enableBackup: false,
       },
     ],
     dependencies: [...dependencies, mariadbService],
-  });
-
-  const dbBackup = createBackupJob({
-    appName: "grimmory",
-    namespace,
-    source: {
-      type: "mariadb",
-      databaseName: "grimmory",
-      dbHost: pulumi.interpolate`${mariadbService.metadata.name}.${mariadbService.metadata.namespace}.svc.cluster.local`,
-      dbUser: "grimmory",
-      dbPasswordSecret: grimmoryDbPassword,
-      clientImage: grimmoryMariaDbImage,
-    },
-    dependencies: [...dependencies, mariadbService, app.deployment],
-  });
-
-  const booksBackup = createBackupJob({
-    appName: "grimmory",
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: "grimmory-books-pvc",
-      mountPath: "/books",
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
-  const dataBackup = createBackupJob({
-    appName: "grimmory",
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: "grimmory-data-pvc",
-      mountPath: "/app/data",
-    },
-    dependencies: [...dependencies, app.deployment],
   });
 
   const patchScriptContent = fs.readFileSync(
@@ -191,15 +161,10 @@ export function configureGrimmory(
     deleteBeforeReplace: true,
   });
 
-  
-
   return {
-    ...app,
+    deployment: app.deployment,
     mariadbService,
-    dbBackup,
-    booksBackup,
-    dataBackup,
     patchJob,
-    
   };
 }
+
