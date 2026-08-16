@@ -3,7 +3,7 @@ set -e
 
 # Wait for the Forgejo service HTTP port to be available before trying to create the runner file.
 echo "Waiting for Forgejo HTTP endpoint..."
-until wget -qO- http://forgejo.selfhosted.svc.cluster.local:80/ >/dev/null 2>&1; do
+until wget -qO- ${FORGEJO_INTERNAL_URL} >/dev/null 2>&1; do
   sleep 2
 done
 
@@ -16,7 +16,7 @@ sed -i "s|DOCKER_HOST_REPLACE_ME|unix:///var/run/docker.sock|g" /tmp/config.yaml
 if [ ! -f /data/.runner ]; then
   echo "Registering runner with Forgejo using the pre-shared secret..."
   forgejo-runner -c /tmp/config.yaml create-runner-file \
-    --instance "https://git.gdario.dev" \
+    --instance "${FORGEJO_PUBLIC_URL}" \
     --secret "${RUNNER_SECRET}" \
     --name "${HOSTNAME}"
 fi

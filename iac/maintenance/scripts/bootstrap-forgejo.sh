@@ -87,7 +87,7 @@ if [ -n "${RUNNER_SECRET}" ]; then
   su-exec git forgejo forgejo-cli actions register \
     --name "k8s-runner" \
     --secret "${RUNNER_SECRET}" \
-    --labels "ubuntu-latest,ubuntu-22.04,ubuntu-20.04"
+    --labels "custom-runner:docker://catthehacker/ubuntu:act-latest,ubuntu-latest:docker://catthehacker/ubuntu:act-latest,ubuntu-22.04:docker://catthehacker/ubuntu:act-latest,ubuntu-20.04:docker://catthehacker/ubuntu:act-latest"
 else
   echo "RUNNER_SECRET not set, skipping runner registration."
 fi

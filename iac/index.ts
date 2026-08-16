@@ -24,7 +24,7 @@ const sharedResources = configureSharedResources();
 const selfhosted = configureSelfhosted(sharedResources.postgres, sharedResources.mariadb);
 const infrastructure = configureInfrastructure();
 
-const forgejo = configureForgejo();
+const forgejo = configureForgejo([sharedResources.postgres]);
 
 // Phase 2: Stateless Agent & MCP Migration
 const sidekicks = configureAgentSidekicks(selfhosted);

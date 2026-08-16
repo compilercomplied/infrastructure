@@ -4,6 +4,8 @@ import * as crypto from "crypto";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../library/k8s-pvc";
+import { createSelfhostedApp } from "../library/selfhosted-app";
+import { Labels } from "../selfhosted/labels";
 
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "../maintenance/scripts/bootstrap-forgejo-runner.sh"), "utf8");
 
@@ -113,6 +115,14 @@ container:
                 {
                   name: "DOCKER_HOST",
                   value: "unix:///var/run/docker.sock",
+                },
+                {
+                  name: "FORGEJO_INTERNAL_URL",
+                  value: "http://forgejo.forgejo.svc.cluster.local:80/",
+                },
+                {
+                  name: "FORGEJO_PUBLIC_URL",
+                  value: "https://git.gdario.dev",
                 },
               ],
               volumeMounts: [

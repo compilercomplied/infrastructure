@@ -5,7 +5,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createSelfhostedApp } from "../library/selfhosted-app";
 import { createBackupJob } from "../maintenance/backup";
-import { Labels } from "./labels";
+import { Labels } from "../selfhosted/labels";
 import { postgresClientImage } from "../shared-resources/shared-postgres";
 
 // Load the standalone script files to satisfy the script-ownership guidelines.
@@ -380,7 +380,7 @@ export function configureForgejo(
                 env: [
                   // Port 80 is the Kubernetes Service port, not the container port (3000).
                   // Pod-to-pod traffic must go through the Service, so :3000 would be refused.
-                  { name: "GITEA_HOST", value: `http://${name}.selfhosted.svc.cluster.local:80` },
+                  { name: "GITEA_HOST", value: `http://${name}.forgejo.svc.cluster.local:80` },
                   // Explicit token path so a future mountPath rename doesn't silently break auth.
                   { name: "GITEA_TOKEN_FILE", value: "/forgejo-data/gitea/hermes-token.txt" },
                 ],
