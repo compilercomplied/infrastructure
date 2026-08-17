@@ -136,21 +136,29 @@ export function configureInfrastructure() {
       "config.yaml": `
 model_list:
   # Provider-Prefixed Aliases (Stable names for your apps)
-  - model_name: kimi-thinking
-    litellm_params:
-      model: openai/kimi-k2.7-code
-      api_key: "os.environ/KIMI_API_KEY"
-      api_base: "https://api.moonshot.ai/v1"
-      drop_params: true
-      extra_body:
-        thinking:
-          type: "enabled"
+  # Pricing source: Moonshot AI Kimi API Platform (https://platform.kimi.com/docs/pricing/chat)
+  # Rates fetched 2026-08-17: kimi-k2.6 ¥6.50/1M input, ¥27.00/1M output;
+  # kimi-k2.7-code ¥6.50/1M input, ¥27.00/1M output. Converted at USD/CNY 0.148.
+  # Disabled: kimi-thinking is too expensive for routine use.
+  # - model_name: kimi-thinking
+  #   litellm_params:
+  #     model: openai/kimi-k2.7-code
+  #     api_key: "os.environ/KIMI_API_KEY"
+  #     api_base: "https://api.moonshot.ai/v1"
+  #     drop_params: true
+  #     input_cost_per_token: 0.000000962
+  #     output_cost_per_token: 0.000003996
+  #     extra_body:
+  #       thinking:
+  #         type: "enabled"
   - model_name: kimi-fast
     litellm_params:
       model: openai/kimi-k2.6
       api_key: "os.environ/KIMI_API_KEY"
       api_base: "https://api.moonshot.ai/v1"
       drop_params: true
+      input_cost_per_token: 0.000000962
+      output_cost_per_token: 0.000003996
   - model_name: deepseek-pro
     litellm_params:
       model: deepseek/deepseek-v4-pro
