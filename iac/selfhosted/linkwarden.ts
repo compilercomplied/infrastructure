@@ -1,6 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
-import { createSelfhostedApp } from "../library/selfhosted-app";
-import { createBackupJob } from "../maintenance/backup";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { Labels } from "./labels";
 
 export function configureLinkwarden(
@@ -12,8 +11,10 @@ export function configureLinkwarden(
   const linkwardenSecret = config.requireSecret("linkwarden-secret");
   const linkwardenNextAuthSecret = config.requireSecret("linkwardenNextAuthSecret");
 
-  const app = createSelfhostedApp({
-    name: "linkwarden",
+  // Configure the frontend/application using the self-hosted application component.
+  // Linkwarden relies on the shared Postgres instance; the database backup is
+  // handled declaratively by the component.
+  const app = new SelfhostedApp("linkwarden", {
     namespace,
     image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
     containerPort: 3000,
@@ -29,7 +30,7 @@ export function configureLinkwarden(
       "AUTHENTIK_CLIENT_SECRET": linkwardenSecret,
       "NEXT_PUBLIC_DISABLE_REGISTRATION": "true",
       "NEXT_PUBLIC_CREDENTIALS_ENABLED": "false",
-      "DATABASE_URL": pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.shared-resources.svc.cluster.local:5432/linkwarden`,
+      "DATABASE_URL": pulumi.interpolate`postgresql://linkwarden:***@shared-postgres.shared-resources.svc.cluster.local:5432/linkwarden`,
     },
     env: [
       {
@@ -44,6 +45,15 @@ export function configureLinkwarden(
       },
       { name: "AUTHENTIK_CLIENT_ID", value: "linkwarden-client-id" },
     ],
+    databases: [
+      {
+        type: "postgres",
+        databaseName: "linkwarden",
+        host: "shared-postgres.shared-resources.svc.cluster.local",
+        username: "linkwarden",
+        passwordSecret: linkwardenDbPassword,
+      },
+    ],
     volumes: [
       {
         name: "linkwarden-data",
@@ -55,33 +65,7 @@ export function configureLinkwarden(
     dependencies,
   });
 
-  const dbBackup = createBackupJob({
-    appName: "linkwarden",
-    namespace,
-    source: {
-      type: "postgres",
-      databaseName: "linkwarden",
-      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
-      dbUser: "linkwarden",
-      dbPasswordSecret: linkwardenDbPassword,
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
-  const filesBackup = createBackupJob({
-    appName: "linkwarden",
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: "linkwarden-pvc",
-      mountPath: "/data/data",
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
   return {
-    ...app,
-    dbBackup,
-    filesBackup,
+    deployment: app.deployment,
   };
 }
