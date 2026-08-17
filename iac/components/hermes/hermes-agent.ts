@@ -36,6 +36,7 @@ export class HermesAgent extends pulumi.ComponentResource {
     // Dedicated virtual API key generated in LiteLLM specifically for Hermes Agent.
     const hermesLitellmApiKey = config.requireSecret("hermesLitellmApiKey");
     const pulumiPassphrase = agentsConfig.requireSecret("pulumiPassphrase");
+    const pulumiAccessToken = agentsConfig.requireSecret("pulumiAccessToken");
 
     const host = "hermes.gdario.dev";
 
@@ -68,6 +69,7 @@ export class HermesAgent extends pulumi.ComponentResource {
         // The dashboard OIDC client secret is sensitive and must not be exposed in pod environment details.
         "HERMES_DASHBOARD_OIDC_CLIENT_SECRET": hermesSecret,
         "PULUMI_CONFIG_PASSPHRASE": pulumiPassphrase,
+        "PULUMI_ACCESS_TOKEN": pulumiAccessToken,
       },
     }, { dependsOn: dependencies, parent: this, aliases: [componentAlias] });
 
@@ -164,6 +166,15 @@ export class HermesAgent extends pulumi.ComponentResource {
                     secretKeyRef: {
                       name: secrets.metadata.name,
                       key: "PULUMI_CONFIG_PASSPHRASE",
+                    },
+                  },
+                },
+                {
+                  name: "PULUMI_ACCESS_TOKEN",
+                  valueFrom: {
+                    secretKeyRef: {
+                      name: secrets.metadata.name,
+                      key: "PULUMI_ACCESS_TOKEN",
                     },
                   },
                 },
