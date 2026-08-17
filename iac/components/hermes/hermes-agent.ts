@@ -78,6 +78,24 @@ export class HermesAgent extends pulumi.ComponentResource {
     const allowedChats = pulumi.all(users.map(u => u.telegramId));
     const allowedUsersString = allowedChats.apply(chats => chats.join(","));
 
+    // 4.5 ServiceAccount and RBAC for Pulumi preview in cluster
+    const serviceAccount = new k8s.core.v1.ServiceAccount(`${name}-sa`, {
+      metadata: { name: `${name}-sa`, namespace },
+    }, { parent: this, aliases: [componentAlias] });
+
+    // Pulumi preview uses Server-Side Apply with dryRun=All to calculate diffs.
+    // Kubernetes RBAC requires actual mutation permissions (patch/create/update) to authorize dryRun requests.
+    // Therefore, cluster-admin is the bare minimum required to preview cluster-wide infrastructure changes.
+    const clusterRoleBinding = new k8s.rbac.v1.ClusterRoleBinding(`${name}-admin-binding`, {
+      metadata: { name: `${name}-admin-binding` },
+      subjects: [{ kind: "ServiceAccount", name: serviceAccount.metadata.name, namespace }],
+      roleRef: {
+        apiGroup: "rbac.authorization.k8s.io",
+        kind: "ClusterRole",
+        name: "cluster-admin",
+      },
+    }, { parent: this, aliases: [componentAlias] });
+
     // 5. Deployment for Hermes Agent
     const deployment = new k8s.apps.v1.Deployment(name, {
       metadata: {
@@ -95,6 +113,7 @@ export class HermesAgent extends pulumi.ComponentResource {
             },
           },
           spec: {
+            serviceAccountName: serviceAccount.metadata.name,
             runtimeClassName: "kata-qemu",
             containers: [{
               name: "hermes-agent",
@@ -178,11 +197,20 @@ export class HermesAgent extends pulumi.ComponentResource {
                     },
                   },
                 },
+                { name: "PULUMI_BACKEND_URL", value: "https://api.pulumi.com" },
                 { name: "DOCKER_HOST", value: "tcp://localhost:2375" },
               ],
               volumeMounts: [
                 { name: "data", mountPath: "/opt/data" },
               ],
+              resources: {
+                limits: {
+                  memory: "6Gi",
+                },
+                requests: {
+                  memory: "2Gi",
+                },
+              },
             },
             {
               name: "dind",
