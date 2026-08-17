@@ -30,7 +30,7 @@ export function configureLinkwarden(
       "AUTHENTIK_CLIENT_SECRET": linkwardenSecret,
       "NEXT_PUBLIC_DISABLE_REGISTRATION": "true",
       "NEXT_PUBLIC_CREDENTIALS_ENABLED": "false",
-      "DATABASE_URL": pulumi.interpolate`postgresql://linkwarden:***@shared-postgres.shared-resources.svc.cluster.local:5432/linkwarden`,
+      "DATABASE_URL": pulumi.interpolate`postgresql://linkwarden:${linkwardenDbPassword}@shared-postgres.shared-resources.svc.cluster.local:5432/linkwarden`,
     },
     env: [
       {
