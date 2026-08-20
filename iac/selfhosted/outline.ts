@@ -1,8 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createSelfhostedApp } from "../library/selfhosted-app";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { Labels } from "./labels";
-import { createBackupJob } from "../maintenance/backup";
 
 export function configureOutline(
   namespace: pulumi.Input<string>,
@@ -10,7 +9,7 @@ export function configureOutline(
 ) {
   const name = "outline";
   const config = new pulumi.Config("selfhosted");
-  
+
   const dbPassword = config.requireSecret("outlineDbPassword");
   const secretKey = config.requireSecret("outlineSecretKey");
   const utilsSecret = config.requireSecret("outlineUtilsSecret");
@@ -18,14 +17,12 @@ export function configureOutline(
   const oidcClientSecret = config.requireSecret("outlineOidcClientSecret");
 
   // Redis
-  const redis = createSelfhostedApp({
-    name: `${name}-redis`,
+  const redis = new SelfhostedApp(`${name}-redis`, {
     namespace,
     image: "redis:7-alpine",
     containerPort: 6379,
     exposeType: "private",
     allowIngressFrom: [{ podSelector: { app: name }, port: 6379 }],
-    host: "",
     volumes: [
       {
         name: "redis-data",
@@ -34,17 +31,15 @@ export function configureOutline(
       }
     ],
     dependencies,
-  } as any);
+  });
 
   // MinIO
-  const minio = createSelfhostedApp({
-    name: `${name}-minio`,
+  const minio = new SelfhostedApp(`${name}-minio`, {
     namespace,
     image: "minio/minio:latest",
     containerPort: 9000,
     exposeType: "private",
     allowIngressFrom: [{ podSelector: { app: name }, port: 9000 }],
-    host: "",
     args: ["server", "/data"],
     env: [
       { name: "MINIO_ROOT_USER", value: "minioadmin" },
@@ -58,7 +53,7 @@ export function configureOutline(
       },
     ],
     dependencies,
-  } as any);
+  });
 
   // MinIO Setup Job
   const minioSetup = new k8s.batch.v1.Job(`${name}-minio-setup`, {
@@ -86,8 +81,7 @@ export function configureOutline(
   }, { dependsOn: [minio.deployment] });
 
   // Outline Web App
-  const outline = createSelfhostedApp({
-    name,
+  const outline = new SelfhostedApp(name, {
     namespace,
     image: "outlinewiki/outline:latest",
     containerPort: 3000,
@@ -100,7 +94,7 @@ export function configureOutline(
       [Labels.Network.AllowPostgres]: "true",
     },
     allowIngressFrom: [
-      { 
+      {
         podSelector: { app: "outline-mcp" },
         namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" }
       },
@@ -116,7 +110,7 @@ export function configureOutline(
       { name: "DATABASE_URL", value: pulumi.interpolate`postgres://outline:${dbPassword}@shared-postgres.shared-resources.svc.cluster.local:5432/outline` },
       { name: "PGSSLMODE", value: "disable" },
       { name: "REDIS_URL", value: "redis://outline-redis.selfhosted.svc.cluster.local:80" },
-      
+
       // Minio S3 Config
       { name: "AWS_ACCESS_KEY_ID", value: "minioadmin" },
       { name: "AWS_SECRET_ACCESS_KEY", value: minioPassword },
@@ -126,7 +120,7 @@ export function configureOutline(
       { name: "FILE_STORAGE_UPLOAD_MAX_SIZE", value: "26214400" },
       { name: "AWS_S3_FORCE_PATH_STYLE", value: "true" },
       { name: "AWS_S3_ACL", value: "private" },
-      
+
       // OIDC Config
       { name: "OIDC_CLIENT_ID", value: "outline-client-id" },
       { name: "OIDC_CLIENT_SECRET", value: oidcClientSecret },
@@ -140,33 +134,9 @@ export function configureOutline(
     dependencies: [minioSetup, redis.deployment, ...dependencies],
   });
 
-  const redisBackup = createBackupJob({
-    appName: `${name}-redis`,
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: `${name}-redis-redis-data-pvc`,
-      mountPath: "/data",
-    },
-    dependencies: [redis.deployment],
-  });
-  
-  const minioBackup = createBackupJob({
-    appName: `${name}-minio`,
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: `${name}-minio-minio-data-pvc`,
-      mountPath: "/data",
-    },
-    dependencies: [minio.deployment],
-  });
-
   return {
     redis,
     minio,
     outline,
-    redisBackup,
-    minioBackup
   };
 }
