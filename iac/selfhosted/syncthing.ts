@@ -1,7 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createSelfhostedApp } from "../library/selfhosted-app";
-import { createBackupJob } from "../maintenance/backup";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { Labels } from "./labels";
 
 // Syncthing Deployment & Services Configuration.
@@ -37,11 +36,10 @@ export function configureSyncthing(
     },
   }, { dependsOn: dependencies });
 
-  // Provision the application using the self-hosted application helper.
+  // Provision the application using the self-hosted application component.
   // The local GUI credentials inside Syncthing will be disabled since access
   // is secured centrally via Authentik.
-  const app = createSelfhostedApp({
-    name,
+  const app = new SelfhostedApp(name, {
     namespace,
     image: "syncthing/syncthing:1.27.8",
     containerPort: 8384,
@@ -64,11 +62,13 @@ export function configureSyncthing(
       // Mount Grimmory's bookdrop persistent volume directly inside Syncthing.
       // This allows Syncthing to sync files directly from the phone into Grimmory's
       // watch folder, avoiding the need for helper scripts or file-copying sidecars.
+      // Backup is disabled because this PVC is owned and backed up by Grimmory.
       {
         name: "grimmory-bookdrop",
         mountPath: "/var/syncthing/bookdrop",
         pvcName: "grimmory-bookdrop-pvc",
         external: true,
+        enableBackup: false,
       },
     ],
     middlewares: [pulumi.interpolate`${namespace}-${authMiddleware.metadata.name}@kubernetescrd`],
@@ -111,18 +111,6 @@ export function configureSyncthing(
     },
   }, { dependsOn: app.deployment });
 
-  // Restic PVC backup configuration to secure Syncthing's persistent directory.
-  const filesBackup = createBackupJob({
-    appName: name,
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: "syncthing-data-pvc",
-      mountPath: "/var/syncthing",
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
   // Allowed from any source (from: []) because Syncthing enforces mutual TLS (mTLS) 
   // authentication using unique, cryptographic Device IDs at the application layer.
   const syncthingSyncPolicy = new k8s.networking.v1.NetworkPolicy("allow-syncthing-sync", {
@@ -149,9 +137,8 @@ export function configureSyncthing(
   }, { dependsOn: app.deployment });
 
   return {
-    ...app,
+    deployment: app.deployment,
     syncService,
-    filesBackup,
     syncthingSyncPolicy,
   };
 }
