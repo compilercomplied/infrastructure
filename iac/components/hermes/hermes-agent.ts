@@ -128,6 +128,7 @@ export class HermesAgent extends pulumi.ComponentResource {
                 { name: "HERMES_DASHBOARD_PUBLIC_URL", value: `https://${host}` },
                 { name: "HERMES_DASHBOARD_OIDC_ISSUER", value: "https://auth.gdario.dev/application/o/hermes/" },
                 { name: "HERMES_DASHBOARD_OIDC_CLIENT_ID", value: "hermes-client-id" },
+                { name: "HERMES_DASHBOARD_OIDC_SCOPES", value: "openid profile email offline_access" },
                 { name: "API_SERVER_ENABLED", value: "true" },
                 { name: "API_SERVER_HOST", value: "0.0.0.0" },
                 // CORS origins are restricted to the dashboard host to prevent cross-origin request forgery.
