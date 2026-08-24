@@ -205,7 +205,7 @@ entries:
     attrs:
       client_id: hermes-client-id
       client_secret: !Env AUTHENTIK_HERMES_CLIENT_SECRET
-      client_type: public
+      client_type: confidential
       authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
       invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
       signing_key: !Find [authentik_crypto.certificatekeypair, [pk, e96bc021-31ba-451e-b3ae-a7c62b7f1363]]
