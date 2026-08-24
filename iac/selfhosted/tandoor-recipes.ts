@@ -1,7 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createSelfhostedApp } from "../library/selfhosted-app";
-import { createBackupJob } from "../maintenance/backup";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { Labels } from "./labels";
 
 export function configureTandoorRecipes(
@@ -30,8 +29,7 @@ export function configureTandoorRecipes(
     }
   }`;
 
-  const app = createSelfhostedApp({
-    name: "tandoor-recipes",
+  const app = new SelfhostedApp("tandoor-recipes", {
     namespace,
     image: "ghcr.io/tandoorrecipes/recipes:2.6.9",
     containerPort: 8080,
@@ -65,43 +63,25 @@ export function configureTandoorRecipes(
         pvcName: "tandoor-recipes-media-pvc",
       },
     ],
+    databases: [
+      {
+        type: "postgres",
+        databaseName: "tandoor",
+        host: "shared-postgres.shared-resources.svc.cluster.local",
+        username: "tandoor",
+        passwordSecret: tandoorDbPassword,
+      },
+    ],
     allowIngressFrom: [
-      { 
+      {
         podSelector: { app: "tandoor-mcp" },
-        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" }
+        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" },
       },
     ],
     dependencies,
   });
 
-  const dbBackup = createBackupJob({
-    appName: "tandoor-recipes",
-    namespace,
-    source: {
-      type: "postgres",
-      databaseName: "tandoor",
-      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
-      dbUser: "tandoor",
-      dbPasswordSecret: tandoorDbPassword,
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
-  const filesBackup = createBackupJob({
-    appName: "tandoor-recipes",
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: "tandoor-recipes-media-pvc",
-      mountPath: "/opt/recipes/mediafiles",
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
   return {
-    ...app,
-    dbBackup,
-    filesBackup,
+    deployment: app.deployment,
   };
 }
-
