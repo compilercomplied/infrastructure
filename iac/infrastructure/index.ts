@@ -3,9 +3,8 @@ import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as path from "path";
 import * as crypto from "crypto";
-import { createSelfhostedApp } from "../library/selfhosted-app";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { configureNamespaceSecurity } from "../selfhosted/security";
-import { createBackupJob } from "../maintenance/backup";
 import { Labels } from "../selfhosted/labels";
 import { postgresClientImage } from "../shared-resources/shared-postgres";
 
@@ -189,8 +188,7 @@ litellm_settings:
 
   // Deploy LiteLLM using standard self-hosted app module. This exposes the proxy
   // publicly with automatic Let's Encrypt TLS cert management via Traefik.
-  const app = createSelfhostedApp({
-    name: "litellm",
+  const app = new SelfhostedApp("litellm", {
     namespace: namespaceName,
     image: "ghcr.io/berriai/litellm:latest",
     containerPort: 4000,
@@ -250,6 +248,15 @@ litellm_settings:
       // one worker's metrics surface on any given scrape — making cost totals unreliable.
       { name: "PROMETHEUS_MULTIPROC_DIR", value: "/tmp/prometheus-multiproc" },
     ],
+    databases: [
+      {
+        type: "postgres",
+        databaseName: "litellm",
+        host: "shared-postgres.shared-resources.svc.cluster.local",
+        username: "litellm",
+        passwordSecret: litellmDbPassword,
+      },
+    ],
     volumes: [
       {
         name: "litellm-config-volume",
@@ -261,7 +268,7 @@ litellm_settings:
       {
         name: "prometheus-multiproc",
         mountPath: "/tmp/prometheus-multiproc",
-        emptyDir: {},
+        isEphemeral: true,
       },
     ],
     command: ["litellm"],
@@ -335,20 +342,6 @@ litellm_settings:
       }],
     },
   }, { dependsOn: [app.service, security.allowMonitoringScrape] });
-
-  // Backup job running Restic to dump the LiteLLM database to R2 storage daily.
-  const dbBackup = createBackupJob({
-    appName: "litellm",
-    namespace: namespaceName,
-    source: {
-      type: "postgres",
-      databaseName: "litellm",
-      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
-      dbUser: "litellm",
-      dbPasswordSecret: litellmDbPassword,
-    },
-    dependencies: [app.deployment],
-  });
 
   // Allow Hermes Agent in the selfhosted namespace and autonomous-agent in the default namespace
   // to access the LiteLLM service in the infrastructure namespace securely.
@@ -480,7 +473,6 @@ litellm_settings:
     security,
     serviceMonitor,
     blockMetricsRoute,
-    dbBackup,
     dbInitJob,
     kataDeploy,
     kataNodeLabel,
