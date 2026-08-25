@@ -22,7 +22,7 @@ export function configureSyncthing(
     },
     spec: {
       forwardAuth: {
-        address: "http://authentik-server.selfhosted.svc.cluster.local/outpost.goauthentik.io/auth/traefik",
+        address: "http://authentik-server.infrastructure.svc.cluster.local/outpost.goauthentik.io/auth/traefik",
         trustForwardHeader: true,
         authResponseHeaders: [
           "X-Authentik-Username",

@@ -5,7 +5,7 @@ import * as path from "path";
 import { createLetsEncryptIngress } from "../library/ingress";
 import { createPVC } from "../library/k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
-import { Labels } from "./labels";
+import { Labels } from "../selfhosted/labels";
 
 export function configureAuthentik(
   namespace: pulumi.Input<string>,
@@ -77,7 +77,7 @@ export function configureAuthentik(
 	// Redis is a hard dependency for authentik.
 	// It is used as an internal task queue.
   const redisName = `${name}-redis`;
-  const redisDeployment = new k8s.apps.v1.Deployment(redisName, {
+  const redisDeployment = new k8s.apps.v1.Deployment(`${redisName}`, {
     metadata: {
       name: redisName,
       namespace,
@@ -108,7 +108,7 @@ export function configureAuthentik(
     },
   }, { dependsOn: [...dependencies, secrets] });
 
-  const redisService = new k8s.core.v1.Service(redisName, {
+  const redisService = new k8s.core.v1.Service(`${redisName}`, {
     metadata: {
       name: redisName,
       namespace,
@@ -144,24 +144,24 @@ export function configureAuthentik(
         },
       },
     },
-    {
-      name: "AUTHENTIK_BOOTSTRAP_PASSWORD",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_BOOTSTRAP_PASSWORD",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_BOOTSTRAP_EMAIL",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_BOOTSTRAP_EMAIL",
-        },
-      },
-    },
+    // {
+    //   name: "AUTHENTIK_BOOTSTRAP_PASSWORD",
+    //   valueFrom: {
+    //     secretKeyRef: {
+    //       name: secrets.metadata.name,
+    //       key: "AUTHENTIK_BOOTSTRAP_PASSWORD",
+    //     },
+    //   },
+    // },
+    // {
+    //   name: "AUTHENTIK_BOOTSTRAP_EMAIL",
+    //   valueFrom: {
+    //     secretKeyRef: {
+    //       name: secrets.metadata.name,
+    //       key: "AUTHENTIK_BOOTSTRAP_EMAIL",
+    //     },
+    //   },
+    // },
     {
       name: "AUTHENTIK_REDIS__PASSWORD",
       valueFrom: {
@@ -285,7 +285,7 @@ export function configureAuthentik(
   }, { dependsOn: dependencies });
 
   const serverName = `${name}-server`;
-  const serverDeployment = new k8s.apps.v1.Deployment(serverName, {
+  const serverDeployment = new k8s.apps.v1.Deployment(`${serverName}`, {
     metadata: {
       name: serverName,
       namespace,
@@ -310,20 +310,20 @@ export function configureAuthentik(
             volumeMounts: [
               { name: "media", mountPath: "/media" },
               { name: "custom-templates", mountPath: "/templates" },
-              { name: "blueprints", mountPath: "/blueprints/custom" },
+              // { name: "blueprints", mountPath: "/blueprints/custom" },
             ],
           }],
           volumes: [
             { name: "media", persistentVolumeClaim: { claimName: mediaPvc.metadata.name } },
             { name: "custom-templates", persistentVolumeClaim: { claimName: templatesPvc.metadata.name } },
-            { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
+            // { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
           ],
         },
       },
     },
   }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap] });
 
-  const serverService = new k8s.core.v1.Service(serverName, {
+  const serverService = new k8s.core.v1.Service(`${serverName}`, {
     metadata: {
       name: serverName,
       namespace,
@@ -335,7 +335,7 @@ export function configureAuthentik(
   }, { dependsOn: serverDeployment });
 
   const workerName = `${name}-worker`;
-  const workerDeployment = new k8s.apps.v1.Deployment(workerName, {
+  const workerDeployment = new k8s.apps.v1.Deployment(`${workerName}`, {
     metadata: {
       name: workerName,
       namespace,
@@ -359,13 +359,13 @@ export function configureAuthentik(
             volumeMounts: [
               { name: "media", mountPath: "/media" },
               { name: "custom-templates", mountPath: "/templates" },
-              { name: "blueprints", mountPath: "/blueprints/custom" },
+              // { name: "blueprints", mountPath: "/blueprints/custom" },
             ],
           }],
           volumes: [
             { name: "media", persistentVolumeClaim: { claimName: mediaPvc.metadata.name } },
             { name: "custom-templates", persistentVolumeClaim: { claimName: templatesPvc.metadata.name } },
-            { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
+            // { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
           ],
         },
       },
@@ -449,6 +449,30 @@ export function configureAuthentik(
               namespaceSelector: {
                 matchLabels: {
                   "kubernetes.io/metadata.name": "infrastructure",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowAuthentik]: "true",
+                },
+              },
+            },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "forgejo",
+                },
+              },
+              podSelector: {
+                matchLabels: {
+                  [Labels.Network.AllowAuthentik]: "true",
+                },
+              },
+            },
+            {
+              namespaceSelector: {
+                matchLabels: {
+                  "kubernetes.io/metadata.name": "agent-sidekicks",
                 },
               },
               podSelector: {

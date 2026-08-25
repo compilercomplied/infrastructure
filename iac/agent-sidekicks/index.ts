@@ -18,7 +18,7 @@ export function configureAgentSidekicks(selfhosted: any) {
     namespace: namespaceName,
     dependencies: [
       selfhosted.postgres, 
-      selfhosted.authentik.serverService, 
+ 
       tandoorMcp.service, 
       grafanaMcp.service, 
       kubernetesMcp.service, 

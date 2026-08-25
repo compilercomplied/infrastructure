@@ -7,6 +7,7 @@ import { SelfhostedApp } from "../library/selfhosted-component";
 import { configureNamespaceSecurity } from "../selfhosted/security";
 import { Labels } from "../selfhosted/labels";
 import { postgresClientImage } from "../shared-resources/shared-postgres";
+import { configureAuthentik } from "./authentik";
 
 export function configureInfrastructure() {
   // A dedicated namespace is created to isolate core infrastructure components
@@ -467,6 +468,8 @@ litellm_settings:
     },
   }, { dependsOn: [kataDeploy] });
 
+  const authentik = configureAuthentik(namespaceName, []);
+
   return {
     namespace: namespaceName,
     app,
@@ -477,5 +480,6 @@ litellm_settings:
     kataDeploy,
     kataNodeLabel,
     sysctlTuner,
+    authentik,
   };
 }

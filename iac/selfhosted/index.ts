@@ -1,7 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { configureTandoorRecipes } from "./tandoor-recipes";
-import { configureAuthentik } from "./authentik";
+
 import { configureLinkwarden } from "./linkwarden";
 import { configureOutline } from "./outline";
 import { configureGrimmory } from "./grimmory";
@@ -22,17 +22,16 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
 
 	// Deployments
   const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
-  const authentik = configureAuthentik(namespaceName, [postgres]);
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, mariadb, [postgres]);
   const outline = configureOutline(namespaceName, [postgres]);
   // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency
   // on Grimmory's volume being created first. We pass grimmory.deployment as a dependency.
-  const syncthing = configureSyncthing(namespaceName, [authentik.serverService, grimmory.deployment]);
+  const syncthing = configureSyncthing(namespaceName, [grimmory.deployment]);
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, authentik.workerDeployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, outline.outline.deployment],
+    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, outline.outline.deployment],
     namePrefix: "selfhosted-",
     aliases: {
       defaultDeny: [{ name: "default-deny-ingress" }],
@@ -51,7 +50,6 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
     namespace: namespaceName,
     postgres,
     tandoor,
-    authentik,
     linkwarden,
     grimmory,
     outline,
