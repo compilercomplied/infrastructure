@@ -60,7 +60,7 @@ entries:
       oidc_jwks_url: https://www.googleapis.com/oauth2/v3/certs
       profile_url: https://openidconnect.googleapis.com/v1/userinfo
       authentication_flow: !Find [authentik_flows.flow, [pk, a7c56c41-379d-417c-9885-f0d55e174317]]
-      enrollment_flow: null
+      enrollment_flow: !Find [authentik_flows.flow, [pk, 96f96a88-5eec-46fd-9943-ba706bfdc8be]]
       user_matching_mode: email_link
 
   # ---------------------------------------------------------------------------
