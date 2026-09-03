@@ -310,13 +310,13 @@ export function configureAuthentik(
             volumeMounts: [
               { name: "media", mountPath: "/media" },
               { name: "custom-templates", mountPath: "/templates" },
-              // { name: "blueprints", mountPath: "/blueprints/custom" },
+              { name: "blueprints", mountPath: "/blueprints/custom" },
             ],
           }],
           volumes: [
             { name: "media", persistentVolumeClaim: { claimName: mediaPvc.metadata.name } },
             { name: "custom-templates", persistentVolumeClaim: { claimName: templatesPvc.metadata.name } },
-            // { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
+            { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
           ],
         },
       },
@@ -359,13 +359,13 @@ export function configureAuthentik(
             volumeMounts: [
               { name: "media", mountPath: "/media" },
               { name: "custom-templates", mountPath: "/templates" },
-              // { name: "blueprints", mountPath: "/blueprints/custom" },
+              { name: "blueprints", mountPath: "/blueprints/custom" },
             ],
           }],
           volumes: [
             { name: "media", persistentVolumeClaim: { claimName: mediaPvc.metadata.name } },
             { name: "custom-templates", persistentVolumeClaim: { claimName: templatesPvc.metadata.name } },
-            // { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
+            { name: "blueprints", configMap: { name: blueprintsConfigMap.metadata.name } },
           ],
         },
       },
