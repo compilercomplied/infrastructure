@@ -173,11 +173,17 @@ model_list:
       model: deepseek/deepseek-v4-pro
       api_key: "os.environ/DEEPSEEK_API_KEY"
       drop_params: true
+      extra_body:
+        thinking:
+          type: "disabled"
   - model_name: deepseek-fast
     litellm_params:
       model: deepseek/deepseek-v4-flash
       api_key: "os.environ/DEEPSEEK_API_KEY"
       drop_params: true
+      extra_body:
+        thinking:
+          type: "disabled"
 general_settings:
   master_key: "os.environ/LITELLM_MASTER_KEY"
   store_model_in_db: true
