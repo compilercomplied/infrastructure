@@ -1,37 +1,24 @@
 # Infrastructure
 
-This project contains the infrastructure-as-code (IaC) for a k3s cluster containing different workflows.
+This project contains the infrastructure-as-code (IaC) for a k3s cluster
+containing different workflows. All infrastructure code is written in Pulumi;
+state is hosted on Pulumi.
 
-
-Check [workloads.md](./docs/workloads.md) to see the currently configured
-workloads covering different features and services.
-
-All infrastructure code written in pulumi is using pulumi servers for the state.
+- **[architecture.md](./docs/architecture.md)** — the high-level map: cluster
+  topology, namespaces, security & storage patterns, and the shared-database
+  model.
+- **[workloads.md](./docs/workloads.md)** — the agentic and sandboxed workflows
+  (Hermes Agent, MCP sidekicks, Kata-isolated sandbox).
+- **[selfhosted.md](./docs/selfhosted.md)** — how self-hosted services are
+  declared and exposed.
 
 # Deployment view
 
-This is deployed locally through the local pulumi stack. Related tasks are in
-`mise.toml`.
+This is deployed through the local Pulumi stack, and its CI preview runs on
+every pull request. Related tasks live in `mise.toml`. **Never run `pulumi up`
+by hand** — changes land via a merged PR.
 
 # Local development
 
-Mise is a pre-requisite. The task `mise run project-setup` configures the
-project.
-
-## Grafana Access
-
-You can use the scripts in the `scripts/` directory to easily access Grafana locally via port-forwarding.
-
-### 1. Get Admin Password
-Run this script to retrieve and decode the admin user's password.
-
-```bash
-./scripts/get-grafana-password.sh
-```
-
-### 2. Port Forward
-Run this script in a separate terminal to access Grafana at [http://localhost:3000](http://localhost:3000).
-
-```bash
-./scripts/port-forward-grafana.sh
-```
+Mise is a prerequisite. The task `mise run project-setup` prepares the project
+(toolchain + deps); `mise run preview-deployment` runs the validation dry-run.

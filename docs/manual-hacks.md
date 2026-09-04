@@ -148,7 +148,7 @@ pulumi up --stack local --cwd iac
 
 ### 2. Disaster Recovery: `restore-cluster.sh`
 
-The [restore-cluster.sh](file:///Users/gdario/code/infrastructure/scripts/restore-cluster.sh) script is the single automated entry point for hydrating a fresh cluster from the Restic/R2 backups. Run it once after Phase 1 `pulumi up` and before Phase 2.
+The [`restore-cluster.sh`](../scripts/restore-cluster.sh) script is the single automated entry point for hydrating a fresh cluster from the Restic/R2 backups. Run it once after Phase 1 `pulumi up` and before Phase 2.
 
 ```bash
 ./scripts/restore-cluster.sh

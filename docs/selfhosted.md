@@ -1,64 +1,74 @@
-[[__TOC__]]
-
 # Self-hosted Workloads
 
-Infrastructure and deployment documentation for personal, self-hosted services running in the cluster.
+This page explains *how* self-hosted services are declared and exposed on the
+cluster. For the high-level architecture (namespaces, security, storage, the
+shared-database model), see [architecture.md](./architecture.md).
 
 ## Services
 
-### 1. Shared PostgreSQL
-A shared PostgreSQL instance used as the database engine for multiple self-hosted services.
-- **Source of Truth**: [shared-postgres.ts](file:///Users/gdario/code/infrastructure/iac/selfhosted/shared-postgres.ts)
-- **Engine Version**: `postgres:16-alpine`
+The current self-hosted applications, one module per app (all under
+`iac/selfhosted/`):
 
-#### Database Isolation & Collisions
-To prevent table collisions, security vulnerabilities, or permission conflicts between applications, each workload is fully isolated at the PostgreSQL engine level:
-1. **Dedicated Database**: Each application has its own separate database.
-2. **Dedicated User**: Each application connects using a unique database user account.
-3. **PostgreSQL 15+ Permissions**: Since PostgreSQL 15, write (`CREATE`) privileges on the `public` schema are restricted to the database owner by default. To allow applications to run database migrations, the database owner must be set to the application user, and permissions on the `public` schema must be explicitly granted.
+| Workload | Public host | Data engine |
+|----------|-------------|-------------|
+| Tandoor (recipes / meal plan) | `recipes.gdario.dev` | shared PostgreSQL |
+| Linkwarden (bookmarks) | `linkwarden.gdario.dev` | shared PostgreSQL |
+| Grimmory (comics / books) | `grimmory.gdario.dev` | shared MariaDB |
+| Outline (wiki) | `outline.gdario.dev` | Redis + MinIO (own) |
+| Syncthing | `syncthing.gdario.dev` | own PVC (forward-auth middleware) |
 
-#### Adding a New Database
-When deploying a new application that uses the shared PostgreSQL instance, add its initialization commands to the startup script inside [shared-postgres.ts](file:///Users/gdario/code/infrastructure/iac/selfhosted/shared-postgres.ts):
-```sql
-CREATE USER new_app WITH PASSWORD 'secure_password';
-CREATE DATABASE new_app OWNER new_app;
-GRANT ALL PRIVILEGES ON DATABASE new_app TO new_app;
-\c new_app
-GRANT ALL ON SCHEMA public TO new_app;
-```
+Each app is declared through the reusable **`SelfhostedApp` component**
+(`iac/library/selfhosted-component.ts`), which takes one compact config and
+renders the Deployment, Service, volumes, ingress, and its database/PVC backups.
+The per-app modules are therefore short and declarative rather than a pile of
+raw resources. Apps that need multiple internal services (e.g. Outline, with
+web + Redis + MinIO) are expressed as multiple `SelfhostedApp` components in the
+same module.
 
----
+### Shared databases
 
-### 2. Tandoor Recipes
-A recipe manager and meal planner application.
-- **Source of Truth**: [tandoor-recipes.ts](file:///Users/gdario/code/infrastructure/iac/selfhosted/tandoor-recipes.ts)
-- **Port mapping**: The internal container server listens on port `8080` (configured via `TANDOOR_PORT`).
+Several apps share a single engine per flavor instead of running their own
+database server:
 
----
+- **Shared PostgreSQL** (`iac/shared-resources/shared-postgres.ts`) hosts one
+  logical database + dedicated user for each app (Tandoor, Authentik, Linkwarden,
+  Forgejo, LiteLLM, Outline).
+- **Shared MariaDB** (`iac/shared-resources/shared-mariadb.ts`) does the same
+  for the MySQL-flavored app (Grimmory).
 
-## Deployment & Configuration Guidelines
+Adding an app to a shared engine means registering a database + user in the
+relevant module and pointing the app at the shared in-cluster host. The
+isolation model, why it exists, and how to add a database are covered in
+[architecture.md → Shared-database pattern](./architecture.md#the-shared-database-pattern).
 
-### 1. Public Exposure via Cloudflare Tunnel
-Services are exposed publicly through a **Cloudflare Tunnel** (`cloudflared`) combined with **Traefik** ingress and automatic **Let's Encrypt** TLS certificates.
+## Exposing a service
 
-To expose a new service publicly, use `exposeType: "public"` in `createSelfhostedApp`:
-```typescript
-createSelfhostedApp({
-  name: "my-app",
-  exposeType: "public",
-  host: "my-app.gdario.dev",
-  // ...
-});
-```
-The `host` value must have a corresponding CNAME in Cloudflare DNS pointing to the tunnel, and a route configured in [`cloudflared.ts`](file:///Users/gdario/code/homelab-iac/iac/selfhosted/cloudflared.ts).
+Public exposure follows one path end-to-end: `SelfhostedApp` with a public
+`host` (e.g. `my-app.gdario.dev`) drives the shared ingress helper
+(`iac/library/ingress.ts`), which wires the Traefik Ingress, the Let's Encrypt
+annotations, an optional rate-limit middleware, and the `*-allow-traefik`
+NetworkPolicy that lets the ingress reach the pods.
 
+Two external preconditions apply to any new public hostname:
 
-### 2. Kubernetes Service Environment Variable Conflicts
-Kubernetes automatically injects environment variables for all services active in a namespace into all pods running within that same namespace.
-* **The Conflict**: If a Service is named exactly the same as an internal application config variable (e.g. `tandoor` Service injecting `TANDOOR_PORT=tcp://<CLUSTER_IP>:<PORT>`), it will collide with the application's configuration (which expects a plain port number like `8080`), crashing the Nginx web server.
-* **The Resolution**: Renaming the Service to `tandoor-recipes` prevents the collision because Kubernetes now injects `TANDOOR_RECIPES_PORT` instead. However, to maintain robust and predictable configurations, we still explicitly define `TANDOOR_PORT` under the container `env` specification in [tandoor-recipes.ts](file:///Users/gdario/code/infrastructure/iac/selfhosted/tandoor-recipes.ts):
-  ```typescript
-  env: [
-    { name: "TANDOOR_PORT", value: "8080" },
-  ]
-  ```
+1. A matching **DNS record in Cloudflare** pointing the host at the tunnel.
+2. A **route entry in `iac/selfhosted/cloudflared.ts`** so `cloudflared` answers
+   that host.
+
+Internal-only workloads (including the supporting services that back a
+multi-service app) declare `exposeType: "private"` and give no host, so they are
+reachable only inside the cluster.
+
+## Notes the code encodes
+
+A few non-obvious constraints are baked into the app configs and worth knowing
+before editing one:
+
+- **Service/env-name collisions.** Kubernetes injects `SERVICE_NAME_*` env vars
+  into every pod in a namespace. A Service whose name collides with an
+  application variable (e.g. `TANDOOR_PORT`) clobbers the app's own setting. The
+  app modules name Services deliberately to avoid this and may still pin the
+  port explicitly. See the `tandoor-recipes` module for the pattern.
+- **PVCs are namespace-scoped.** An app's storage and its backup job must share
+  the app's namespace, because a Pod cannot mount another namespace's PVC. The
+  `SelfhostedApp` component handles this automatically for volumes it manages.

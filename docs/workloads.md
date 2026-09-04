@@ -1,37 +1,57 @@
-[[__TOC__]]
+# Agentic & Sandboxed Workloads
 
-# Agentic workflows
-## Features
+The cluster runs an AI-agent fleet alongside the self-hosted apps. This page
+covers how those workloads are structured. For the general architecture
+(namespaces, security, storage) see [architecture.md](./architecture.md).
 
-Custom agentic workflows with a sandboxed coding environment connected to my
-personal git repositories.
+## The pieces
 
-## Core components
+Agent workloads are split into four namespaces plus a shared runtime:
 
-- [discord-agent-bridge](https://github.com/compilercomplied/discord-agent-bridge). Discord bot used to send tasks and prompts to the llm engine.
-- [agent-hub](https://github.com/compilercomplied/agent-hub). Integrates with
-	third party llm APIs using ReACT pattern to enable complex workflows.
-- [agent-dev-environment](https://github.com/compilercomplied/agent-dev-environment). Sandboxed coding environment for secure and isolated coding workflows. It leverages **Kata Containers** to provide secure virtual machine isolation for untrusted agent-generated code.
+| Component | Namespace | Purpose |
+|-----------|-----------|---------|
+| Hermes Agent | `agent-sidekicks` | The assistant driving messaging, cron, and tool integration |
+| MCP sidekicks | `agent-sidekicks` | Read/write tooling for Tandoor, Outline, Grafana, Kubernetes |
+| Control plane | `agents-control-plane` | RBAC + service accounts for the orchestrator that coordinates worker agents |
+| Workers / sandbox | `agent-sandbox` | Untrusted, agent-generated code executed in isolation |
 
-## Kata Containers Configuration
-To support the sandboxing for `agent-dev-environment`, the cluster is configured with the `kata` RuntimeClass. 
-Currently, Kata is deployed completely through the IaC (Zero ClickOps) using the **kata-deploy** Helm chart, which injects host binaries and patches the K3s `containerd` configuration via a privileged DaemonSet.
+The namespace and RBAC definitions live in `iac/modules/agents/` (namespaces,
+rbac, secrets). Hermes Agent and the MCP servers are wired in
+`iac/agent-sidekicks/`.
 
-> **Architecture Decision Note:** We chose to use the Helm chart in Pulumi to keep all cluster configurations in one place. However, if using a privileged DaemonSet to modify host binaries ever becomes unreliable or creates issues with K3s upgrades, it is highly recommended to move the Kata binary installation and `config.toml.tmpl` templating directly into the **ansible-playbook** (host setup), and only keep the `RuntimeClass` resource definition in the Pulumi IaC.
+## Isolation model
 
-## Hermes Agent Workload
+Untrusted code is executed in **Kata Containers** — a real virtual machine per
+pod, not a container sandbox. This is the important line: the orchestrator and
+its MCP tooling run in `agent-sidekicks` under normal isolation, but anything
+that *executes arbitrary agent-generated code* runs in `agent-sandbox` under the
+Kata runtime class.
 
-The self-hosted [Hermes Agent](file:///Users/gdario/code/infrastructure/iac/selfhosted/hermes-agent.ts) handles messaging gateway integrations, cron scheduling, and personal assistant tasks. It is configured to ensure user configurations are persistent and protected.
+Kata is installed entirely through the IaC with the `kata-deploy` Helm chart,
+which injects the host VM runtime and patches k3s' `containerd` to register the
+RuntimeClass. That chart is a single resource in the `infrastructure` module
+(`iac/infrastructure/index.ts`), which also keeps the required node label in
+place across reboots. The only thing left out of IaC is the OS-level Kata
+package install on the (single) node; the chart and node label are declarative.
 
-### Configuration & First-Boot Seeding
-To allow dynamic configuration edits via the Hermes UI (e.g., enabling/disabling skills or changing settings) without getting overwritten by Pulumi deployments:
-- **Seed Template:** The default template is defined in [hermes-config.yaml](file:///Users/gdario/code/infrastructure/iac/selfhosted/templates/hermes-config.yaml).
-- **First-Boot Guard:** On startup, the [sync-config.py](file:///Users/gdario/code/infrastructure/iac/maintenance/scripts/sync-config.py) script in the `initContainer` checks if `/opt/data/config.yaml` exists. If it does not, it initializes it from the template. On subsequent deployments, it skips copying to protect active configuration changes.
-- **Manual Template Refresh:** If you modify the default configuration template and want to force the running server to re-seed:
-  ```bash
-  kubectl exec -n selfhosted deployment/hermes-agent -c hermes-agent -- rm /opt/data/config.yaml
-  kubectl rollout restart -n selfhosted deployment/hermes-agent
-  ```
+> **Design note:** if installing Kata via a privileged DaemonSet ever fights with
+> a k3s upgrade, the `infrastructure` module has the prepared fallback — move the
+> binary install and `config.toml` templating to the node's Ansible setup and keep
+> only the RuntimeClass in IaC.
 
-### PVC Backup
-The entire `/opt/data` Persistent Volume (containing configuration, databases, memories, and custom skills) is backed up daily using the automated `hermes-agent-pvc-hermes-agent-pvc` CronJob.
+## Hermes Agent
+
+The self-hosted Hermes Agent runs as a `custom:selfhosted:HermesAgent` component
+(`iac/components/hermes/hermes-agent.ts`) in `agent-sidekicks`. It is itself
+pinned to the Kata runtime class, and talks to the LLM backend through the
+LiteLLM gateway in `infrastructure` rather than holding a key per model.
+
+Two access paths are exposed:
+
+- **Dashboard** (`hermes.gdario.dev`) — fronted by Authentik OIDC.
+- **OpenAI-compatible API** (`hermes-api.gdario.dev`) — intended for client
+  apps; authenticates with its own bearer key (no SSO redirect).
+
+Its persistent data lives on a PVC mounted at `/opt/data` (configuration,
+memories, skills) and is backed up daily via the standard restic backup job
+described in `architecture.md`.
