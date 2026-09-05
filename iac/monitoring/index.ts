@@ -6,6 +6,7 @@ import { configureLoki } from "./loki";
 import { configureAlloy } from "./alloy";
 import { configurePvcExporter } from "./pvc-exporter";
 import { configureDeepseekExporter } from "./deepseek-exporter";
+import { configureBlackboxExporter } from "./blackbox";
 
 /**
  * Entry point for the modular Monitoring stack.
@@ -38,6 +39,8 @@ export function configureMonitoring() {
   // 6. Monitor DeepSeek API usage and credit balance dynamically
   const deepseekExporter = configureDeepseekExporter(namespaceName, prometheusCRDs);
 
+  const blackboxExporter = configureBlackboxExporter(namespaceName, prometheusCRDs);
+
   return {
     monitoringNamespace,
     prometheus,
@@ -46,6 +49,7 @@ export function configureMonitoring() {
     grafana,
     prometheusCRDs,
     pvcExporter,
-    deepseekExporter
+    deepseekExporter,
+    blackboxExporter,
   };
 }

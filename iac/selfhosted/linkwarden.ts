@@ -20,6 +20,7 @@ export function configureLinkwarden(
     containerPort: 3000,
     exposeType: "public",
     host: "linkwarden.gdario.dev",
+    healthCheck: { protocol: "tcp" },
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",

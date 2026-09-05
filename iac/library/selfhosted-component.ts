@@ -3,6 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "./ingress";
 import { createPVC } from "./k8s-pvc";
 import { createBackupJob } from "../maintenance/backup";
+import { AppHealthCheck, createHealthProbe } from "./health-probe";
 
 export interface AppDatabase {
   type: "postgres" | "mariadb";
@@ -56,6 +57,7 @@ export type SelfhostedAppArgs = {
   strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
+  healthCheck?: AppHealthCheck;
   rateLimit?: false | { average?: number; burst?: number; period?: string };
   ipFamilyPolicy?: string;
   ipFamilies?: string[];
@@ -77,6 +79,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
   public readonly traefikPolicy?: k8s.networking.v1.NetworkPolicy;
   public readonly internalPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly backupJobs: k8s.batch.v1.CronJob[];
+  public readonly healthProbe?: k8s.apiextensions.CustomResource;
 
   constructor(name: string, args: SelfhostedAppArgs, opts?: pulumi.ComponentResourceOptions) {
     super("custom:selfhosted:App", name, {}, opts);
@@ -107,6 +110,17 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     this.internalPolicies = this.configureInternalPolicies(name, args, childOpts);
 
     this.backupJobs = this.configureBackups(name, args, volConfig.backupPVCs, dependencies, componentAlias);
+
+    if (args.healthCheck) {
+      this.healthProbe = createHealthProbe({
+        name,
+        namespace: args.namespace,
+        service: this.service,
+        healthCheck: args.healthCheck,
+        parent: this,
+        aliases: [componentAlias],
+      });
+    }
 
     this.registerOutputs({});
   }

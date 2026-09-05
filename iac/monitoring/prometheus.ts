@@ -40,6 +40,8 @@ export function configurePrometheus(
           retention: "30d",
           // Ensures any ServiceMonitor in any namespace is scraped
           serviceMonitorSelectorNilUsesHelmValues: false,
+          // Ensures Probe CRs created by SelfhostedApp are selected cluster-wide.
+          probeSelectorNilUsesHelmValues: false,
           // Storage: Prometheus owns this PVC
           storageSpec: {
             volumeClaimTemplate: {
