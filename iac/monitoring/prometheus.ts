@@ -11,6 +11,9 @@ export function configurePrometheus(
   namespace: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = []
 ) {
+  const config = new pulumi.Config("selfhosted");
+  const healthAlertWebhookToken = config.requireSecret("healthAlertWebhookToken");
+
   const kubePrometheusStack = new k8s.helm.v3.Chart("kube-prometheus-stack", {
     namespace: namespace,
     chart: "kube-prometheus-stack",
@@ -29,9 +32,38 @@ export function configurePrometheus(
         enabled: false,
       },
 
-      // Disable Alertmanager for now; can be enabled later if needed
       alertmanager: {
-        enabled: false,
+        enabled: true,
+        config: {
+          global: { resolve_timeout: "5m" },
+          route: {
+            receiver: "discard",
+            group_by: ["alertname", "job", "instance"],
+            group_wait: "30s",
+            group_interval: "5m",
+            repeat_interval: "4h",
+            routes: [{
+              receiver: "hermes-selfhosted-health",
+              matchers: ["alertname = SelfhostedHealthProbeFailed"],
+            }],
+          },
+          receivers: [
+            { name: "discard" },
+            {
+              name: "hermes-selfhosted-health",
+              webhook_configs: [{
+                url: "http://hermes-agent.agent-sidekicks.svc.cluster.local:8644/p/engineer/webhooks/selfhosted-health",
+                send_resolved: true,
+                // Hermes 0.20.5 only accepts a static token through this GitLab-compatible header.
+                http_config: {
+                  http_headers: {
+                    "X-Gitlab-Token": { secrets: [healthAlertWebhookToken] },
+                  },
+                },
+              }],
+            },
+          ],
+        },
       },
 
       prometheus: {

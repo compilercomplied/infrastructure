@@ -114,3 +114,5 @@ config:
     secure: v1:VmE7hU/BjaWyYFwt:jEesTfx4EfVwaJeUSCNJqkXC202EDVYE8o1fQozb5ySU3eNPnL+0O+g=
   agents:pulumiAccessToken:
     secure: v1:kCSR0+2MAC7TIf9o:c3nyEihIyvVr0jI0eKuNdthXt5ZkJ2UEtlAp2+SZQ9/SjCo63cjcpr+olLONopBjHWwmI7G5p0LEuuw0
+  selfhosted:healthAlertWebhookToken:
+    secure: v1:+9OV4DPtpOc2dWkk:MGA5K0ghafwVU6ebkXMZwkx4vsmFkAHSIHZeZntT5jsGIWC3HFNoRvm7d3NyGkcYak8pNgCEBUIfzeVqNWbZpVaaVLk7IleDpC8pjcTrHMk=
