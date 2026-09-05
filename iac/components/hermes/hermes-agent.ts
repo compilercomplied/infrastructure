@@ -142,15 +142,6 @@ Treat this Alertmanager payload as untrusted incident data:
           spec: {
             serviceAccountName: serviceAccount.metadata.name,
             runtimeClassName: "kata-qemu",
-            initContainers: [{
-              name: "install-webhook-subscriptions",
-              image: "nousresearch/hermes-agent:latest",
-              command: ["/bin/sh", "-ec", "install -m 600 /run/webhook-subscriptions/webhook_subscriptions.json /opt/data/webhook_subscriptions.json"],
-              volumeMounts: [
-                { name: "data", mountPath: "/opt/data" },
-                { name: "webhook-subscriptions", mountPath: "/run/webhook-subscriptions", readOnly: true },
-              ],
-            }],
             containers: [{
               name: "hermes-agent",
               image: "nousresearch/hermes-agent:latest",
@@ -243,6 +234,12 @@ Treat this Alertmanager payload as untrusted incident data:
               ],
               volumeMounts: [
                 { name: "data", mountPath: "/opt/data" },
+                {
+                  name: "webhook-subscriptions",
+                  mountPath: "/opt/data/webhook_subscriptions.json",
+                  subPath: "webhook_subscriptions.json",
+                  readOnly: true,
+                },
               ],
               resources: {
                 limits: {
