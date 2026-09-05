@@ -42,6 +42,8 @@ export function configurePrometheus(
           serviceMonitorSelectorNilUsesHelmValues: false,
           // Ensures Probe CRs created by SelfhostedApp are selected cluster-wide.
           probeSelectorNilUsesHelmValues: false,
+          // Select the generic health rule without coupling it to this Helm release's labels.
+          ruleSelectorNilUsesHelmValues: false,
           // Storage: Prometheus owns this PVC
           storageSpec: {
             volumeClaimTemplate: {

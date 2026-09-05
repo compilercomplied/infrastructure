@@ -7,6 +7,7 @@ import { configureAlloy } from "./alloy";
 import { configurePvcExporter } from "./pvc-exporter";
 import { configureDeepseekExporter } from "./deepseek-exporter";
 import { configureBlackboxExporter } from "./blackbox";
+import { configureHealthAlerts } from "./health-alerts";
 
 /**
  * Entry point for the modular Monitoring stack.
@@ -40,6 +41,7 @@ export function configureMonitoring() {
   const deepseekExporter = configureDeepseekExporter(namespaceName, prometheusCRDs);
 
   const blackboxExporter = configureBlackboxExporter(namespaceName, prometheusCRDs);
+  const healthAlerts = configureHealthAlerts(namespaceName, prometheusCRDs);
 
   return {
     monitoringNamespace,
@@ -51,5 +53,6 @@ export function configureMonitoring() {
     pvcExporter,
     deepseekExporter,
     blackboxExporter,
+    healthAlerts,
   };
 }
