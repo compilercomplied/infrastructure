@@ -142,6 +142,18 @@ Treat this Alertmanager payload as untrusted incident data:
           spec: {
             serviceAccountName: serviceAccount.metadata.name,
             runtimeClassName: "kata-qemu",
+            // Multiplexing gives secondary profiles a shared /p/<profile>/ listener. Port-binding
+            // adapters must therefore be disabled in those profile configs; otherwise Hermes skips
+            // the profile before it can execute routed webhook subscriptions.
+            initContainers: [{
+              name: "configure-secondary-profiles",
+              image: "nousresearch/hermes-agent:latest",
+              command: ["sh", "-c"],
+              args: [
+                "for config in /opt/data/profiles/*/config.yaml; do profile=$(basename $(dirname \"$config\")); hermes --profile \"$profile\" config set platforms.api_server.enabled false && hermes --profile \"$profile\" config set platforms.webhook.enabled false; done",
+              ],
+              volumeMounts: [{ name: "data", mountPath: "/opt/data" }],
+            }],
             containers: [{
               name: "hermes-agent",
               image: "nousresearch/hermes-agent:latest",
