@@ -54,10 +54,10 @@ export function configurePrometheus(
               webhook_configs: [{
                 url: "http://hermes-agent.agent-sidekicks.svc.cluster.local:8644/p/engineer/webhooks/selfhosted-health",
                 send_resolved: true,
-                // Hermes 0.20.5 only accepts a static token through this GitLab-compatible header.
                 http_config: {
-                  http_headers: {
-                    "X-Gitlab-Token": { secrets: [healthAlertWebhookToken] },
+                  authorization: {
+                    type: "Bearer",
+                    credentials: healthAlertWebhookToken,
                   },
                 },
               }],
