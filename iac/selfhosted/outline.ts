@@ -87,6 +87,7 @@ export function configureOutline(
     containerPort: 3000,
     exposeType: "public",
     host: "outline.gdario.dev",
+    healthCheck: { protocol: "tcp" },
     ipFamilyPolicy: "SingleStack",
     ipFamilies: ["IPv6"],
     labels: {
