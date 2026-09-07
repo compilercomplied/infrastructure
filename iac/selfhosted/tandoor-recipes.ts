@@ -14,6 +14,7 @@ export function configureTandoorRecipes(
 
   const socialaccountProviders = pulumi.interpolate`{
     "openid_connect": {
+      "SCOPE": ["openid", "profile", "email", "offline_access"],
       "SERVERS": [
         {
           "id": "authentik",

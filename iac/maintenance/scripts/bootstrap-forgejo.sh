@@ -49,9 +49,16 @@ until wget -qO- http://127.0.0.1:3000/ >/dev/null 2>&1; do
 done
 echo "Forgejo is ready. Proceeding with configuration..."
 
-# Register the Authentik OIDC source if not already configured
-# We run this as the 'git' user using su-exec to bypass Gitea/Forgejo root checks
-if ! su-exec git forgejo admin auth list | grep -q "Authentik"; then
+# Register the Authentik OIDC source if not already configured. Existing sources
+# are updated as well: changing the bootstrap script must reconcile the live source.
+# We run this as the 'git' user using su-exec to bypass Gitea/Forgejo root checks.
+authentik_source_id=$(su-exec git forgejo admin auth list | while IFS= read -r line; do
+  case "$line" in
+    *Authentik*) set -- $line; printf '%s' "$1"; break ;;
+  esac
+done)
+
+if [ -z "$authentik_source_id" ]; then
   echo "Adding Authentik OIDC authentication source..."
   su-exec git forgejo admin auth add-oauth \
     --name "Authentik" \
@@ -59,7 +66,12 @@ if ! su-exec git forgejo admin auth list | grep -q "Authentik"; then
     --key "forgejo-client-id" \
     --secret "${AUTHENTIK_CLIENT_SECRET}" \
     --auto-discover-url "https://auth.gdario.dev/application/o/forgejo/.well-known/openid-configuration" \
-    --scopes "openid email profile"
+    --scopes "openid email profile offline_access"
+else
+  echo "Updating Authentik OIDC scopes..."
+  su-exec git forgejo admin auth update-oauth \
+    --id "$authentik_source_id" \
+    --scopes "openid email profile offline_access"
 fi
 
 # Seed the admin user if not already present (checking word boundaries to handle ID column)

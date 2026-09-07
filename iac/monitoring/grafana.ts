@@ -50,7 +50,7 @@ export function configureGrafana(
           allow_sign_up: true,
           client_id: "grafana-client-id",
           client_secret: grafanaSecret,
-          scopes: "openid profile email",
+          scopes: "openid profile email offline_access",
           auth_url: "https://auth.gdario.dev/application/o/authorize/",
           token_url: "https://auth.gdario.dev/application/o/token/",
           api_url: "https://auth.gdario.dev/application/o/userinfo/",

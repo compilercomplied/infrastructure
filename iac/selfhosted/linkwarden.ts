@@ -45,6 +45,7 @@ export function configureLinkwarden(
         value: "https://auth.gdario.dev/application/o/linkwarden",
       },
       { name: "AUTHENTIK_CLIENT_ID", value: "linkwarden-client-id" },
+      { name: "OIDC_SCOPES", value: "openid profile email offline_access" },
     ],
     databases: [
       {

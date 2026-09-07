@@ -154,6 +154,7 @@ export function configureForgejo(
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",
+      "auth.gdario.dev/oidc-scopes": "offline-access-v1",
     },
     secrets: {
       "FORGEJO__database__PASSWD": forgejoDbPassword,

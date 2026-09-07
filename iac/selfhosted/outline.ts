@@ -130,7 +130,7 @@ export function configureOutline(
       { name: "OIDC_USERINFO_URI", value: "https://auth.gdario.dev/application/o/userinfo/" },
       { name: "OIDC_USERNAME_CLAIM", value: "preferred_username" },
       { name: "OIDC_DISPLAY_NAME", value: "Authentik" },
-      { name: "OIDC_SCOPES", value: "openid profile email" },
+      { name: "OIDC_SCOPES", value: "openid profile email offline_access" },
     ],
     dependencies: [minioSetup, redis.deployment, ...dependencies],
   });

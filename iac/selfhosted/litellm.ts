@@ -254,6 +254,7 @@ litellm_settings:
       { name: "GENERIC_AUTHORIZATION_ENDPOINT", value: "https://auth.gdario.dev/application/o/authorize/" },
       { name: "GENERIC_TOKEN_ENDPOINT", value: "https://auth.gdario.dev/application/o/token/" },
       { name: "GENERIC_USERINFO_ENDPOINT", value: "https://auth.gdario.dev/application/o/userinfo/" },
+      { name: "GENERIC_SCOPE", value: "openid profile email offline_access" },
       { name: "PROXY_BASE_URL", value: "https://litellm.gdario.dev" },
       { name: "FORWARDED_ALLOW_IPS", value: "*" },
       { name: "GENERIC_ROLE_MAPPINGS_GROUP_CLAIM", value: "groups" },

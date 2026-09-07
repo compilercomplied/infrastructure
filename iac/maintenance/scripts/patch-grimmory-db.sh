@@ -20,7 +20,7 @@ done
 
 mariadb -h "$DB_HOST" -u "$DB_USER" -e "
   UPDATE grimmory.app_settings
-  SET val = '{\"providerName\":\"Authentik\",\"clientId\":\"grimmory-client-id\",\"clientSecret\":\"$OIDC_CLIENT_SECRET\",\"issuerUri\":\"https://auth.gdario.dev/application/o/grimmory/\",\"scopes\":\"\",\"claimMapping\":{\"email\":\"email\",\"groups\":\"\",\"name\":\"given_name\",\"username\":\"preferred_username\"}}'
+  SET val = '{\"providerName\":\"Authentik\",\"clientId\":\"grimmory-client-id\",\"clientSecret\":\"$OIDC_CLIENT_SECRET\",\"issuerUri\":\"https://auth.gdario.dev/application/o/grimmory/\",\"scopes\":\"openid profile email offline_access\",\"claimMapping\":{\"email\":\"email\",\"groups\":\"\",\"name\":\"given_name\",\"username\":\"preferred_username\"}}'
   WHERE name = 'oidc_provider_details';
   UPDATE grimmory.app_settings
   SET val = 'true'
