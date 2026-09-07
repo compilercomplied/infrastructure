@@ -26,6 +26,7 @@ export function configureGrimmory(
     containerPort: 6060,
     exposeType: "public",
     host: "grimmory.gdario.dev",
+    healthCheck: { protocol: "tcp" },
     labels: {
       [Labels.Network.AllowMariaDb]: "true",
       [Labels.Network.AllowAuthentik]: "true",
