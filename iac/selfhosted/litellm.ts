@@ -210,6 +210,7 @@ litellm_settings:
     containerPort: 4000,
     exposeType: "public",
     host: "litellm.gdario.dev",
+    healthCheck: { protocol: "http", path: "/health/readiness" },
     rateLimit: false,
     // uvicorn binds to 0.0.0.0 (IPv4 only). The default dual-stack service policy
     // generates an IPv6 endpoint alongside the IPv4 one, which Traefik round-robins
