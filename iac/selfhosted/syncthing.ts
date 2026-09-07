@@ -45,6 +45,7 @@ export function configureSyncthing(
     containerPort: 8384,
     exposeType: "public",
     host: "syncthing.gdario.dev",
+    healthCheck: { protocol: "tcp" },
     labels: {
       [Labels.Network.AllowAuthentik]: "true",
     },
