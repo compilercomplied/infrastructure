@@ -35,6 +35,7 @@ export function configureTandoorRecipes(
     containerPort: 8080,
     exposeType: "public",
     host: "recipes.gdario.dev",
+    healthCheck: { protocol: "http", path: "/api/health" },
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",
