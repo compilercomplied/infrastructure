@@ -55,16 +55,17 @@ export interface AppEndpoint {
     rateLimit?: false | { average?: number; burst?: number; period?: string };
   };
   allowIngressFrom?: IngressRuleConfig[];
+  healthCheck?: AppHealthCheck;
 }
 
-export type ExposeConfig = {
-  exposeType: "public";
-  host: string;
+export type AppDeploymentStrategy = Omit<k8s.types.input.apps.v1.DeploymentStrategy, "rollingUpdate"> & {
+  rollingUpdate?: k8s.types.input.apps.v1.RollingUpdateDeployment | null;
 };
 
 type SelfhostedAppCommonArgs = {
   namespace: pulumi.Input<string>;
   image: string;
+  endpoints: [AppEndpoint, ...AppEndpoint[]];
   databases?: AppDatabase[];
   volumes?: AppVolume[];
   env?: k8s.types.input.core.v1.EnvVar[];
@@ -75,7 +76,7 @@ type SelfhostedAppCommonArgs = {
   affinity?: k8s.types.input.core.v1.Affinity;
   command?: string[];
   args?: string[];
-  strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
+  strategy?: AppDeploymentStrategy;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
   ipFamilyPolicy?: string;
@@ -91,53 +92,7 @@ type SelfhostedAppCommonArgs = {
   childAliases?: pulumi.Alias[];
 };
 
-type LegacyEndpointConfig = {
-  endpoints?: never;
-  containerPort: number;
-  allowIngressFrom?: IngressRuleConfig[];
-  middlewares?: pulumi.Input<string>[];
-  rateLimit?: false | { average?: number; burst?: number; period?: string };
-  healthCheck?: AppHealthCheck;
-} & (ExposeConfig | { exposeType: "private"; host?: never });
-
-type MultiEndpointConfig = {
-  endpoints: AppEndpoint[];
-  containerPort?: never;
-  exposeType?: never;
-  host?: never;
-  allowIngressFrom?: never;
-  middlewares?: never;
-  rateLimit?: never;
-  healthCheck?: never;
-};
-
-export type SelfhostedAppArgs = SelfhostedAppCommonArgs & (LegacyEndpointConfig | MultiEndpointConfig);
-
-function hasMultipleEndpoints(args: SelfhostedAppArgs): args is SelfhostedAppCommonArgs & MultiEndpointConfig {
-  return args.endpoints !== undefined;
-}
-
-function getEndpoints(args: SelfhostedAppArgs): AppEndpoint[] {
-  if (hasMultipleEndpoints(args)) {
-    if (args.endpoints.length === 0) {
-      throw new Error("SelfhostedApp requires at least one endpoint.");
-    }
-    return args.endpoints;
-  }
-
-  return [{
-    name: "http",
-    containerPort: args.containerPort,
-    servicePort: 80,
-    ingress: args.exposeType === "public" ? {
-      name: undefined,
-      host: args.host,
-      middlewares: args.middlewares,
-      rateLimit: args.rateLimit,
-    } : undefined,
-    allowIngressFrom: args.allowIngressFrom,
-  }];
-}
+export type SelfhostedAppArgs = SelfhostedAppCommonArgs;
 
 interface VolumeConfigResult {
   pvcs: k8s.core.v1.PersistentVolumeClaim[];
@@ -152,9 +107,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
   public readonly configMap?: k8s.core.v1.ConfigMap;
   public readonly secret?: k8s.core.v1.Secret;
   public readonly pvcs: k8s.core.v1.PersistentVolumeClaim[];
-  public readonly ingress?: k8s.networking.v1.Ingress;
   public readonly ingresses: k8s.networking.v1.Ingress[];
-  public readonly traefikPolicy?: k8s.networking.v1.NetworkPolicy;
   public readonly traefikPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly internalPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly backupJobs: k8s.batch.v1.CronJob[];
@@ -167,7 +120,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     const childAliases = [componentAlias, ...(args.childAliases || [])];
     const childOpts = { parent: this, aliases: childAliases };
     const dependencies = args.dependencies || [];
-    const endpoints = getEndpoints(args);
+    const endpoints = args.endpoints;
 
     const { configMap, secret, envFrom } = this.configureEnvironment(name, args.namespace, args.config, args.secrets, dependencies, childOpts);
     this.configMap = configMap;
@@ -191,19 +144,19 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     const exposures = this.configureIngresses(name, args, endpoints, this.service, childAliases);
     this.ingresses = exposures.map(exposure => exposure.ingress);
     this.traefikPolicies = exposures.flatMap(exposure => exposure.policy ? [exposure.policy] : []);
-    this.ingress = this.ingresses[0];
-    this.traefikPolicy = this.traefikPolicies[0];
+
 
     this.internalPolicies = this.configureInternalPolicies(name, args, endpoints, childOpts);
 
     this.backupJobs = this.configureBackups(name, args, volConfig.backupPVCs, dependencies, childAliases);
 
-    if (args.healthCheck) {
+    const healthEndpoint = endpoints.find(endpoint => endpoint.healthCheck);
+    if (healthEndpoint?.healthCheck) {
       this.healthProbe = createHealthProbe({
         name,
         namespace: args.namespace,
         service: this.service,
-        healthCheck: args.healthCheck,
+        healthCheck: healthEndpoint.healthCheck,
         parent: this,
         aliases: childAliases,
       });
@@ -327,7 +280,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
       metadata: { name, namespace: args.namespace },
       spec: {
         replicas: 1,
-        strategy: args.strategy,
+        strategy: args.strategy as k8s.types.input.apps.v1.DeploymentStrategy,
         selector: { matchLabels: { app: name } },
         template: {
           metadata: { labels: { app: name, ...(args.labels || {}) } },
@@ -400,7 +353,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
       }
 
       return [createLetsEncryptIngress({
-        name: endpoint.ingress.name || (hasMultipleEndpoints(args) ? `${name}-${endpoint.name}` : name),
+        name: endpoint.ingress.name || `${name}-${endpoint.name}`,
         namespace: args.namespace,
         host: endpoint.ingress.host,
         serviceName: service.metadata.name,
@@ -443,7 +396,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
               }],
               ports: [{
                 port: rule.port || endpoint.containerPort,
-                protocol: hasMultipleEndpoints(args) ? endpoint.protocol || "TCP" : undefined,
+                protocol: endpoint.protocol,
               }],
             }],
             policyTypes: ["Ingress"],

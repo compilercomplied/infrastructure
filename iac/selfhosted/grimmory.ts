@@ -23,10 +23,7 @@ export function configureGrimmory(
   const app = new SelfhostedApp("grimmory", {
     namespace,
     image: grimmoryImage,
-    containerPort: 6060,
-    exposeType: "public",
-    host: "grimmory.gdario.dev",
-    healthCheck: { protocol: "tcp" },
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 6060, ingress: { name: "grimmory", host: "grimmory.gdario.dev" }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowMariaDb]: "true",
       [Labels.Network.AllowAuthentik]: "true",

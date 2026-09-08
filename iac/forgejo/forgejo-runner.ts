@@ -4,8 +4,6 @@ import * as crypto from "crypto";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../library/k8s-pvc";
-import { createSelfhostedApp } from "../library/selfhosted-app";
-import { Labels } from "../selfhosted/labels";
 
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "../maintenance/scripts/bootstrap-forgejo-runner.sh"), "utf8");
 

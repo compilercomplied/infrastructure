@@ -207,11 +207,7 @@ litellm_settings:
   const app = new SelfhostedApp("litellm", {
     namespace: namespaceName,
     image: "ghcr.io/berriai/litellm:latest",
-    containerPort: 4000,
-    exposeType: "public",
-    host: "litellm.gdario.dev",
-    healthCheck: { protocol: "http", path: "/health/readiness" },
-    rateLimit: false,
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 4000, ingress: { name: "litellm", host: "litellm.gdario.dev", rateLimit: false }, healthCheck: { protocol: "http", path: "/health/readiness" } }],
     // uvicorn binds to 0.0.0.0 (IPv4 only). The default dual-stack service policy
     // generates an IPv6 endpoint alongside the IPv4 one, which Traefik round-robins
     // to — causing every other request to fail with connection refused → 502.

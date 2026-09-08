@@ -17,10 +17,7 @@ export function configureLinkwarden(
   const app = new SelfhostedApp("linkwarden", {
     namespace,
     image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
-    containerPort: 3000,
-    exposeType: "public",
-    host: "linkwarden.gdario.dev",
-    healthCheck: { protocol: "tcp" },
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "linkwarden", host: "linkwarden.gdario.dev" }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",

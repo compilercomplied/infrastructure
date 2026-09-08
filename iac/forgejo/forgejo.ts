@@ -3,8 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createSelfhostedApp } from "../library/selfhosted-app";
-import { createBackupJob } from "../maintenance/backup";
+import { SelfhostedApp } from "../library/selfhosted-component";
 import { Labels } from "../selfhosted/labels";
 import { postgresClientImage } from "../shared-resources/shared-postgres";
 
@@ -144,13 +143,10 @@ export function configureForgejo(
   const jobWithSecrets = dbInitJob; // Implicitly depends on secret due to env mappings, but we declare it to ensure ordering
   
   // 3. Deployment and Ingress configuration using the selfhosted-app library
-  const app = createSelfhostedApp({
-    name,
+  const app = new SelfhostedApp(name, {
     namespace,
     image,
-    containerPort: 3000,
-    exposeType: "public",
-    host: "git.gdario.dev",
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "forgejo", host: "git.gdario.dev" } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",
@@ -186,6 +182,13 @@ export function configureForgejo(
       { name: "FORGEJO__repository__ENABLE_PUSH_CREATE_USER", value: "true" },
       { name: "FORGEJO__repository__ENABLE_PUSH_CREATE_ORG", value: "true" },
     ],
+    databases: [{
+      type: "postgres",
+      databaseName: name,
+      host: "shared-postgres.shared-resources.svc.cluster.local",
+      username: name,
+      passwordSecret: forgejoDbPassword,
+    }],
     volumes: [
       {
         name: "forgejo-data",
@@ -200,12 +203,12 @@ export function configureForgejo(
           name: bootstrapConfigMap.metadata.name,
           defaultMode: 0o755,
         },
-      } as any, // Cast as any because VolumeConfig has basic typing
+      },
     ],
     command: ["/bin/bash", "/scripts/bootstrap-forgejo.sh"],
     strategy: {
       type: "Recreate",
-      rollingUpdate: null as any,
+      rollingUpdate: null,
     },
     readinessProbe: {
       httpGet: {
@@ -320,32 +323,7 @@ export function configureForgejo(
     },
   }, { dependsOn: app.deployment });
 
-  // 6. Restic Backups (Database stream and PVC files copy)
-  const dbBackup = createBackupJob({
-    appName: name,
-    namespace,
-    source: {
-      type: "postgres",
-      databaseName: name,
-      dbHost: "shared-postgres.shared-resources.svc.cluster.local",
-      dbUser: name,
-      dbPasswordSecret: forgejoDbPassword,
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
-  const filesBackup = createBackupJob({
-    appName: name,
-    namespace,
-    source: {
-      type: "pvc",
-      pvcName: "forgejo-pvc",
-      mountPath: "/data",
-    },
-    dependencies: [...dependencies, app.deployment],
-  });
-
-  // 7. Prune CronJob (Keeps last 5 actions and packages)
+  // 6. Prune CronJob (Keeps last 5 actions and packages)
   const pruneScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-prune-scripts`, {
     metadata: {
       name: `${name}-prune-scripts`,
@@ -431,12 +409,11 @@ export function configureForgejo(
   }, { dependsOn: [...dependencies, app.deployment, pruneScriptsConfigMap] });
 
   return {
-    ...app,
+    deployment: app.deployment,
     sshService,
     sshPolicy,
     internalHttpPolicy,
-    dbBackup,
-    filesBackup,
+
     runnerSecret,
     pruneCronJob,
     pruneScriptsConfigMap,

@@ -42,10 +42,17 @@ export function configureSyncthing(
   const app = new SelfhostedApp(name, {
     namespace,
     image: "syncthing/syncthing:1.27.8",
-    containerPort: 8384,
-    exposeType: "public",
-    host: "syncthing.gdario.dev",
-    healthCheck: { protocol: "tcp" },
+    endpoints: [{
+      name: "http",
+      servicePort: 80,
+      containerPort: 8384,
+      ingress: {
+        name: "syncthing",
+        host: "syncthing.gdario.dev",
+        middlewares: [pulumi.interpolate`${namespace}-${authMiddleware.metadata.name}@kubernetescrd`],
+      },
+      healthCheck: { protocol: "tcp" },
+    }],
     labels: {
       [Labels.Network.AllowAuthentik]: "true",
     },
@@ -72,7 +79,6 @@ export function configureSyncthing(
         enableBackup: false,
       },
     ],
-    middlewares: [pulumi.interpolate`${namespace}-${authMiddleware.metadata.name}@kubernetescrd`],
     affinity: {
       podAffinity: {
         requiredDuringSchedulingIgnoredDuringExecution: [

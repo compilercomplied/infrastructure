@@ -33,10 +33,17 @@ export function configureTandoorRecipes(
   const app = new SelfhostedApp("tandoor-recipes", {
     namespace,
     image: "ghcr.io/tandoorrecipes/recipes:2.6.9",
-    containerPort: 8080,
-    exposeType: "public",
-    host: "recipes.gdario.dev",
-    healthCheck: { protocol: "http", path: "/api/health" },
+    endpoints: [{
+      name: "http",
+      servicePort: 80,
+      containerPort: 8080,
+      ingress: { name: "tandoor-recipes", host: "recipes.gdario.dev" },
+      healthCheck: { protocol: "http", path: "/api/health" },
+      allowIngressFrom: [{
+        podSelector: { app: "tandoor-mcp" },
+        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" },
+      }],
+    }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",
@@ -74,12 +81,7 @@ export function configureTandoorRecipes(
         passwordSecret: tandoorDbPassword,
       },
     ],
-    allowIngressFrom: [
-      {
-        podSelector: { app: "tandoor-mcp" },
-        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" },
-      },
-    ],
+
     dependencies,
   });
 

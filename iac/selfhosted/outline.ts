@@ -20,9 +20,7 @@ export function configureOutline(
   const redis = new SelfhostedApp(`${name}-redis`, {
     namespace,
     image: "redis:7-alpine",
-    containerPort: 6379,
-    exposeType: "private",
-    allowIngressFrom: [{ podSelector: { app: name }, port: 6379 }],
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 6379, allowIngressFrom: [{ podSelector: { app: name }, port: 6379 }] }],
     volumes: [
       {
         name: "redis-data",
@@ -37,9 +35,7 @@ export function configureOutline(
   const minio = new SelfhostedApp(`${name}-minio`, {
     namespace,
     image: "minio/minio:latest",
-    containerPort: 9000,
-    exposeType: "private",
-    allowIngressFrom: [{ podSelector: { app: name }, port: 9000 }],
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 9000, allowIngressFrom: [{ podSelector: { app: name }, port: 9000 }] }],
     args: ["server", "/data"],
     env: [
       { name: "MINIO_ROOT_USER", value: "minioadmin" },
@@ -84,22 +80,24 @@ export function configureOutline(
   const outline = new SelfhostedApp(name, {
     namespace,
     image: "outlinewiki/outline:latest",
-    containerPort: 3000,
-    exposeType: "public",
-    host: "outline.gdario.dev",
-    healthCheck: { protocol: "tcp" },
+    endpoints: [{
+      name: "http",
+      servicePort: 80,
+      containerPort: 3000,
+      ingress: { name: "outline", host: "outline.gdario.dev" },
+      healthCheck: { protocol: "tcp" },
+      allowIngressFrom: [{
+        podSelector: { app: "outline-mcp" },
+        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" },
+      }],
+    }],
     ipFamilyPolicy: "SingleStack",
     ipFamilies: ["IPv6"],
     labels: {
       [Labels.Network.AllowAuthentik]: "true",
       [Labels.Network.AllowPostgres]: "true",
     },
-    allowIngressFrom: [
-      {
-        podSelector: { app: "outline-mcp" },
-        namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" }
-      },
-    ],
+
     env: [
       { name: "NODE_ENV", value: "production" },
       { name: "PORT", value: "3000" },
