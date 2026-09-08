@@ -42,7 +42,8 @@ package install on the (single) node; the chart and node label are declarative.
 ## Hermes Agent
 
 The self-hosted Hermes Agent runs as a `custom:selfhosted:HermesAgent` component
-(`iac/components/hermes/hermes-agent.ts`) in `agent-sidekicks`. It is itself
+declared in `iac/library/hermes-agent.ts`, with its seeded deployment in
+`iac/agent-sidekicks/hermes-agent.ts`. It is itself
 pinned to the Kata runtime class, and talks to the LLM backend through the
 LiteLLM gateway in `infrastructure` rather than holding a key per model.
 

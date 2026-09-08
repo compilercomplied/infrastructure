@@ -1,62 +1,40 @@
-import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { SelfhostedApp } from "../../library/selfhosted-component";
-import { Labels } from "../../selfhosted/labels";
-import { getAuthorizedUsers } from "../../selfhosted/users";
+import { HermesAgent } from "../library/hermes-agent";
+import { Labels } from "../selfhosted/labels";
+import { getAuthorizedUsers } from "../selfhosted/users";
 
-export interface HermesAgentArgs {
-  namespace: pulumi.Input<string>;
-  dependencies?: pulumi.Resource[];
-}
+export function configureHermesAgent(
+  namespace: pulumi.Input<string>,
+  dependencies: pulumi.Resource[] = [],
+) {
+  const config = new pulumi.Config("selfhosted");
+  const agentsConfig = new pulumi.Config("agents");
+  const users = getAuthorizedUsers();
+  const oidcClientSecret = config.requireSecret("hermesSecret");
 
-export class HermesAgent extends pulumi.ComponentResource {
-  public readonly deployment: k8s.apps.v1.Deployment;
-  public readonly service: k8s.core.v1.Service;
-  public readonly ingress: k8s.networking.v1.Ingress;
-  public readonly apiIngress: k8s.networking.v1.Ingress;
-  public readonly dataBackup: k8s.batch.v1.CronJob;
-
-  constructor(name: string, args: HermesAgentArgs, opts?: pulumi.ComponentResourceOptions) {
-    super("custom:selfhosted:HermesAgent", name, {}, opts);
-
-    const { namespace, dependencies = [] } = args;
-    const config = new pulumi.Config("selfhosted");
-    const agentsConfig = new pulumi.Config("agents");
-    const users = getAuthorizedUsers();
-    const oidcClientSecret = config.requireSecret("hermesSecret");
-
-    const legacyParentAlias = { parent: pulumi.rootStackResource };
-    const serviceAccount = new k8s.core.v1.ServiceAccount(`${name}-sa`, {
-      metadata: { name: `${name}-sa`, namespace },
-    }, { parent: this, aliases: [legacyParentAlias] });
-
-    // Pulumi previews authorize server-side dry runs using the same Kubernetes verbs as an
-    // update, so Hermes needs cluster-wide access even though it does not apply changes.
-    const clusterRoleBinding = new k8s.rbac.v1.ClusterRoleBinding(`${name}-admin-binding`, {
-      metadata: { name: `${name}-admin-binding` },
-      subjects: [{ kind: "ServiceAccount", name: serviceAccount.metadata.name, namespace }],
-      roleRef: {
-        apiGroup: "rbac.authorization.k8s.io",
-        kind: "ClusterRole",
-        name: "cluster-admin",
-      },
-    }, { parent: this, aliases: [legacyParentAlias] });
-
-    const app = new SelfhostedApp(name, {
-      namespace,
+  // Pulumi previews authorize server-side dry runs using the same Kubernetes verbs as an
+  // update, so Hermes needs cluster-wide access even though it does not apply changes.
+  return new HermesAgent("hermes-agent", {
+    namespace,
+    dependencies,
+    serviceAccount: {
+      name: "hermes-agent-sa",
+      clusterRoleName: "cluster-admin",
+    },
+    app: {
       image: "nousresearch/hermes-agent:latest",
       endpoints: [
         {
           name: "http",
           containerPort: 9119,
           servicePort: 80,
-          ingress: { name, host: "hermes.gdario.dev" },
+          ingress: { name: "hermes-agent", host: "hermes.gdario.dev" },
         },
         {
           name: "api",
           containerPort: 8642,
           servicePort: 8642,
-          ingress: { name: `${name}-api`, host: "hermes-api.gdario.dev" },
+          ingress: { name: "hermes-agent-api", host: "hermes-api.gdario.dev" },
         },
       ],
       config: {
@@ -89,8 +67,6 @@ export class HermesAgent extends pulumi.ComponentResource {
       strategy: { type: "RollingUpdate" },
       ipFamilyPolicy: "SingleStack",
       ipFamilies: ["IPv4"],
-      serviceAccountName: serviceAccount.metadata.name,
-      automountServiceAccountToken: false,
       runtimeClassName: "kata-qemu",
       resources: {
         limits: { memory: "6Gi" },
@@ -100,7 +76,7 @@ export class HermesAgent extends pulumi.ComponentResource {
         name: "data",
         mountPath: "/opt/data",
         size: "256Mi",
-        pvcName: `${name}-pvc`,
+        pvcName: "hermes-agent-pvc",
       }],
       additionalContainers: [{
         name: "dind",
@@ -128,22 +104,6 @@ export class HermesAgent extends pulumi.ComponentResource {
         mountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
         readOnly: true,
       }],
-      dependencies: [...dependencies, serviceAccount, clusterRoleBinding],
-      childAliases: [{ parent: this }],
-    }, { parent: this });
-
-    this.deployment = app.deployment;
-    this.service = app.service;
-    this.ingress = app.ingresses[0];
-    this.apiIngress = app.ingresses[1];
-    this.dataBackup = app.backupJobs[0];
-
-    this.registerOutputs({
-      deployment: this.deployment,
-      service: this.service,
-      ingress: this.ingress,
-      apiIngress: this.apiIngress,
-      dataBackup: this.dataBackup,
-    });
-  }
+    },
+  });
 }

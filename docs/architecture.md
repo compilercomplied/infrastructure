@@ -223,7 +223,8 @@ The cluster hosts an AI-agent fleet, and treats it as security-critical:
   through the LiteLLM gateway in `infrastructure` rather than holding provider
   keys for every model. Its dashboard is fronted by Authentik OIDC; its
   OpenAI-compatible API endpoint uses its own bearer key. The component is
-  `custom:selfhosted:HermesAgent` in `iac/components/hermes/hermes-agent.ts`.
+  `custom:selfhosted:HermesAgent`, declared in `iac/library/hermes-agent.ts`
+  and deployed from `iac/agent-sidekicks/hermes-agent.ts`.
 - **MCP servers** (`agent-sidekicks`) expose read/write tooling to agents for
   Tandoor, Outline, Grafana, and Kubernetes. They live in their own namespace,
   separate from the pods that actually *execute* arbitrary agent code.
@@ -275,7 +276,7 @@ Everything lives under `iac/`, split by responsibility:
 | `iac/infrastructure/` | Authentik, LiteLLM, Kata deployment, sysctl-tuner |
 | `iac/forgejo/` | Forgejo server + Actions runner |
 | `iac/agent-sidekicks/` | MCP servers + Hermes Agent |
-| `iac/components/hermes/` | Reusable `HermesAgent` component |
+| `iac/library/hermes-agent.ts` | Reusable `HermesAgent` component declaration |
 | `iac/modules/agents/` | Agent namespaces, RBAC, secrets, cleanup cron |
 | `iac/monitoring/` | Prometheus, Loki, Alloy, Grafana, exporters |
 | `iac/maintenance/` | Backup jobs + scripts |

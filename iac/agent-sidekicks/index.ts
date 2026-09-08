@@ -3,7 +3,7 @@ import { configureTandoorMcp } from "./tandoor-mcp";
 import { configureOutlineMcp } from "./outline-mcp";
 import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureKubernetesMcp } from "./kubernetes-mcp";
-import { HermesAgent } from "../components/hermes/hermes-agent";
+import { configureHermesAgent } from "./hermes-agent";
 
 export function configureAgentSidekicks(selfhosted: any) {
   const namespaceName = "agent-sidekicks";
@@ -13,17 +13,13 @@ export function configureAgentSidekicks(selfhosted: any) {
   const grafanaMcp = configureGrafanaMcp(namespaceName, [selfhosted.postgres]);
   const kubernetesMcp = configureKubernetesMcp(namespaceName, [selfhosted.postgres]);
   
-  const hermes = new HermesAgent("hermes-agent", {
-    namespace: namespaceName,
-    dependencies: [
-      selfhosted.postgres, 
- 
-      tandoorMcp.service, 
-      grafanaMcp.service, 
-      kubernetesMcp.service, 
-      outlineMcp.service
-    ],
-  });
+  const hermes = configureHermesAgent(namespaceName, [
+    selfhosted.postgres,
+    tandoorMcp.service,
+    grafanaMcp.service,
+    kubernetesMcp.service,
+    outlineMcp.service,
+  ]);
 
   return {
     tandoorMcp,
