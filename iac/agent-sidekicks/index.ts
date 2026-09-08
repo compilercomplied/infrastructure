@@ -1,5 +1,4 @@
 import * as k8s from "@pulumi/kubernetes";
-import * as pulumi from "@pulumi/pulumi";
 import { configureTandoorMcp } from "./tandoor-mcp";
 import { configureOutlineMcp } from "./outline-mcp";
 import { configureGrafanaMcp } from "./grafana-mcp";

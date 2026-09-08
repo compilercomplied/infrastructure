@@ -28,10 +28,33 @@ export interface AppVolume {
   configMap?: k8s.types.input.core.v1.ConfigMapVolumeSource;
 }
 
-export interface IngressRuleConfig {
-  podSelector: Record<string, string>;
-  namespaceSelector?: Record<string, string>;
+type IngressPeerSelector =
+  | {
+      podSelector: Record<string, string>;
+      namespaceSelector?: Record<string, string>;
+    }
+  | {
+      podSelector?: Record<string, string>;
+      namespaceSelector: Record<string, string>;
+    };
+
+export type IngressRuleConfig = IngressPeerSelector & {
+  name?: string;
   port?: number;
+};
+
+export interface AppEndpoint {
+  name: string;
+  containerPort: number;
+  servicePort?: number;
+  protocol?: "TCP" | "UDP" | "SCTP";
+  ingress?: {
+    name?: string;
+    host: string;
+    middlewares?: pulumi.Input<string>[];
+    rateLimit?: false | { average?: number; burst?: number; period?: string };
+  };
+  allowIngressFrom?: IngressRuleConfig[];
 }
 
 export type ExposeConfig = {
@@ -39,29 +62,82 @@ export type ExposeConfig = {
   host: string;
 };
 
-export type SelfhostedAppArgs = {
+type SelfhostedAppCommonArgs = {
   namespace: pulumi.Input<string>;
   image: string;
-  containerPort: number;
   databases?: AppDatabase[];
   volumes?: AppVolume[];
   env?: k8s.types.input.core.v1.EnvVar[];
+  config?: Record<string, pulumi.Input<string>>;
   secrets?: Record<string, pulumi.Input<string>>;
   labels?: Record<string, string>;
-  allowIngressFrom?: IngressRuleConfig[];
   dependencies?: pulumi.Resource[];
-  middlewares?: pulumi.Input<string>[];
   affinity?: k8s.types.input.core.v1.Affinity;
   command?: string[];
   args?: string[];
   strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
-  healthCheck?: AppHealthCheck;
-  rateLimit?: false | { average?: number; burst?: number; period?: string };
   ipFamilyPolicy?: string;
   ipFamilies?: string[];
+  serviceAccountName?: pulumi.Input<string>;
+  automountServiceAccountToken?: boolean;
+  runtimeClassName?: pulumi.Input<string>;
+  resources?: k8s.types.input.core.v1.ResourceRequirements;
+  initContainers?: k8s.types.input.core.v1.Container[];
+  additionalContainers?: k8s.types.input.core.v1.Container[];
+  additionalVolumes?: k8s.types.input.core.v1.Volume[];
+  additionalVolumeMounts?: k8s.types.input.core.v1.VolumeMount[];
+  childAliases?: pulumi.Alias[];
+};
+
+type LegacyEndpointConfig = {
+  endpoints?: never;
+  containerPort: number;
+  allowIngressFrom?: IngressRuleConfig[];
+  middlewares?: pulumi.Input<string>[];
+  rateLimit?: false | { average?: number; burst?: number; period?: string };
+  healthCheck?: AppHealthCheck;
 } & (ExposeConfig | { exposeType: "private"; host?: never });
+
+type MultiEndpointConfig = {
+  endpoints: AppEndpoint[];
+  containerPort?: never;
+  exposeType?: never;
+  host?: never;
+  allowIngressFrom?: never;
+  middlewares?: never;
+  rateLimit?: never;
+  healthCheck?: never;
+};
+
+export type SelfhostedAppArgs = SelfhostedAppCommonArgs & (LegacyEndpointConfig | MultiEndpointConfig);
+
+function hasMultipleEndpoints(args: SelfhostedAppArgs): args is SelfhostedAppCommonArgs & MultiEndpointConfig {
+  return args.endpoints !== undefined;
+}
+
+function getEndpoints(args: SelfhostedAppArgs): AppEndpoint[] {
+  if (hasMultipleEndpoints(args)) {
+    if (args.endpoints.length === 0) {
+      throw new Error("SelfhostedApp requires at least one endpoint.");
+    }
+    return args.endpoints;
+  }
+
+  return [{
+    name: "http",
+    containerPort: args.containerPort,
+    servicePort: 80,
+    ingress: args.exposeType === "public" ? {
+      name: undefined,
+      host: args.host,
+      middlewares: args.middlewares,
+      rateLimit: args.rateLimit,
+    } : undefined,
+    allowIngressFrom: args.allowIngressFrom,
+  }];
+}
 
 interface VolumeConfigResult {
   pvcs: k8s.core.v1.PersistentVolumeClaim[];
@@ -73,10 +149,13 @@ interface VolumeConfigResult {
 export class SelfhostedApp extends pulumi.ComponentResource {
   public readonly deployment: k8s.apps.v1.Deployment;
   public readonly service: k8s.core.v1.Service;
+  public readonly configMap?: k8s.core.v1.ConfigMap;
   public readonly secret?: k8s.core.v1.Secret;
   public readonly pvcs: k8s.core.v1.PersistentVolumeClaim[];
   public readonly ingress?: k8s.networking.v1.Ingress;
+  public readonly ingresses: k8s.networking.v1.Ingress[];
   public readonly traefikPolicy?: k8s.networking.v1.NetworkPolicy;
+  public readonly traefikPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly internalPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly backupJobs: k8s.batch.v1.CronJob[];
   public readonly healthProbe?: k8s.apiextensions.CustomResource;
@@ -85,31 +164,39 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     super("custom:selfhosted:App", name, {}, opts);
 
     const componentAlias = { parent: pulumi.rootStackResource };
-    const childOpts = { parent: this, aliases: [componentAlias] };
+    const childAliases = [componentAlias, ...(args.childAliases || [])];
+    const childOpts = { parent: this, aliases: childAliases };
     const dependencies = args.dependencies || [];
+    const endpoints = getEndpoints(args);
 
-    const { secret, envFrom } = this.configureSecrets(name, args.namespace, args.secrets, dependencies, childOpts);
+    const { configMap, secret, envFrom } = this.configureEnvironment(name, args.namespace, args.config, args.secrets, dependencies, childOpts);
+    this.configMap = configMap;
     this.secret = secret;
 
-    const volConfig = this.configureVolumes(name, args.namespace, args.volumes, dependencies, childOpts, componentAlias);
+    const volConfig = this.configureVolumes(name, args.namespace, args.volumes, dependencies, childOpts, childAliases);
     this.pvcs = volConfig.pvcs;
 
     const deploymentDeps = [...dependencies, ...this.pvcs];
+    if (this.configMap) {
+      deploymentDeps.push(this.configMap);
+    }
     if (this.secret) {
       deploymentDeps.push(this.secret);
     }
     
-    this.deployment = this.configureDeployment(name, args, envFrom, volConfig.k8sVolumes, volConfig.k8sVolumeMounts, deploymentDeps, childOpts);
+    this.deployment = this.configureDeployment(name, args, endpoints, envFrom, volConfig.k8sVolumes, volConfig.k8sVolumeMounts, deploymentDeps, childOpts);
 
-    this.service = this.configureService(name, args, childOpts);
+    this.service = this.configureService(name, args, endpoints, childOpts);
 
-    const exposure = this.configureIngress(name, args, this.service, componentAlias);
-    this.ingress = exposure?.ingress;
-    this.traefikPolicy = exposure?.policy;
+    const exposures = this.configureIngresses(name, args, endpoints, this.service, childAliases);
+    this.ingresses = exposures.map(exposure => exposure.ingress);
+    this.traefikPolicies = exposures.flatMap(exposure => exposure.policy ? [exposure.policy] : []);
+    this.ingress = this.ingresses[0];
+    this.traefikPolicy = this.traefikPolicies[0];
 
-    this.internalPolicies = this.configureInternalPolicies(name, args, childOpts);
+    this.internalPolicies = this.configureInternalPolicies(name, args, endpoints, childOpts);
 
-    this.backupJobs = this.configureBackups(name, args, volConfig.backupPVCs, dependencies, componentAlias);
+    this.backupJobs = this.configureBackups(name, args, volConfig.backupPVCs, dependencies, childAliases);
 
     if (args.healthCheck) {
       this.healthProbe = createHealthProbe({
@@ -118,40 +205,54 @@ export class SelfhostedApp extends pulumi.ComponentResource {
         service: this.service,
         healthCheck: args.healthCheck,
         parent: this,
-        aliases: [componentAlias],
+        aliases: childAliases,
       });
     }
 
     this.registerOutputs({});
   }
 
-  private configureSecrets(
+  private configureEnvironment(
     name: string,
     namespace: pulumi.Input<string>,
+    config: Record<string, pulumi.Input<string>> | undefined,
     secrets: Record<string, pulumi.Input<string>> | undefined,
     dependencies: pulumi.Resource[],
     childOpts: pulumi.CustomResourceOptions
-  ): { secret?: k8s.core.v1.Secret; envFrom: k8s.types.input.core.v1.EnvFromSource[] } {
+  ): {
+    configMap?: k8s.core.v1.ConfigMap;
+    secret?: k8s.core.v1.Secret;
+    envFrom: k8s.types.input.core.v1.EnvFromSource[];
+  } {
     const envFrom: k8s.types.input.core.v1.EnvFromSource[] = [];
-    if (!secrets || Object.keys(secrets).length === 0) {
-      return { envFrom };
+    let configMap: k8s.core.v1.ConfigMap | undefined;
+    let secret: k8s.core.v1.Secret | undefined;
+
+    if (config && Object.keys(config).length > 0) {
+      configMap = new k8s.core.v1.ConfigMap(`${name}-config`, {
+        metadata: {
+          name: `${name}-config`,
+          namespace,
+        },
+        data: config,
+      }, { dependsOn: dependencies, ...childOpts });
+
+      envFrom.push({ configMapRef: { name: configMap.metadata.name } });
     }
 
-    const secret = new k8s.core.v1.Secret(`${name}-secrets`, {
-      metadata: {
-        name: `${name}-secrets`,
-        namespace,
-      },
-      stringData: secrets,
-    }, { dependsOn: dependencies, ...childOpts });
+    if (secrets && Object.keys(secrets).length > 0) {
+      secret = new k8s.core.v1.Secret(`${name}-secrets`, {
+        metadata: {
+          name: `${name}-secrets`,
+          namespace,
+        },
+        stringData: secrets,
+      }, { dependsOn: dependencies, ...childOpts });
 
-    envFrom.push({
-      secretRef: {
-        name: secret.metadata.name,
-      },
-    });
+      envFrom.push({ secretRef: { name: secret.metadata.name } });
+    }
 
-    return { secret, envFrom };
+    return { configMap, secret, envFrom };
   }
 
   private configureVolumes(
@@ -160,7 +261,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     volumes: AppVolume[] | undefined,
     dependencies: pulumi.Resource[],
     childOpts: pulumi.CustomResourceOptions,
-    componentAlias: pulumi.Alias
+    childAliases: pulumi.Alias[]
   ): VolumeConfigResult {
     const pvcs: k8s.core.v1.PersistentVolumeClaim[] = [];
     const k8sVolumes: k8s.types.input.core.v1.Volume[] = [];
@@ -188,7 +289,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             accessModes: vol.accessModes,
             dependencies,
             parent: this,
-            aliases: [componentAlias],
+            aliases: childAliases,
           });
           pvcs.push(pvc);
         }
@@ -215,6 +316,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
   private configureDeployment(
     name: string,
     args: SelfhostedAppArgs,
+    endpoints: AppEndpoint[],
     envFrom: k8s.types.input.core.v1.EnvFromSource[],
     k8sVolumes: k8s.types.input.core.v1.Volume[],
     k8sVolumeMounts: k8s.types.input.core.v1.VolumeMount[],
@@ -230,19 +332,28 @@ export class SelfhostedApp extends pulumi.ComponentResource {
         template: {
           metadata: { labels: { app: name, ...(args.labels || {}) } },
           spec: {
+            serviceAccountName: args.serviceAccountName,
+            automountServiceAccountToken: args.automountServiceAccountToken,
+            runtimeClassName: args.runtimeClassName,
             containers: [{
               name,
               image: args.image,
-              ports: [{ containerPort: args.containerPort, name: "http" }],
+              ports: endpoints.map(endpoint => ({
+                containerPort: endpoint.containerPort,
+                name: endpoint.name,
+                protocol: endpoint.protocol,
+              })),
               envFrom,
               env: args.env || [],
-              volumeMounts: k8sVolumeMounts,
+              volumeMounts: [...k8sVolumeMounts, ...(args.additionalVolumeMounts || [])],
               command: args.command,
               args: args.args,
               readinessProbe: args.readinessProbe,
               livenessProbe: args.livenessProbe,
-            }],
-            volumes: k8sVolumes,
+              resources: args.resources,
+            }, ...(args.additionalContainers || [])],
+            initContainers: args.initContainers,
+            volumes: [...k8sVolumes, ...(args.additionalVolumes || [])],
             affinity: args.affinity,
           },
         },
@@ -253,6 +364,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
   private configureService(
     name: string,
     args: SelfhostedAppArgs,
+    endpoints: AppEndpoint[],
     childOpts: pulumi.CustomResourceOptions
   ): k8s.core.v1.Service {
     return new k8s.core.v1.Service(name, {
@@ -264,71 +376,81 @@ export class SelfhostedApp extends pulumi.ComponentResource {
       spec: {
         ipFamilyPolicy: args.ipFamilyPolicy || "PreferDualStack",
         ipFamilies: args.ipFamilies || ["IPv4", "IPv6"],
-        ports: [{ port: 80, targetPort: args.containerPort, protocol: "TCP", name: "http" }],
+        ports: endpoints.map(endpoint => ({
+          port: endpoint.servicePort ?? endpoint.containerPort,
+          targetPort: endpoint.containerPort,
+          protocol: endpoint.protocol || "TCP",
+          name: endpoint.name,
+        })),
         selector: { app: name },
       },
     }, { dependsOn: this.deployment, ...childOpts });
   }
 
-  private configureIngress(
+  private configureIngresses(
     name: string,
     args: SelfhostedAppArgs,
+    endpoints: AppEndpoint[],
     service: k8s.core.v1.Service,
-    componentAlias: pulumi.Alias
-  ): { ingress: k8s.networking.v1.Ingress; policy?: k8s.networking.v1.NetworkPolicy } | undefined {
-    if (args.exposeType !== "public") {
-      return undefined;
-    }
+    childAliases: pulumi.Alias[]
+  ): { ingress: k8s.networking.v1.Ingress; policy?: k8s.networking.v1.NetworkPolicy }[] {
+    return endpoints.flatMap(endpoint => {
+      if (!endpoint.ingress) {
+        return [];
+      }
 
-    return createLetsEncryptIngress({
-      name,
-      namespace: args.namespace,
-      host: args.host!,
-      serviceName: service.metadata.name,
-      servicePort: 80,
-      targetPort: args.containerPort,
-      podSelector: { app: name },
-      rateLimit: args.rateLimit,
-      middlewares: args.middlewares,
-      dependencies: [service],
-      parent: this,
-      aliases: [componentAlias],
+      return [createLetsEncryptIngress({
+        name: endpoint.ingress.name || (hasMultipleEndpoints(args) ? `${name}-${endpoint.name}` : name),
+        namespace: args.namespace,
+        host: endpoint.ingress.host,
+        serviceName: service.metadata.name,
+        servicePort: endpoint.servicePort ?? endpoint.containerPort,
+        targetPort: endpoint.containerPort,
+        podSelector: { app: name },
+        rateLimit: endpoint.ingress.rateLimit,
+        middlewares: endpoint.ingress.middlewares,
+        dependencies: [service],
+        parent: this,
+        aliases: childAliases,
+      })];
     });
   }
 
   private configureInternalPolicies(
     name: string,
     args: SelfhostedAppArgs,
+    endpoints: AppEndpoint[],
     childOpts: pulumi.CustomResourceOptions
   ): k8s.networking.v1.NetworkPolicy[] {
     const policies: k8s.networking.v1.NetworkPolicy[] = [];
-    if (!args.allowIngressFrom) {
-      return policies;
-    }
 
-    for (const rule of args.allowIngressFrom) {
-      const clientName = Object.values(rule.podSelector)[0];
-      const policyName = `${name}-allow-${clientName}`;
+    for (const endpoint of endpoints) {
+      for (const rule of endpoint.allowIngressFrom || []) {
+        const clientName = rule.name || Object.values(rule.podSelector || {})[0];
+        if (!clientName) {
+          throw new Error(`Ingress rule for ${name}/${endpoint.name} requires a name or a non-empty pod selector.`);
+        }
+        const policyName = `${name}-allow-${clientName}`;
 
-      const policy = new k8s.networking.v1.NetworkPolicy(policyName, {
-        metadata: { name: policyName, namespace: args.namespace },
-        spec: {
-          podSelector: { matchLabels: { app: name } },
-          ingress: [
-            {
-              from: [
-                {
-                  podSelector: { matchLabels: rule.podSelector },
-                  ...(rule.namespaceSelector ? { namespaceSelector: { matchLabels: rule.namespaceSelector } } : {})
-                },
-              ],
-              ports: [{ port: rule.port || args.containerPort }],
-            },
-          ],
-          policyTypes: ["Ingress"],
-        },
-      }, { dependsOn: this.deployment, ...childOpts });
-      policies.push(policy);
+        const policy = new k8s.networking.v1.NetworkPolicy(policyName, {
+          metadata: { name: policyName, namespace: args.namespace },
+          spec: {
+            podSelector: { matchLabels: { app: name } },
+            ingress: [{
+              from: [{
+                ...(rule.podSelector ? { podSelector: { matchLabels: rule.podSelector } } : {}),
+                ...(rule.namespaceSelector ? { namespaceSelector: { matchLabels: rule.namespaceSelector } } : {}),
+              }],
+              ports: [{
+                port: rule.port || endpoint.containerPort,
+                protocol: hasMultipleEndpoints(args) ? endpoint.protocol || "TCP" : undefined,
+              }],
+            }],
+            policyTypes: ["Ingress"],
+          },
+        }, { dependsOn: this.deployment, ...childOpts });
+        policies.push(policy);
+      }
     }
     return policies;
   }
@@ -338,7 +460,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     args: SelfhostedAppArgs,
     backupPVCs: { pvcName: string; mountPath: string }[],
     dependencies: pulumi.Resource[],
-    componentAlias: pulumi.Alias
+    childAliases: pulumi.Alias[]
   ): k8s.batch.v1.CronJob[] {
     const jobs: k8s.batch.v1.CronJob[] = [];
 
@@ -354,7 +476,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
         },
         dependencies: [...dependencies, this.deployment],
         parent: this,
-        aliases: [componentAlias],
+        aliases: childAliases,
       });
       jobs.push(job);
     }
@@ -380,7 +502,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             source,
             dependencies: [...dependencies, this.deployment],
             parent: this,
-            aliases: [componentAlias],
+            aliases: childAliases,
           });
           jobs.push(job);
         }
