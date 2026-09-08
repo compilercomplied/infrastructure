@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+set -e
+
+# Wait for the Forgejo service HTTP port to be available before trying to create the runner file.
+echo "Waiting for Forgejo HTTP endpoint..."
+until wget -qO- ${FORGEJO_INTERNAL_URL} >/dev/null 2>&1; do
+  sleep 2
+done
+
+# We copy the config to /tmp so we can dynamically inject it
+cp /config/config.yaml /tmp/config.yaml
+sed -i "s|DOCKER_HOST_REPLACE_ME|unix:///var/run/docker.sock|g" /tmp/config.yaml
+
+# Initialize the runner credentials if they don't exist yet.
+# We do this in a persistent volume so that the registration is preserved across pod restarts.
+if [ ! -f /data/.runner ]; then
+  echo "Registering runner with Forgejo using the pre-shared secret..."
+  forgejo-runner -c /tmp/config.yaml create-runner-file \
+    --instance "${FORGEJO_PUBLIC_URL}" \
+    --secret "${RUNNER_SECRET}" \
+    --name "${HOSTNAME}"
+fi
+
+# Wait for the Docker daemon UNIX socket to be fully ready before starting the runner daemon.
+echo "Waiting for Docker daemon to be ready..."
+while [ ! -S /var/run/docker.sock ]; do
+  sleep 1
+done
+echo "Docker daemon is ready!"
+
+echo "Starting Forgejo runner daemon..."
+exec forgejo-runner -c /tmp/config.yaml daemon
