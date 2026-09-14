@@ -117,7 +117,8 @@ container:
               podSelector: { matchLabels: { app: "forgejo" } },
             },
           ],
-          ports: [{ port: 80, protocol: "TCP" }],
+          // NetworkPolicy matches Forgejo's destination Pod port after Service translation (80 → 3000).
+          ports: [{ port: 3000, protocol: "TCP" }],
         },
         {
           // Registries and Google/Maven artifact hosts have environment-dependent CIDRs; keep
