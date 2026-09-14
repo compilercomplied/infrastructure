@@ -50,6 +50,9 @@ export function configureHermesAgent(
         "CUSTOM_BASE_URL": "http://litellm.infrastructure.svc.cluster.local/v1",
         "PULUMI_BACKEND_URL": "https://api.pulumi.com",
         "DOCKER_HOST": "tcp://localhost:2375",
+        "ANDROID_HOME": "/opt/android/sdk",
+        "ANDROID_SDK_ROOT": "/opt/android/sdk",
+        "ANDROID_AVD_HOME": "/opt/android/avd",
       },
       secrets: {
         "CUSTOM_API_KEY": config.requireSecret("hermesLitellmApiKey"),
@@ -67,7 +70,9 @@ export function configureHermesAgent(
       strategy: { type: "RollingUpdate" },
       ipFamilyPolicy: "SingleStack",
       ipFamilies: ["IPv4"],
-      runtimeClassName: "kata-qemu",
+      // KVM must be exposed to the process that the agent starts locally; nested KVM through
+      // the Kata runtime is not a supported contract for direct Android CLI emulator control.
+      nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
       resources: {
         limits: { memory: "6Gi" },
         requests: { memory: "2Gi" },
@@ -77,6 +82,13 @@ export function configureHermesAgent(
         mountPath: "/opt/data",
         size: "256Mi",
         pvcName: "hermes-agent-pvc",
+      }, {
+        // SDK packages and AVD snapshots are reproducible but too large for the agent-state PVC;
+        // retaining them separately keeps direct Android CLI state across ordinary rollouts.
+        name: "android",
+        mountPath: "/opt/android",
+        size: "20Gi",
+        enableBackup: false,
       }],
       additionalContainers: [{
         name: "dind",
@@ -98,11 +110,18 @@ export function configureHermesAgent(
             ],
           },
         },
+        {
+          name: "dev-kvm",
+          hostPath: { path: "/dev/kvm", type: "CharDevice" },
+        },
       ],
       additionalVolumeMounts: [{
         name: "kube-api-access",
         mountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
         readOnly: true,
+      }, {
+        name: "dev-kvm",
+        mountPath: "/dev/kvm",
       }],
     },
   });
