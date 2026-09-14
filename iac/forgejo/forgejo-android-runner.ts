@@ -58,7 +58,7 @@ runner:
 
 container:
   docker_host: DOCKER_HOST_REPLACE_ME
-  options: ""
+  options: "--device=/dev/kvm"
 `,
     },
   }, { dependsOn: dependencies });

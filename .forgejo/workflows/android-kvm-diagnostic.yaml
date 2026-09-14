@@ -1,0 +1,53 @@
+name: Android KVM diagnostic
+
+on:
+  workflow_dispatch:
+
+jobs:
+  android-kvm:
+    name: Verify unprivileged KVM job boundary
+    runs-on: android-kvm
+    permissions: {}
+    container:
+      image: docker.io/library/ubuntu:24.04
+    steps:
+      - name: Verify the restricted job boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -c /dev/kvm
+          stat --format='KVM mode=%a owner=%U:%G type=%F' /dev/kvm
+          id
+
+          test ! -e /var/run/secrets/kubernetes.io/serviceaccount/token
+          test ! -S /var/run/docker.sock
+          test ! -e /run/containerd/containerd.sock
+
+      - name: Install QEMU over HTTPS
+        shell: bash
+        run: |
+          set -euo pipefail
+          sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends qemu-system-x86
+          qemu-system-x86_64 --version
+
+      - name: Start QEMU with KVM acceleration
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 5 qemu-system-x86_64 \
+            -accel kvm \
+            -machine q35 \
+            -m 256M \
+            -display none \
+            -nodefaults \
+            -monitor none \
+            -serial none \
+            -S
+          status=$?
+          set -e
+
+          test "$status" -eq 124
