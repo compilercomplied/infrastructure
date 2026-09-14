@@ -11,14 +11,28 @@ done
 cp /config/config.yaml /tmp/config.yaml
 sed -i "s|DOCKER_HOST_REPLACE_ME|unix:///var/run/docker.sock|g" /tmp/config.yaml
 
-# Initialize the runner credentials if they don't exist yet.
-# We do this in a persistent volume so that the registration is preserved across pod restarts.
+# A registration generation is supplied only by runners whose identity is intentionally being
+# migrated. It makes the Android UUID replacement one-time and leaves the generic PVC untouched.
+registration_generation_file=/data/.runner-registration-generation
+if [ -n "${RUNNER_REGISTRATION_GENERATION:-}" ] && \
+  [ "$(cat "${registration_generation_file}" 2>/dev/null || true)" != "${RUNNER_REGISTRATION_GENERATION}" ]; then
+  echo "Replacing outdated runner registration for generation ${RUNNER_REGISTRATION_GENERATION}..."
+  rm -f /data/.runner
+fi
+
+# Initialize the runner credentials if they don't exist yet. We do this in a persistent volume
+# so that the registration is preserved across pod restarts.
 if [ ! -f /data/.runner ]; then
   echo "Registering runner with Forgejo using the pre-shared secret..."
   forgejo-runner -c /tmp/config.yaml create-runner-file \
     --instance "${FORGEJO_PUBLIC_URL}" \
     --secret "${RUNNER_SECRET}" \
     --name "${HOSTNAME}"
+fi
+
+if [ -n "${RUNNER_REGISTRATION_GENERATION:-}" ] && \
+  [ "$(cat "${registration_generation_file}" 2>/dev/null || true)" != "${RUNNER_REGISTRATION_GENERATION}" ]; then
+  printf '%s' "${RUNNER_REGISTRATION_GENERATION}" > "${registration_generation_file}"
 fi
 
 # Wait for the Docker daemon UNIX socket to be fully ready before starting the runner daemon.

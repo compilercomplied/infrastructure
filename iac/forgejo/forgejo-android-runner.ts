@@ -176,6 +176,10 @@ container:
                 { name: "DOCKER_HOST", value: "unix:///var/run/docker.sock" },
                 { name: "FORGEJO_INTERNAL_URL", value: "http://forgejo.forgejo.svc.cluster.local:80/" },
                 { name: "FORGEJO_PUBLIC_URL", value: "https://git.gdario.dev" },
+                // The original Android deployment shared the generic runner UUID. Bumping this
+                // generation replaces only its old local registration after Forgejo registers
+                // the dedicated secret, leaving the generic runner's PVC untouched.
+                { name: "RUNNER_REGISTRATION_GENERATION", value: "2" },
               ],
               volumeMounts: [
                 { name: "data", mountPath: "/data" },

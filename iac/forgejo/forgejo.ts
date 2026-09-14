@@ -26,11 +26,14 @@ export function configureForgejo(
   const userGdarioEmail = config.requireSecret("user-gdario-email");
   const postgresPassword = config.requireSecret("postgresPassword");
 
-  // Derive a deterministic 40-character hex secret for offline runner registration.
-  // Using a deterministic hash of the main forgejoSecret ensures the registration is stable
-  // and does not change across Pulumi runs.
+  // Offline-runner secrets encode the runner UUID, so each daemon needs its own stable secret.
+  // Deriving them from the Forgejo secret preserves identity across reconciliations without
+  // allowing separate runner deployments to overwrite each other's labels in Forgejo.
   const runnerSecret = pulumi.secret(forgejoSecret.apply(s =>
     crypto.createHash("sha256").update(s + "runner-salt-v1").digest("hex").substring(0, 40)
+  ));
+  const androidRunnerSecret = pulumi.secret(forgejoSecret.apply(s =>
+    crypto.createHash("sha256").update(s + "android-runner-salt-v1").digest("hex").substring(0, 40)
   ));
 
   // 1. ConfigMaps for Database Init and Container Bootstrap Scripts
@@ -157,6 +160,7 @@ export function configureForgejo(
       "AUTHENTIK_CLIENT_SECRET": forgejoSecret,
       "USER_EMAIL": userGdarioEmail,
       "RUNNER_SECRET": runnerSecret,
+      "ANDROID_RUNNER_SECRET": androidRunnerSecret,
     },
     env: [
       { name: "FORGEJO__database__DB_TYPE", value: "postgres" },
@@ -424,6 +428,7 @@ export function configureForgejo(
     internalHttpPolicy,
 
     runnerSecret,
+    androidRunnerSecret,
     pruneCronJob,
     pruneScriptsConfigMap,
   };

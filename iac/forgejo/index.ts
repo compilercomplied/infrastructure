@@ -16,7 +16,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
 
   const forgejoApp = configureForgejoApp(namespaceName, [...dependencies, namespace]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
-  const forgejoAndroidRunner = configureForgejoAndroidRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
+  const forgejoAndroidRunner = configureForgejoAndroidRunner(namespaceName, forgejoApp.androidRunnerSecret, [forgejoApp.deployment, namespace]);
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,

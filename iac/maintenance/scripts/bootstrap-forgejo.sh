@@ -92,8 +92,8 @@ if [ ! -f /data/gitea/hermes-token.txt ]; then
   chown git:git /data/gitea/hermes-token.txt
 fi
 
-# Register the offline runner using the pre-shared secret.
-# This runs idempotently on every bootstrap.
+# Register each offline runner with its own pre-shared secret. Forgejo derives a runner UUID
+# from the secret, so sharing one would make their daemon declarations overwrite each other.
 if [ -n "${RUNNER_SECRET}" ]; then
   echo "Registering offline runner 'k8s-runner'..."
   su-exec git forgejo forgejo-cli actions register \
@@ -102,6 +102,16 @@ if [ -n "${RUNNER_SECRET}" ]; then
     --labels "custom-runner,ubuntu-latest,ubuntu-22.04,ubuntu-20.04"
 else
   echo "RUNNER_SECRET not set, skipping runner registration."
+fi
+
+if [ -n "${ANDROID_RUNNER_SECRET}" ]; then
+  echo "Registering offline runner 'android-kvm-runner'..."
+  su-exec git forgejo forgejo-cli actions register \
+    --name "android-kvm-runner" \
+    --secret "${ANDROID_RUNNER_SECRET}" \
+    --labels "android-kvm"
+else
+  echo "ANDROID_RUNNER_SECRET not set, skipping Android runner registration."
 fi
 
 # Wait for the background Forgejo web process to keep the container running
