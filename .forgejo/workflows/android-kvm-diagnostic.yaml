@@ -5,8 +5,9 @@ on:
 
 jobs:
   android-kvm:
-    name: Verify unprivileged KVM job boundary
+    name: Verify unprivileged Android emulator with KVM
     runs-on: android-kvm
+    timeout-minutes: 20
     permissions: {}
     container:
       image: catthehacker/ubuntu:act-latest
@@ -28,30 +29,81 @@ jobs:
           test -S /var/run/docker.sock
           test ! -e /run/containerd/containerd.sock
 
-      - name: Install QEMU over HTTPS
+      - name: Install a fixed Android SDK over HTTPS
         shell: bash
         run: |
           set -euo pipefail
           sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends qemu-system-x86
-          qemu-system-x86_64 --version
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+            ca-certificates curl openjdk-21-jre-headless unzip
 
-      - name: Start QEMU with KVM acceleration
+          export ANDROID_HOME=/tmp/android-sdk
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+          curl --fail --location --retry 3 --connect-timeout 20 \
+            --output /tmp/commandline-tools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip
+          echo '7ec965280a073311c339e571cd5de778b9975026cfcbe79f2b1cdcb1e15317ee  /tmp/commandline-tools.zip' | sha256sum --check --strict
+          unzip -q /tmp/commandline-tools.zip -d "$ANDROID_HOME/cmdline-tools"
+          mv "$ANDROID_HOME/cmdline-tools/cmdline-tools" "$ANDROID_HOME/cmdline-tools/latest"
+
+          set +e
+          yes | sdkmanager --licenses >/dev/null
+          sdkmanager_status=${PIPESTATUS[1]}
+          set -e
+          test "$sdkmanager_status" -eq 0
+          sdkmanager --install \
+            'platform-tools' \
+            'emulator' \
+            'system-images;android-35;google_apis;x86_64'
+
+      - name: Require Android KVM acceleration
         shell: bash
         run: |
           set -euo pipefail
-          set +e
-          timeout 5 qemu-system-x86_64 \
-            -accel kvm \
-            -machine q35 \
-            -m 256M \
-            -display none \
-            -nodefaults \
-            -monitor none \
-            -serial none \
-            -S
-          status=$?
-          set -e
+          export ANDROID_HOME=/tmp/android-sdk
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+          emulator -accel-check 2>&1 | tee /tmp/emulator-accel-check.log
+          grep -Eq 'KVM.*usable|KVM.*installed' /tmp/emulator-accel-check.log
 
-          test "$status" -eq 124
+      - name: Boot a clean AVD and verify ADB
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_HOME=/tmp/android-sdk
+          export ANDROID_AVD_HOME=/tmp/android-avd
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+          mkdir -p "$ANDROID_AVD_HOME"
+          printf 'no\n' | avdmanager create avd --force --name ci-kvm \
+            --package 'system-images;android-35;google_apis;x86_64'
+
+          cleanup() {
+            adb devices -l || true
+            test -f /tmp/emulator.log && tail -n 200 /tmp/emulator.log || true
+            test -n "${emulator_pid:-}" && kill "$emulator_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          emulator -avd ci-kvm \
+            -accel on \
+            -no-window \
+            -no-audio \
+            -no-boot-anim \
+            -gpu swiftshader_indirect \
+            -no-snapshot \
+            -no-metrics \
+            -wipe-data \
+            > /tmp/emulator.log 2>&1 &
+          emulator_pid=$!
+
+          timeout 300 adb wait-for-device
+          deadline=$((SECONDS + 300))
+          until test "$(adb shell getprop sys.boot_completed | tr -d '\r')" = '1'; do
+            test "$SECONDS" -lt "$deadline"
+            sleep 5
+          done
+          adb devices -l
+          test "$(adb shell getprop ro.kernel.qemu | tr -d '\r')" = '1'
+          free -h
+          df -h /tmp
