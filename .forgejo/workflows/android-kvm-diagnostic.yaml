@@ -9,7 +9,7 @@ jobs:
     runs-on: android-kvm
     permissions: {}
     container:
-      image: docker.io/library/ubuntu:24.04
+      image: catthehacker/ubuntu:act-latest
       # forgejo-runner v3.3.0 applies this workflow-level option to an explicit job container;
       # its global container.options is not propagated when the workflow declares container.image.
       options: --device=/dev/kvm
