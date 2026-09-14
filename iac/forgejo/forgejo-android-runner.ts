@@ -149,6 +149,9 @@ container:
             {
               name: "runner",
               image: runnerImage,
+              // DinD creates its UNIX socket as root; matching the generic runner grants this
+              // control container access without changing the privilege boundary of job containers.
+              securityContext: { runAsUser: 0 },
               command: ["/bin/bash", "/scripts/bootstrap-forgejo-runner.sh"],
               env: [
                 {
