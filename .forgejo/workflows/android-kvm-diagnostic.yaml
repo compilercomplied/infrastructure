@@ -36,7 +36,7 @@ jobs:
           sed -i 's|http://|https://|g' /etc/apt/sources.list.d/ubuntu.sources
           apt-get update
           DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
-            ca-certificates curl openjdk-21-jre-headless unzip
+            ca-certificates curl libx11-xcb1 openjdk-21-jre-headless unzip
 
           export ANDROID_HOME=/tmp/android-sdk
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
