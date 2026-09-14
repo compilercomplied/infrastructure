@@ -10,6 +10,9 @@ jobs:
     permissions: {}
     container:
       image: docker.io/library/ubuntu:24.04
+      # forgejo-runner v3.3.0 applies this workflow-level option to an explicit job container;
+      # its global container.options is not propagated when the workflow declares container.image.
+      options: --device=/dev/kvm
     steps:
       - name: Verify the restricted job boundary
         shell: bash
@@ -21,7 +24,8 @@ jobs:
           id
 
           test ! -e /var/run/secrets/kubernetes.io/serviceaccount/token
-          test ! -S /var/run/docker.sock
+          # The Docker executor injects its DinD socket. The host container runtime is not mounted.
+          test -S /var/run/docker.sock
           test ! -e /run/containerd/containerd.sock
 
       - name: Install QEMU over HTTPS
