@@ -4,18 +4,16 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../library/k8s-pvc";
 
-// Byte-for-byte copy of the generic runner bootstrap, using the same FORGEJO_INTERNAL_URL
-// and DOCKER_HOST replacement-token logic so the android runner registers over a pre-shared
-// RUNNER_SECRET and persists .runner in a PVC exactly like its sibling. Only the runner image
-// source differs (we mount /dev/kvm for the dind sidecar, never referencing a node by name).
+// Both runners use the same registration protocol. Sharing the script prevents the Android
+// runner from drifting from the generic runner when Forgejo changes its bootstrap requirements.
 const bootstrapScriptContent = fs.readFileSync(
-  path.join(__dirname, "../maintenance/scripts/bootstrap-forgejo-android-runner.sh"),
+  path.join(__dirname, "../maintenance/scripts/bootstrap-forgejo-runner.sh"),
   "utf8"
 );
 
-// The android/civite/emulator jobs are scheduled by a nodeSelector (not a hard-coded node name),
-// so the cluster operator can taint/label whichever physical host actually exposes /dev/kvm
-// without touching this IaC.
+// A capability label keeps the runner portable while letting the single-node cluster advertise
+// KVM explicitly. There is intentionally no matching taint: tainting the only node would block
+// unrelated workloads from recovering after a restart.
 const androidRunnerNodeLabel = "ci.gdario.dev/android-kvm";
 
 export function configureForgejoAndroidRunner(
@@ -40,7 +38,7 @@ export function configureForgejoAndroidRunner(
   const bootstrapConfigMap = new k8s.core.v1.ConfigMap(`${name}-bootstrap-scripts`, {
     metadata: { name: `${name}-bootstrap-scripts`, namespace },
     data: {
-      "bootstrap-forgejo-android-runner.sh": bootstrapScriptContent,
+      "bootstrap-forgejo-runner.sh": bootstrapScriptContent,
     },
   }, { dependsOn: dependencies });
 
@@ -87,6 +85,50 @@ container:
     automountServiceAccountToken: false,
   }, { dependsOn: dependencies });
 
+  // The runner downloads SDK/system images and build artifacts, so unlike most self-hosted
+  // apps it needs controlled EGRESS. Create the policy before its privileged DinD sidecar can
+  // start; a readiness failure must not leave a partially-created runner outside this boundary.
+  const networkPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-egress`, {
+    metadata: { name: `${name}-egress`, namespace },
+    spec: {
+      podSelector: { matchLabels: { app: name } },
+      policyTypes: ["Egress"],
+      egress: [
+        {
+          to: [
+            {
+              namespaceSelector: {
+                matchLabels: { "kubernetes.io/metadata.name": "kube-system" },
+              },
+              podSelector: { matchLabels: { "k8s-app": "kube-dns" } },
+            },
+          ],
+          ports: [
+            { port: 53, protocol: "UDP" },
+            { port: 53, protocol: "TCP" },
+          ],
+        },
+        {
+          to: [
+            {
+              namespaceSelector: {
+                matchLabels: { "kubernetes.io/metadata.name": "forgejo" },
+              },
+              podSelector: { matchLabels: { app: "forgejo" } },
+            },
+          ],
+          ports: [{ port: 80, protocol: "TCP" }],
+        },
+        {
+          // Registries and Google/Maven artifact hosts have environment-dependent CIDRs; keep
+          // the allowance narrow to HTTPS rather than granting arbitrary node-management egress.
+          to: [{ ipBlock: { cidr: "0.0.0.0/0" } }],
+          ports: [{ port: 443, protocol: "TCP" }],
+        },
+      ],
+    },
+  }, { dependsOn: dependencies });
+
   const deployment = new k8s.apps.v1.Deployment(name, {
     metadata: { name, namespace },
     spec: {
@@ -101,20 +143,12 @@ container:
           // dind gets its own emptyDir dockersock, and /dev/kvm comes in as an explicit CharDevice
           // mounted only into the privileged dind sidecar.
           nodeSelector: { [androidRunnerNodeLabel]: "true" },
-          tolerations: [
-            {
-              key: androidRunnerNodeLabel,
-              operator: "Equal",
-              value: "true",
-              effect: "NoSchedule",
-            },
-          ],
           // runtimeClassName intentionally omitted so pods run on the default (runc) runtime, not kata.
           containers: [
             {
               name: "runner",
               image: runnerImage,
-              command: ["/bin/bash", "/scripts/bootstrap-forgejo-android-runner.sh"],
+              command: ["/bin/bash", "/scripts/bootstrap-forgejo-runner.sh"],
               env: [
                 {
                   name: "RUNNER_SECRET",
@@ -167,58 +201,7 @@ container:
         },
       },
     },
-  }, { dependsOn: [bootstrapConfigMap, runnerConfigMap, secrets, pvc, serviceAccount, ...dependencies] });
-
-  // The android runner downloads SDK/system images and build artifacts, so unlike most self-hosted
-  // apps it needs controlled EGRESS. policyTypes is Egress-only: ingress stays governed by the shared
-  // namespace default-deny that the namespace security applies. The podSelector matches the job pod
-  // by its app label, which is the same select value the deployment nodeSelector targets.
-  //
-  // Allowed egress, and why:
-  //  * 53/udp+53/tcp to kube-dns (kube-system) — pod and job DNS resolution.
-  //  * 80 to the in-cluster Forgejo service — job repo clone/push over http.
-  //  * 443 to the world — OCI registry, and google/maven artifact hosts that serve jobs. Exact
-  //    egress CIDRs are environment-dependent (mirrors, enterprise proxies) so they are expressed
-  //    as a scoped 443-only allowance to 0.0.0.0/0; this does NOT open node-management or the k8s
-  //    apiserver, which listen on non-443 and would need their own explicit rule.
-  const networkPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-egress`, {
-    metadata: { name: `${name}-egress`, namespace },
-    spec: {
-      podSelector: { matchLabels: { app: name } },
-      policyTypes: ["Egress"],
-      egress: [
-        {
-          to: [
-            {
-              namespaceSelector: {
-                matchLabels: { "kubernetes.io/metadata.name": "kube-system" },
-              },
-              podSelector: { matchLabels: { "k8s-app": "kube-dns" } },
-            },
-          ],
-          ports: [
-            { port: 53, protocol: "UDP" },
-            { port: 53, protocol: "TCP" },
-          ],
-        },
-        {
-          to: [
-            {
-              namespaceSelector: {
-                matchLabels: { "kubernetes.io/metadata.name": "forgejo" },
-              },
-              podSelector: { matchLabels: { app: "forgejo" } },
-            },
-          ],
-          ports: [{ port: 80, protocol: "TCP" }],
-        },
-        {
-          to: [{ ipBlock: { cidr: "0.0.0.0/0" } }],
-          ports: [{ port: 443, protocol: "TCP" }],
-        },
-      ],
-    },
-  }, { dependsOn: [deployment] });
+  }, { dependsOn: [bootstrapConfigMap, runnerConfigMap, secrets, pvc, serviceAccount, networkPolicy, ...dependencies] });
 
   return {
     deployment,

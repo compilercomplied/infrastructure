@@ -74,13 +74,15 @@ export function configureInfrastructure() {
     },
   });
 
-  // Declaratively enforce the Kata Containers runtime node label on the worker node
-  // so that node resets or re-initializations preserve the katacontainers.io/kata-runtime label.
+  // Keep runtime and Android-execution capability labels in the same patch so rebuilding the
+  // single worker cannot leave a runner unschedulable. This is deliberately a label only: a
+  // NoSchedule taint on the cluster's only node would prevent ordinary workloads from recovering.
   const kataNodeLabel = new k8s.core.v1.NodePatch("kata-node-label-debian", {
     metadata: {
       name: "debian",
       labels: {
         "katacontainers.io/kata-runtime": "true",
+        "ci.gdario.dev/android-kvm": "true",
       },
     },
   }, { dependsOn: [kataDeploy] });

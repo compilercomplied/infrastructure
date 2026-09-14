@@ -300,6 +300,15 @@ export function configureForgejo(
               },
             },
             {
+              // Android runner registration follows the same internal HTTP path as the generic
+              // runner; without this selector, namespace default-deny blocks its bootstrap loop.
+              podSelector: {
+                matchLabels: {
+                  app: "forgejo-android-runner",
+                },
+              },
+            },
+            {
               podSelector: {
                 matchLabels: {
                   app: `${name}-prune`,
