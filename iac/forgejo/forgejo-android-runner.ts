@@ -121,6 +121,19 @@ container:
           ports: [{ port: 3000, protocol: "TCP" }],
         },
         {
+          // In-cluster DNS resolves git.gdario.dev to Traefik. NetworkPolicy matches the backend
+          // Pod port after the Service's 443 → 8443 translation, so permit only that TLS endpoint.
+          to: [
+            {
+              namespaceSelector: {
+                matchLabels: { "kubernetes.io/metadata.name": "kube-system" },
+              },
+              podSelector: { matchLabels: { "app.kubernetes.io/name": "traefik" } },
+            },
+          ],
+          ports: [{ port: 8443, protocol: "TCP" }],
+        },
+        {
           // Registries and Google/Maven artifact hosts have environment-dependent CIDRs; keep
           // the allowance narrow to HTTPS rather than granting arbitrary node-management egress.
           to: [{ ipBlock: { cidr: "0.0.0.0/0" } }],
