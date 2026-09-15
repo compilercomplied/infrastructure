@@ -50,9 +50,6 @@ export function configureHermesAgent(
         "CUSTOM_BASE_URL": "http://litellm.infrastructure.svc.cluster.local/v1",
         "PULUMI_BACKEND_URL": "https://api.pulumi.com",
         "DOCKER_HOST": "tcp://localhost:2375",
-        "ANDROID_HOME": "/opt/data/Android/Sdk",
-        "ANDROID_SDK_ROOT": "/opt/data/Android/Sdk",
-        "ANDROID_AVD_HOME": "/opt/data/Android/avd",
       },
       env: [{
         // ConfigMap envFrom does not replace the image's PATH, so this must be an explicit env var.
@@ -75,15 +72,6 @@ export function configureHermesAgent(
       strategy: { type: "RollingUpdate" },
       ipFamilyPolicy: "SingleStack",
       ipFamilies: ["IPv4"],
-      // KVM must be exposed to the process that the agent starts locally; nested KVM through
-      // the Kata runtime is not a supported contract for direct Android CLI emulator control.
-      nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
-      // /dev/kvm is root-owned by the node's KVM group, so the Pod needs that group to match
-      // the selected host's direct KVM device identity.
-      podSecurityContext: { supplementalGroups: [990] },
-      // Kubernetes device cgroups reject hostPath character devices unless the target container
-      // is privileged; this grants direct KVM only to Hermes, matching the existing DinD sidecar.
-      containerSecurityContext: { privileged: true },
       resources: {
         limits: { memory: "6Gi" },
         requests: { memory: "2Gi" },
@@ -94,10 +82,9 @@ export function configureHermesAgent(
         size: "256Mi",
         pvcName: "hermes-agent-pvc",
       }, {
-        // The agent already uses /opt/data/Android as its local CLI workspace; mounting the
-        // dedicated volume there preserves direct command semantics while giving images room to grow.
+        // Retain development data until its disposal is explicitly approved, but do not expose
+        // it to Hermes while direct emulator execution is disabled on this shared host.
         name: "android",
-        mountPath: "/opt/data/Android",
         size: "20Gi",
         enableBackup: false,
       }],
@@ -121,18 +108,11 @@ export function configureHermesAgent(
             ],
           },
         },
-        {
-          name: "dev-kvm",
-          hostPath: { path: "/dev/kvm", type: "CharDevice" },
-        },
       ],
       additionalVolumeMounts: [{
         name: "kube-api-access",
         mountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
         readOnly: true,
-      }, {
-        name: "dev-kvm",
-        mountPath: "/dev/kvm",
       }],
     },
   });

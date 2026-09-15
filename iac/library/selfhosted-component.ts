@@ -17,7 +17,7 @@ export interface AppDatabase {
 
 export interface AppVolume {
   name: string;
-  mountPath: string;
+  mountPath?: string;
   size?: string; // defaults to "10Gi"
   storageClassName?: string;
   accessModes?: string[];
@@ -255,15 +255,17 @@ export class SelfhostedApp extends pulumi.ComponentResource {
           persistentVolumeClaim: { claimName: pvcName },
         });
 
-        if (vol.enableBackup !== false) {
+        if (vol.enableBackup !== false && vol.mountPath) {
           backupPVCs.push({ pvcName, mountPath: vol.mountPath });
         }
       }
 
-      k8sVolumeMounts.push({
-        name: vol.name,
-        mountPath: vol.mountPath,
-      });
+      if (vol.mountPath) {
+        k8sVolumeMounts.push({
+          name: vol.name,
+          mountPath: vol.mountPath,
+        });
+      }
     }
 
     return { pvcs, k8sVolumes, k8sVolumeMounts, backupPVCs };

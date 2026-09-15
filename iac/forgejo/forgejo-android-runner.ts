@@ -146,7 +146,9 @@ container:
   const deployment = new k8s.apps.v1.Deployment(name, {
     metadata: { name, namespace },
     spec: {
-      replicas: 1,
+      // This host has only two physical CPU cores, so even capacity-one emulator execution can
+      // starve control-plane and application workloads. Re-enable only with an isolated worker.
+      replicas: 0,
       selector: { matchLabels: { app: name } },
       template: {
         metadata: { labels: { app: name } },
