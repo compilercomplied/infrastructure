@@ -50,12 +50,15 @@ export function configureHermesAgent(
         "CUSTOM_BASE_URL": "http://litellm.infrastructure.svc.cluster.local/v1",
         "PULUMI_BACKEND_URL": "https://api.pulumi.com",
         "DOCKER_HOST": "tcp://localhost:2375",
-        // The base image places the Android launcher here; retain ordinary `android` command use.
-        "PATH": "/opt/data/profiles/engineer/home/.local/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games",
         "ANDROID_HOME": "/opt/data/Android/Sdk",
         "ANDROID_SDK_ROOT": "/opt/data/Android/Sdk",
         "ANDROID_AVD_HOME": "/opt/data/Android/avd",
       },
+      env: [{
+        // ConfigMap envFrom does not replace the image's PATH, so this must be an explicit env var.
+        name: "PATH",
+        value: "/opt/data/profiles/engineer/home/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+      }],
       secrets: {
         "CUSTOM_API_KEY": config.requireSecret("hermesLitellmApiKey"),
         "DEEPSEEK_API_KEY": config.requireSecret("deepseekApiKey"),
@@ -75,9 +78,12 @@ export function configureHermesAgent(
       // KVM must be exposed to the process that the agent starts locally; nested KVM through
       // the Kata runtime is not a supported contract for direct Android CLI emulator control.
       nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
-      // /dev/kvm is root-owned by the node's KVM group; Hermes remains non-root while gaining
-      // direct accelerator access on the explicitly selected single-node host.
+      // /dev/kvm is root-owned by the node's KVM group, so the Pod needs that group to match
+      // the selected host's direct KVM device identity.
       podSecurityContext: { supplementalGroups: [990] },
+      // Kubernetes device cgroups reject hostPath character devices unless the target container
+      // is privileged; this grants direct KVM only to Hermes, matching the existing DinD sidecar.
+      containerSecurityContext: { privileged: true },
       resources: {
         limits: { memory: "6Gi" },
         requests: { memory: "2Gi" },

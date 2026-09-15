@@ -76,6 +76,7 @@ type SelfhostedAppCommonArgs = {
   affinity?: k8s.types.input.core.v1.Affinity;
   nodeSelector?: Record<string, pulumi.Input<string>>;
   podSecurityContext?: k8s.types.input.core.v1.PodSecurityContext;
+  containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
   command?: string[];
   args?: string[];
   strategy?: AppDeploymentStrategy;
@@ -308,6 +309,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
               readinessProbe: args.readinessProbe,
               livenessProbe: args.livenessProbe,
               resources: args.resources,
+              securityContext: args.containerSecurityContext,
             }, ...(args.additionalContainers || [])],
             initContainers: args.initContainers,
             volumes: [...k8sVolumes, ...(args.additionalVolumes || [])],
