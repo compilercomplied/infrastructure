@@ -75,6 +75,7 @@ type SelfhostedAppCommonArgs = {
   dependencies?: pulumi.Resource[];
   affinity?: k8s.types.input.core.v1.Affinity;
   nodeSelector?: Record<string, pulumi.Input<string>>;
+  podSecurityContext?: k8s.types.input.core.v1.PodSecurityContext;
   command?: string[];
   args?: string[];
   strategy?: AppDeploymentStrategy;
@@ -290,6 +291,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             automountServiceAccountToken: args.automountServiceAccountToken,
             runtimeClassName: args.runtimeClassName,
             nodeSelector: args.nodeSelector,
+            securityContext: args.podSecurityContext,
             containers: [{
               name,
               image: args.image,
