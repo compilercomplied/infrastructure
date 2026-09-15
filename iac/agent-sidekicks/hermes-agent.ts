@@ -50,9 +50,9 @@ export function configureHermesAgent(
         "CUSTOM_BASE_URL": "http://litellm.infrastructure.svc.cluster.local/v1",
         "PULUMI_BACKEND_URL": "https://api.pulumi.com",
         "DOCKER_HOST": "tcp://localhost:2375",
-        "ANDROID_HOME": "/opt/android/sdk",
-        "ANDROID_SDK_ROOT": "/opt/android/sdk",
-        "ANDROID_AVD_HOME": "/opt/android/avd",
+        "ANDROID_HOME": "/opt/data/Android/Sdk",
+        "ANDROID_SDK_ROOT": "/opt/data/Android/Sdk",
+        "ANDROID_AVD_HOME": "/opt/data/Android/avd",
       },
       secrets: {
         "CUSTOM_API_KEY": config.requireSecret("hermesLitellmApiKey"),
@@ -83,10 +83,10 @@ export function configureHermesAgent(
         size: "256Mi",
         pvcName: "hermes-agent-pvc",
       }, {
-        // SDK packages and AVD snapshots are reproducible but too large for the agent-state PVC;
-        // retaining them separately keeps direct Android CLI state across ordinary rollouts.
+        // The agent already uses /opt/data/Android as its local CLI workspace; mounting the
+        // dedicated volume there preserves direct command semantics while giving images room to grow.
         name: "android",
-        mountPath: "/opt/android",
+        mountPath: "/opt/data/Android",
         size: "20Gi",
         enableBackup: false,
       }],
