@@ -114,3 +114,5 @@ config:
     secure: v1:VmE7hU/BjaWyYFwt:jEesTfx4EfVwaJeUSCNJqkXC202EDVYE8o1fQozb5ySU3eNPnL+0O+g=
   agents:pulumiAccessToken:
     secure: v1:kCSR0+2MAC7TIf9o:c3nyEihIyvVr0jI0eKuNdthXt5ZkJ2UEtlAp2+SZQ9/SjCo63cjcpr+olLONopBjHWwmI7G5p0LEuuw0
+  selfhosted:ntfyAdminPasswordHash:
+    secure: v1:O9b7hke/nuFuqbG7:JBmnzx/TLEuh2jWup4lQgDQvtK9UnSL+AaouC5KLHbiNIUxRzrvlebKxJ9uDG1qo46xuAzqk+d2tIIc6N5JVC7TMg1QEQvB0pCFLpQ==

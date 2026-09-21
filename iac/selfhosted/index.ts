@@ -9,6 +9,7 @@ import { configureSyncthing } from "./syncthing";
 import { configureNamespaceSecurity } from "./security";
 import { configureCoreDnsCustom } from "./coredns";
 import { configureCloudflared } from "./cloudflared";
+import { configureNtfy } from "./ntfy";
 
 export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.core.v1.Service) {
   const namespace = new k8s.core.v1.Namespace("selfhosted", {
@@ -25,13 +26,14 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
   const linkwarden = configureLinkwarden(namespaceName, [postgres]);
   const grimmory = configureGrimmory(namespaceName, mariadb, [postgres]);
   const outline = configureOutline(namespaceName, [postgres]);
+  const ntfy = configureNtfy(namespaceName);
   // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency
   // on Grimmory's volume being created first. We pass grimmory.deployment as a dependency.
   const syncthing = configureSyncthing(namespaceName, [grimmory.deployment]);
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, outline.outline.deployment],
+    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, outline.outline.deployment, ntfy.deployment],
     namePrefix: "selfhosted-",
     aliases: {
       defaultDeny: [{ name: "default-deny-ingress" }],
@@ -54,6 +56,7 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
     grimmory,
     outline,
     syncthing,
+    ntfy,
     corednsCustom,
     cloudflared,
     defaultDeny: security.defaultDeny,

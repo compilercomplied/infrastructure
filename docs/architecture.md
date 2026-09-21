@@ -63,6 +63,7 @@ ingress-helper calls, but at a glance:
 | `grimmory.gdario.dev` | Grimmory (comics / books) | `selfhosted` |
 | `outline.gdario.dev` | Outline (wiki) | `selfhosted` |
 | `syncthing.gdario.dev` | Syncthing | `selfhosted` |
+| `notifications.gdario.dev` | ntfy notifications | `selfhosted` |
 | `grafana.gdario.dev` | Grafana | `monitoring` |
 | `litellm.gdario.dev` | LiteLLM (LLM gateway) | `infrastructure` |
 | `hermes.gdario.dev` / `hermes-api.gdario.dev` | Hermes Agent | `agent-sidekicks` |
@@ -79,7 +80,7 @@ namespace carries its own default-deny network policy (see Security).
 | `kube-system` | Cluster plumbing | Traefik ingress, CoreDNS rewrite, `cert-manager` solver, Kata runtime, sysctl-tuner, image-gc cron |
 | `monitoring` | Observability | Prometheus + Loki (storage), Alloy (collection), Grafana (visualization), PVC + DeepSeek-budget exporters |
 | `shared-resources` | Shared stateful foundations | The shared PostgreSQL and shared MariaDB clusters and their access policies |
-| `selfhosted` | User-facing apps | Tandoor, Linkwarden, Grimmory, Outline, Syncthing, the `cloudflared` tunnel agent |
+| `selfhosted` | User-facing apps | Tandoor, Linkwarden, Grimmory, Outline, Syncthing, ntfy, the `cloudflared` tunnel agent |
 | `infrastructure` | Core platform | Authentik (SSO) + its Redis, LiteLLM proxy, Kata deployment |
 | `forgejo` | Code forge | Forgejo (git) + Forgejo Actions runner |
 | `agent-sidekicks` | AI agent tooling | The MCP servers (Tandoor, Outline, Grafana, Kubernetes) and Hermes Agent |

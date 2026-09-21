@@ -16,6 +16,7 @@ The current self-hosted applications, one module per app (all under
 | Grimmory (comics / books) | `grimmory.gdario.dev` | shared MariaDB |
 | Outline (wiki) | `outline.gdario.dev` | Redis + MinIO (own) |
 | Syncthing | `syncthing.gdario.dev` | own PVC (forward-auth middleware) |
+| ntfy (notifications) | `notifications.gdario.dev` | own PVC (cache and auth database) |
 
 Each app is declared through the reusable **`SelfhostedApp` component**
 (`iac/library/selfhosted-component.ts`), which takes one compact config and
@@ -58,6 +59,22 @@ Two external preconditions apply to any new public hostname:
 Internal-only workloads (including the supporting services that back a
 multi-service app) declare `exposeType: "private"` and give no host, so they are
 reachable only inside the cluster.
+
+### ntfy credentials
+
+ntfy's user database is persisted with the workload. The encrypted Pulumi
+configuration bootstraps only the `gdario` administrator account; create all
+other users, ACLs, and publisher tokens in ntfy's web UI. Before the first
+preview, define this secret configuration value:
+
+```text
+selfhosted:ntfyAdminPasswordHash=<bcrypt-admin-password-hash>
+```
+
+Sign in as `gdario` at `https://notifications.gdario.dev/app`, then create a
+token-only publisher user and restrict it to its notification topic. Keep that
+token in the work laptop's secret store. The ntfy iOS app uses `ntfy.sh` only
+to wake the app; it retrieves messages from `notifications.gdario.dev`.
 
 ## Notes the code encodes
 
