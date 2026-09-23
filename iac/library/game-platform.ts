@@ -25,12 +25,14 @@ export class GamePlatform extends pulumi.ComponentResource {
       namespace: namespace.metadata.name,
       dependencies: [namespace],
       namePrefix: `${namespaceName}-`,
+      allowMonitoringScrape: false,
+      allowCertManagerSolver: false,
     });
 
     const server = new GameServer(name, {
       ...args,
       namespace: namespace.metadata.name,
-      dependencies: [namespace, security.defaultDeny, security.allowMonitoringScrape],
+      dependencies: [namespace, security.defaultDeny],
     }, { parent: this });
 
     this.servers.set(name, server);

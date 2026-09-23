@@ -5,6 +5,8 @@ export interface NamespaceSecurityArgs {
   namespace: pulumi.Input<string>;
   dependencies?: pulumi.Resource[];
   namePrefix?: string;
+  allowMonitoringScrape?: boolean;
+  allowCertManagerSolver?: boolean;
   aliases?: {
     defaultDeny?: pulumi.Alias[];
     monitoring?: pulumi.Alias[];
@@ -12,13 +14,26 @@ export interface NamespaceSecurityArgs {
   };
 }
 
+export interface NamespaceSecurity {
+  defaultDeny: k8s.networking.v1.NetworkPolicy;
+  allowMonitoringScrape: k8s.networking.v1.NetworkPolicy;
+  allowCertManagerSolver: k8s.networking.v1.NetworkPolicy;
+}
+
 /**
  * Configures the baseline network security policies for a namespace.
  * Establishes a zero-trust default-deny model while permitting required external
  * infrastructure integrations (e.g., Prometheus scraping, cert-manager solvers).
  */
-export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
-  const { namespace, dependencies = [], namePrefix = "", aliases = {} } = args;
+export function configureNamespaceSecurity(args: NamespaceSecurityArgs): NamespaceSecurity {
+  const {
+    namespace,
+    dependencies = [],
+    namePrefix = "",
+    allowMonitoringScrape = true,
+    allowCertManagerSolver = true,
+    aliases = {},
+  } = args;
 
   // Baseline zero-trust policy. Restricting lateral movement requires denying all ingress
   // by default, forcing components to explicitly declare their inbound permission rules.
@@ -35,7 +50,7 @@ export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
 
   // Centralized monitoring scrapers (like Alloy or Prometheus in the monitoring namespace)
   // require ingress access to fetch metrics endpoints exposed by self-hosted applications.
-  const allowMonitoringScrape = new k8s.networking.v1.NetworkPolicy(`${namePrefix}allow-monitoring-scrape`, {
+  const monitoringPolicy = allowMonitoringScrape ? new k8s.networking.v1.NetworkPolicy(`${namePrefix}allow-monitoring-scrape`, {
     metadata: {
       name: "allow-monitoring-scrape",
       namespace,
@@ -57,11 +72,11 @@ export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
       ],
       policyTypes: ["Ingress"],
     },
-  }, { dependsOn: [defaultDeny], aliases: aliases.monitoring });
+  }, { dependsOn: [defaultDeny], aliases: aliases.monitoring }) : defaultDeny;
 
   // Cert-manager automatically spawns temporary HTTP-01 solver pods in the application's
   // namespace. Traefik must be allowed to reach these pods to solve ACME challenges.
-  const allowCertManagerSolver = new k8s.networking.v1.NetworkPolicy(`${namePrefix}allow-cert-manager-solver`, {
+  const certManagerPolicy = allowCertManagerSolver ? new k8s.networking.v1.NetworkPolicy(`${namePrefix}allow-cert-manager-solver`, {
     metadata: {
       name: "allow-cert-manager-solver",
       namespace,
@@ -88,11 +103,11 @@ export function configureNamespaceSecurity(args: NamespaceSecurityArgs) {
       ],
       policyTypes: ["Ingress"],
     },
-  }, { dependsOn: [defaultDeny], aliases: aliases.certManager });
+  }, { dependsOn: [defaultDeny], aliases: aliases.certManager }) : defaultDeny;
 
   return {
     defaultDeny,
-    allowMonitoringScrape,
-    allowCertManagerSolver,
+    allowMonitoringScrape: monitoringPolicy,
+    allowCertManagerSolver: certManagerPolicy,
   };
 }

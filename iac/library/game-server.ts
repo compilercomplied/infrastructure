@@ -16,10 +16,15 @@ export interface GameServerEndpoint {
   allowIngressFrom?: PeerIngressRule[];
 }
 
+export interface GameServerStateVolume extends ManagedVolume {
+  mountPath: string;
+}
+
 export interface GameServerArgs {
   namespace: pulumi.Input<string>;
   image: string;
   endpoints: [GameServerEndpoint, ...GameServerEndpoint[]];
+  stateVolume: GameServerStateVolume;
   volumes?: ManagedVolume[];
   env?: k8s.types.input.core.v1.EnvVar[];
   config?: Record<string, pulumi.Input<string>>;
@@ -27,14 +32,14 @@ export interface GameServerArgs {
   command?: string[];
   args?: string[];
   resources: k8s.types.input.core.v1.ResourceRequirements;
-  healthCheck?: WorkloadHealthCheck & { endpoint: string };
+  healthCheck: Extract<WorkloadHealthCheck, { protocol: "tcp" }> & { endpoint: string };
   labels?: Record<string, string>;
   dependencies?: pulumi.Resource[];
   affinity?: k8s.types.input.core.v1.Affinity;
   nodeSelector?: Record<string, pulumi.Input<string>>;
   podSecurityContext?: k8s.types.input.core.v1.PodSecurityContext;
   containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
-  strategy?: k8s.types.input.apps.v1.DeploymentStrategy;
+
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
 }
@@ -52,8 +57,14 @@ export class GameServer extends pulumi.ComponentResource {
   constructor(name: string, args: GameServerArgs, opts?: pulumi.ComponentResourceOptions) {
     super("custom:gameserver:GameServer", name, {}, opts);
 
-    if (!args.resources.requests?.cpu || !args.resources.requests.memory || !args.resources.limits?.cpu || !args.resources.limits.memory) {
+    if (!args.resources.requests || !args.resources.limits) {
       throw new Error(`Game server ${name} requires CPU and memory requests and limits.`);
+    }
+    if (args.stateVolume.external || args.stateVolume.isEphemeral || args.stateVolume.enableBackup === false || !args.stateVolume.mountPath) {
+      throw new Error(`Game server ${name} requires a managed, mounted, backup-enabled state volume.`);
+    }
+    if (args.volumes?.some(volume => volume.name === args.stateVolume.name)) {
+      throw new Error(`Game server ${name} state volume ${args.stateVolume.name} must not be repeated in auxiliary volumes.`);
     }
 
     const dependencies = args.dependencies ?? [];
@@ -72,7 +83,7 @@ export class GameServer extends pulumi.ComponentResource {
     const volumePlan = planManagedVolumes({
       appName: name,
       namespace: args.namespace,
-      volumes: args.volumes,
+      volumes: [args.stateVolume, ...(args.volumes ?? [])],
       dependencies,
       parent: this,
     });
@@ -90,7 +101,7 @@ export class GameServer extends pulumi.ComponentResource {
       metadata: { name, namespace: args.namespace },
       spec: {
         replicas: 1,
-        strategy: args.strategy,
+        strategy: { type: "Recreate" },
         selector: { matchLabels: { app: name } },
         template: {
           metadata: { labels: { app: name, ...(args.labels ?? {}) } },
@@ -159,8 +170,7 @@ export class GameServer extends pulumi.ComponentResource {
         namespace: args.namespace,
         service: this.service,
         healthCheck: {
-          protocol: args.healthCheck.protocol,
-          ...(args.healthCheck.protocol === "http" ? { path: args.healthCheck.path } : {}),
+          protocol: "tcp",
           interval: args.healthCheck.interval,
           servicePort: endpoint.servicePort ?? endpoint.containerPort,
         },
