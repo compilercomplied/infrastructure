@@ -61,7 +61,7 @@ esac
 while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
   [ -n "$owner" ] || continue
   owner_tag="${directDnsOwnerLabel}:$owner"
-  record_json="$(curl --fail --silent --show-error --get \\
+  record_json="$(curl --silent --show-error --get \\
     --data-urlencode "type=A" \\
     --data-urlencode "name=$hostname" \\
     --data-urlencode "per_page=100" \\
@@ -73,7 +73,7 @@ while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
   record_id="$(printf '%s' "$record_json" | jq -r '.result | if length == 1 then .[0].id else empty end')"
   if [ -z "$record_id" ]; then
     payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_tag "$owner_tag" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,tags:[$owner_tag]}')"
-    response="$(curl --fail --silent --show-error -X POST \\
+    response="$(curl --silent --show-error -X POST \\
       -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
       -H "Content-Type: application/json" \\
       --data "$payload" \\
@@ -96,7 +96,7 @@ while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
   fi
 
   payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_tag "$owner_tag" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,tags:[$owner_tag]}')"
-  response="$(curl --fail --silent --show-error -X PUT \\
+  response="$(curl --silent --show-error -X PUT \\
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
     -H "Content-Type: application/json" \\
     --data "$payload" \\
