@@ -30,6 +30,10 @@ export function configureMinecraft(platform: GamePlatform) {
       { name: "VIEW_DISTANCE", value: "10" },
       { name: "SIMULATION_DISTANCE", value: "6" },
       { name: "USE_AIKAR_FLAGS", value: "true" },
+      // Emit one JSON object per server event so Kubernetes log collectors can
+      // parse timestamps, thread names, levels, and messages without regex.
+      { name: "GENERATE_LOG4J2_CONFIG", value: "true" },
+      { name: "LOG_CONSOLE_FORMAT", value: "{\"timestamp\":\"%d{ISO8601}\",\"thread\":\"%t\",\"level\":\"%p\",\"logger\":\"%c\",\"message\":\"%enc{%m}{JSON}\",\"exception\":\"%enc{%throwable{full}}{JSON}\"}%n" },
     ],
     // Temporary cap for the current two-core node; restore the exploration CPU
     // allocation after the new CPU is installed and the node is validated.
