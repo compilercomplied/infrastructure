@@ -173,9 +173,11 @@ export class DirectDnsReconciler extends pulumi.ComponentResource {
                     limits: { cpu: "100m", memory: "64Mi" },
                   },
                   securityContext: {
+                    // Alpine packages are installed immediately before this short-lived job
+                    // invokes the reconciler; apk requires UID 0 even though the reconciler
+                    // otherwise needs no elevated Linux privileges.
                     allowPrivilegeEscalation: false,
-                    runAsNonRoot: true,
-                    runAsUser: 65532,
+                    runAsUser: 0,
                     capabilities: { drop: ["ALL"] },
                   },
                 }],
