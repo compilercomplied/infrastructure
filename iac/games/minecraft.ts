@@ -4,9 +4,9 @@ const minecraftPort = 25565;
 
 export function configureMinecraft(platform: GamePlatform) {
   const minecraft = platform.addServer("minecraft", {
-    // Pin both the multi-architecture image manifest and the server release so a
-    // normal rollout cannot change the Java runtime or mutate the world format.
-    image: "itzg/minecraft-server@sha256:21b3d6bad32cc49ca15c8ceefcaffe94ac7fb6a53939fc7a5da066ec5dd0bc1d",
+    // Java 25 is required by Minecraft 26.3; VERSION remains explicit so a
+    // normal rollout cannot silently change the server or world format.
+    image: "itzg/minecraft-server:java25",
     endpoints: [{
       name: "minecraft",
       containerPort: minecraftPort,
@@ -25,7 +25,7 @@ export function configureMinecraft(platform: GamePlatform) {
       // Keep membership on the backed-up world volume and manage it with RCON;
       // a static IaC list would overwrite player changes on later rollouts.
       { name: "ENABLE_WHITELIST", value: "true" },
-      { name: "VERSION", value: "1.21.8" },
+      { name: "VERSION", value: "26.3" },
       { name: "MEMORY", value: "4G" },
       { name: "VIEW_DISTANCE", value: "10" },
       { name: "SIMULATION_DISTANCE", value: "6" },
