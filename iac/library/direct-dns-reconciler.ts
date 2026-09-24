@@ -42,6 +42,16 @@ function renderReconcilerScript(): string {
 records_file=/etc/direct-dns/records
 api_base=https://api.cloudflare.com/client/v4
 
+require_cloudflare_success() {
+  response="$1"
+  if ! printf '%s' "$response" | jq -e '.success == true' >/dev/null; then
+    # Cloudflare reports authorization and validation failures in an HTTP 200
+    # response; surfacing them prevents a silently successful reconciliation.
+    printf '%s' "$response" | jq -c '.errors // .messages // .'
+    exit 1
+  fi
+}
+
 ipv4="$(curl --fail --silent --show-error --max-time 10 "$PUBLIC_IPV4_ENDPOINT" | tr -d '\\r\\n')"
 case "$ipv4" in
   [0-9]*.[0-9]*.[0-9]*.[0-9]*) ;;
@@ -58,15 +68,17 @@ while IFS='|' read -r owner hostname; do
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
     -H "Content-Type: application/json" \\
     "$api_base/zones/$CLOUDFLARE_ZONE_ID/dns_records")"
+  require_cloudflare_success "$record_json"
 
   record_id="$(printf '%s' "$record_json" | jq -r '.result | if length == 1 then .[0].id else empty end')"
   if [ -z "$record_id" ]; then
     payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_tag "$owner_tag" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,tags:[$owner_tag]}')"
-    curl --fail --silent --show-error -X POST \\
+    response="$(curl --fail --silent --show-error -X POST \\
       -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
       -H "Content-Type: application/json" \\
       --data "$payload" \\
-      "$api_base/zones/$CLOUDFLARE_ZONE_ID/dns_records" >/dev/null
+      "$api_base/zones/$CLOUDFLARE_ZONE_ID/dns_records")"
+    require_cloudflare_success "$response"
     echo "direct-dns: created $hostname"
     continue
   fi
@@ -84,11 +96,12 @@ while IFS='|' read -r owner hostname; do
   fi
 
   payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_tag "$owner_tag" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,tags:[$owner_tag]}')"
-  curl --fail --silent --show-error -X PUT \\
+  response="$(curl --fail --silent --show-error -X PUT \\
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
     -H "Content-Type: application/json" \\
     --data "$payload" \\
-    "$api_base/zones/$CLOUDFLARE_ZONE_ID/dns_records/$record_id" >/dev/null
+    "$api_base/zones/$CLOUDFLARE_ZONE_ID/dns_records/$record_id")"
+  require_cloudflare_success "$response"
   echo "direct-dns: reconciled $hostname"
 done < "$records_file"
 `;
