@@ -1,6 +1,9 @@
 import { GamePlatform } from "../library/game-platform";
 
 const minecraftPort = 25565;
+// The image injects this into a Log4j XML attribute, so the JSON quotes need
+// XML entities even though Log4j ultimately receives them as literal quotes.
+const minecraftConsoleLogFormat = "{&quot;timestamp&quot;:&quot;%d{ISO8601}&quot;,&quot;thread&quot;:&quot;%t&quot;,&quot;level&quot;:&quot;%p&quot;,&quot;logger&quot;:&quot;%c&quot;,&quot;message&quot;:&quot;%enc{%m}{JSON}&quot;,&quot;exception&quot;:&quot;%enc{%throwable{full}}{JSON}&quot;}%n";
 
 export function configureMinecraft(platform: GamePlatform) {
   const minecraft = platform.addServer("minecraft", {
@@ -34,7 +37,7 @@ export function configureMinecraft(platform: GamePlatform) {
       // Emit one JSON object per server event so Kubernetes log collectors can
       // parse timestamps, thread names, levels, and messages without regex.
       { name: "GENERATE_LOG4J2_CONFIG", value: "true" },
-      { name: "LOG_CONSOLE_FORMAT", value: "{&quot;timestamp&quot;:&quot;%d{ISO8601}&quot;,&quot;thread&quot;:&quot;%t&quot;,&quot;level&quot;:&quot;%p&quot;,&quot;logger&quot;:&quot;%c&quot;,&quot;message&quot;:&quot;%enc{%m}{JSON}&quot;,&quot;exception&quot;:&quot;%enc{%throwable{full}}{JSON}&quot;}%n" },
+      { name: "LOG_CONSOLE_FORMAT", value: minecraftConsoleLogFormat },
     ],
     // Temporary cap for the current two-core node; restore the exploration CPU
     // allocation after the new CPU is installed and the node is validated.
