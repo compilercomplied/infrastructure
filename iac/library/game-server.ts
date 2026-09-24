@@ -34,6 +34,7 @@ export interface GameServerArgs {
   args?: string[];
   resources: k8s.types.input.core.v1.ResourceRequirements;
   healthCheck: Extract<WorkloadHealthCheck, { protocol: "tcp" }> & { endpoint: string };
+  service: string;
   labels?: Record<string, string>;
   dependencies?: pulumi.Resource[];
   affinity?: k8s.types.input.core.v1.Affinity;
@@ -107,7 +108,7 @@ export class GameServer extends pulumi.ComponentResource {
         strategy: { type: "Recreate" },
         selector: { matchLabels: { app: name } },
         template: {
-          metadata: { labels: { app: name, ...(args.labels ?? {}) } },
+          metadata: { labels: { app: name, service: args.service, ...(args.labels ?? {}) } },
           spec: {
             securityContext: args.podSecurityContext,
             nodeSelector: args.nodeSelector,

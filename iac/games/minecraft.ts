@@ -4,6 +4,7 @@ const minecraftPort = 25565;
 
 export function configureMinecraft(platform: GamePlatform) {
   const minecraft = platform.addServer("minecraft", {
+    service: "minecraft",
     // Java 25 is required by Minecraft 26.3; VERSION remains explicit so a
     // normal rollout cannot silently change the server or world format.
     image: "itzg/minecraft-server:java25",
