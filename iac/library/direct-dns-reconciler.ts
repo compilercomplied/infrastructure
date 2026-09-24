@@ -58,7 +58,7 @@ case "$ipv4" in
   *) echo "direct-dns: public IPv4 endpoint returned an invalid address" >&2; exit 1 ;;
 esac
 
-while IFS='|' read -r owner hostname; do
+while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
   [ -n "$owner" ] || continue
   owner_tag="${directDnsOwnerLabel}:$owner"
   record_json="$(curl --fail --silent --show-error --get \\
