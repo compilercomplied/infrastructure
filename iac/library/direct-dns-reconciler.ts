@@ -1,7 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
-export const directDnsOwnerLabel = "homelab.gdario.dev/direct-dns-owner";
+export const directDnsOwnerCommentPrefix = "managed-by:homelab:";
 
 export interface DirectDnsRegistration {
   owner: string;
@@ -60,7 +60,7 @@ esac
 
 while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
   [ -n "$owner" ] || continue
-  owner_tag="${directDnsOwnerLabel}:$owner"
+  owner_comment="${directDnsOwnerCommentPrefix}$owner"
   record_json="$(curl --silent --show-error --get \\
     --data-urlencode "type=A" \\
     --data-urlencode "name=$hostname" \\
@@ -72,7 +72,7 @@ while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
 
   record_id="$(printf '%s' "$record_json" | jq -r '.result | if length == 1 then .[0].id else empty end')"
   if [ -z "$record_id" ]; then
-    payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_tag "$owner_tag" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,tags:[$owner_tag]}')"
+    payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_comment "$owner_comment" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,comment:$owner_comment}')"
     response="$(curl --silent --show-error -X POST \\
       -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
       -H "Content-Type: application/json" \\
@@ -83,7 +83,7 @@ while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
     continue
   fi
 
-  record_owner="$(printf '%s' "$record_json" | jq -r --arg owner_tag "$owner_tag" '.result[0] | select(.type == "A" and .proxied == false and (.tags | index($owner_tag))) | .id // empty')"
+  record_owner="$(printf '%s' "$record_json" | jq -r --arg owner_comment "$owner_comment" '.result[0] | select(.type == "A" and .proxied == false and .comment == $owner_comment) | .id // empty')"
   if [ "$record_owner" != "$record_id" ]; then
     echo "direct-dns: refusing to modify conflicting record $hostname" >&2
     exit 1
@@ -95,7 +95,7 @@ while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
     continue
   fi
 
-  payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_tag "$owner_tag" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,tags:[$owner_tag]}')"
+  payload="$(jq -nc --arg hostname "$hostname" --arg ipv4 "$ipv4" --arg owner_comment "$owner_comment" '{type:"A",name:$hostname,content:$ipv4,ttl:1,proxied:false,comment:$owner_comment}')"
   response="$(curl --silent --show-error -X PUT \\
     -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \\
     -H "Content-Type: application/json" \\
