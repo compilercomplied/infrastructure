@@ -14,6 +14,7 @@ export interface GameServerEndpoint {
   servicePort?: number;
   protocol: GameServerProtocol;
   allowIngressFrom?: PeerIngressRule[];
+  exposeOnLan?: boolean;
 }
 
 export interface GameServerStateVolume extends ManagedVolume {
@@ -51,6 +52,8 @@ export class GameServer extends pulumi.ComponentResource {
   public readonly secret?: k8s.core.v1.Secret;
   public readonly pvcs: k8s.core.v1.PersistentVolumeClaim[];
   public readonly internalPolicies: k8s.networking.v1.NetworkPolicy[];
+  public readonly lanService?: k8s.core.v1.Service;
+  public readonly lanPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly backupJobs: k8s.batch.v1.CronJob[];
   public readonly healthProbe?: k8s.apiextensions.CustomResource;
 
@@ -152,6 +155,36 @@ export class GameServer extends pulumi.ComponentResource {
       dependencies: [this.deployment],
       parent: this,
     }));
+
+    const lanEndpoints = args.endpoints.filter(endpoint => endpoint.exposeOnLan);
+    if (lanEndpoints.length > 0) {
+      this.lanService = new k8s.core.v1.Service(`${name}-lan`, {
+        metadata: { name: `${name}-lan`, namespace: args.namespace },
+        spec: {
+          type: "LoadBalancer",
+          selector: { app: name },
+          ports: lanEndpoints.map(endpoint => ({
+            name: `${endpoint.name}-${endpoint.protocol.toLowerCase()}`,
+            protocol: endpoint.protocol,
+            port: endpoint.servicePort ?? endpoint.containerPort,
+            targetPort: endpoint.containerPort,
+          })),
+        },
+      }, { dependsOn: this.deployment, parent: this });
+
+      this.lanPolicies = lanEndpoints.map(endpoint => new k8s.networking.v1.NetworkPolicy(`${name}-allow-${endpoint.name}`, {
+        metadata: { name: `${name}-allow-${endpoint.name}`, namespace: args.namespace },
+        spec: {
+          podSelector: { matchLabels: { app: name } },
+          ingress: [{
+            ports: [{ protocol: endpoint.protocol, port: endpoint.containerPort }],
+          }],
+          policyTypes: ["Ingress"],
+        },
+      }, { dependsOn: this.deployment, parent: this }));
+    } else {
+      this.lanPolicies = [];
+    }
 
     this.backupJobs = createManagedVolumeBackups({
       appName: name,

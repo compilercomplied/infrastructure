@@ -11,6 +11,8 @@ import { configureSharedResources } from "./shared-resources";
 import { configureForgejo } from "./forgejo";
 import { configureAgentSidekicks } from "./agent-sidekicks";
 import { DirectDnsReconciler } from "./library/direct-dns-reconciler";
+import { GamePlatform } from "./library/game-platform";
+import { configureMinecraft } from "./games/minecraft";
 
 const { namespace } = configureAgents();
 
@@ -28,8 +30,14 @@ const infrastructure = configureInfrastructure();
 
 const forgejo = configureForgejo([sharedResources.postgres]);
 
+const gamePlatform = new GamePlatform("games");
+configureMinecraft(gamePlatform);
+
 const directDnsConfig = new pulumi.Config("selfhosted");
-const directDnsRecords = directDnsConfig.getObject<{ owner: string; hostname: string }[]>("directDnsRecords") ?? [];
+const directDnsRecords = [
+  ...(directDnsConfig.getObject<{ owner: string; hostname: string }[]>("directDnsRecords") ?? []),
+  ...gamePlatform.directDnsRecords(),
+];
 if (directDnsRecords.length > 0) {
   const publicIpv4Endpoint = directDnsConfig.get("directDnsPublicIpv4Endpoint") ?? "https://api.ipify.org";
   const intervalSeconds = directDnsConfig.getNumber("directDnsIntervalSeconds") ?? 300;

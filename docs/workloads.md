@@ -56,3 +56,13 @@ Two access paths are exposed:
 Its persistent data lives on a PVC mounted at `/opt/data` (configuration,
 memories, skills) and is backed up daily via the standard restic backup job
 described in `architecture.md`.
+
+## Minecraft reference workload
+
+`game-minecraft` is a LAN-exposed Java server on TCP `25565`; its `GameServer`
+component owns the ServiceLB edge, narrow ingress policy, world PVC, backup, and
+TCP health probe. The initial `4Gi` heap, `1` CPU / `5Gi` request, `2` CPU /
+`6Gi` limit, `view-distance=10`, `simulation-distance=6`, and `30Gi` world PVC
+are estimates from upstream and community sizing guidance for a large vanilla
+world with 3–5 concurrent players—not measured cluster data. Revisit them after
+observing real TPS, heap use, CPU, and disk growth.
