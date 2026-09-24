@@ -59,9 +59,11 @@ described in `architecture.md`.
 
 ## Minecraft reference workload
 
-`game-minecraft` is a LAN-exposed Java server on TCP `25565`; its `GameServer`
-component owns the ServiceLB edge, narrow ingress policy, world PVC, backup, and
-TCP health probe. The initial `4Gi` heap, `1` CPU / `5Gi` request, `2` CPU /
+`game-minecraft` declares `minecraft.barpepe.party` on its TCP `25565` endpoint.
+Every game endpoint is LAN-exposed through its `GameServer`-owned ServiceLB
+edge; an endpoint hostname additionally registers direct DNS and a future
+public-L4 target. This does not open router, NAT, or firewall ports. The initial
+`4Gi` heap, `1` CPU / `5Gi` request, `2` CPU /
 `6Gi` limit, `view-distance=10`, `simulation-distance=6`, and `30Gi` world PVC
 are estimates from upstream and community sizing guidance for a large vanilla
 world with 3–5 concurrent players—not measured cluster data. Revisit them after

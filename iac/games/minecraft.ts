@@ -10,9 +10,9 @@ export function configureMinecraft(platform: GamePlatform) {
     image: "itzg/minecraft-server:java25",
     endpoints: [{
       name: "minecraft",
+      hostname: "minecraft.barpepe.party",
       containerPort: minecraftPort,
       protocol: "TCP",
-      exposeOnLan: true,
     }],
     stateVolume: {
       name: "world",

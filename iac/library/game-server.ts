@@ -10,11 +10,17 @@ export type GameServerProtocol = "TCP" | "UDP" | "SCTP";
 
 export interface GameServerEndpoint {
   name: string;
+  hostname?: string;
   containerPort: number;
   servicePort?: number;
   protocol: GameServerProtocol;
   allowIngressFrom?: PeerIngressRule[];
-  exposeOnLan?: boolean;
+}
+
+export interface GameServerLanEndpoint {
+  name: string;
+  protocol: GameServerProtocol;
+  servicePort: number;
 }
 
 export interface GameServerStateVolume extends ManagedVolume {
@@ -54,6 +60,7 @@ export class GameServer extends pulumi.ComponentResource {
   public readonly pvcs: k8s.core.v1.PersistentVolumeClaim[];
   public readonly internalPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly lanService?: k8s.core.v1.Service;
+  public readonly lanEndpoints: readonly GameServerLanEndpoint[];
   public readonly lanPolicies: k8s.networking.v1.NetworkPolicy[];
   public readonly backupJobs: k8s.batch.v1.CronJob[];
   public readonly healthProbe?: k8s.apiextensions.CustomResource;
@@ -157,7 +164,12 @@ export class GameServer extends pulumi.ComponentResource {
       parent: this,
     }));
 
-    const lanEndpoints = args.endpoints.filter(endpoint => endpoint.exposeOnLan);
+    const lanEndpoints = args.endpoints;
+    this.lanEndpoints = lanEndpoints.map(endpoint => ({
+      name: endpoint.name,
+      protocol: endpoint.protocol,
+      servicePort: endpoint.servicePort ?? endpoint.containerPort,
+    }));
     if (lanEndpoints.length > 0) {
       this.lanService = new k8s.core.v1.Service(`${name}-lan`, {
         metadata: { name: `${name}-lan`, namespace: args.namespace },
