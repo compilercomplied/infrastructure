@@ -31,7 +31,8 @@ const infrastructure = configureInfrastructure();
 const forgejo = configureForgejo([sharedResources.postgres]);
 
 const gamePlatform = new GamePlatform("games");
-configureMinecraft(gamePlatform);
+// Disable minecraft server. Pending better way to tackle server toggling.
+// configureMinecraft(gamePlatform);
 
 const directDnsConfig = new pulumi.Config("selfhosted");
 const directDnsRecords = [

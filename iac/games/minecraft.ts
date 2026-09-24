@@ -30,20 +30,19 @@ export function configureMinecraft(platform: GamePlatform) {
       // a static IaC list would overwrite player changes on later rollouts.
       { name: "ENABLE_WHITELIST", value: "true" },
       { name: "VERSION", value: "26.3" },
-      { name: "MEMORY", value: "4G" },
+      { name: "MEMORY", value: "6G" },
       { name: "VIEW_DISTANCE", value: "10" },
       { name: "SIMULATION_DISTANCE", value: "6" },
       { name: "USE_AIKAR_FLAGS", value: "true" },
-      // Emit one JSON object per server event so Kubernetes log collectors can
-      // parse timestamps, thread names, levels, and messages without regex.
       { name: "GENERATE_LOG4J2_CONFIG", value: "true" },
       { name: "LOG_CONSOLE_FORMAT", value: minecraftConsoleLogFormat },
     ],
-    // Temporary cap for the current two-core node; restore the exploration CPU
-    // allocation after the new CPU is installed and the node is validated.
+		// Estimation for 3-5 players in a huge world with these settings:
+		// { name: "VIEW_DISTANCE", value: "10" },
+		// { name: "SIMULATION_DISTANCE", value: "6" },
     resources: {
-      requests: { cpu: "250m", memory: "5Gi" },
-      limits: { cpu: "750m", memory: "6Gi" },
+      requests: { cpu: "1000m", memory: "7Gi" },
+      limits: { cpu: "2500m", memory: "9Gi" },
     },
     healthCheck: {
       protocol: "tcp",
