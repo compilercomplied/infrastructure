@@ -36,12 +36,7 @@ export function installPrometheusCRDs() {
   const crdDir = path.join(__dirname, "crds");
   const crdFiles = fs.readdirSync(crdDir).filter(file => file.endsWith(".yaml"));
 
-  const resources = crdFiles.map(filename => {
-    const name = filename.replace(".yaml", "");
-    return new k8s.yaml.ConfigFile(`crd-${name}`, {
-      file: `./workloads/monitoring/crds/${filename}`,
-    });
-  });
-
-  return resources;
+  return [new k8s.yaml.ConfigGroup("prometheus-crds", {
+    files: crdFiles.map(filename => `./workloads/monitoring/crds/${filename}`),
+  })];
 }

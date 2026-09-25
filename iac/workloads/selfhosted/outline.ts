@@ -28,7 +28,8 @@ export function configureOutline(
   // MinIO
   const minio = new SelfhostedApp(`${name}-minio`, {
     namespace,
-    image: "minio/minio:latest",
+    image: "minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+    imagePullPolicy: "IfNotPresent",
     settings: outlineMinioSettings,
     endpoints: [{ name: "http", servicePort: 80, containerPort: 9000, allowIngressFrom: [{ podSelector: { app: name }, port: 9000 }] }],
     args: ["server", "/data"],

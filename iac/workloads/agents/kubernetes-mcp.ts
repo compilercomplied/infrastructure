@@ -8,6 +8,11 @@ export function configureKubernetesMcp(
 ) {
   const name = "kubernetes-mcp";
 
+  const runtimeConfig = new k8s.core.v1.ConfigMap(`${name}-config`, {
+    metadata: { name: `${name}-config`, namespace },
+    data: { "config.toml": 'port = "8000"\n' },
+  }, { dependsOn: dependencies });
+
   // A dedicated service account ensures cluster capabilities are tightly scoped 
   // to this workload rather than shared by the namespace's default account.
   const sa = new k8s.core.v1.ServiceAccount(`${name}-sa`, {
@@ -73,7 +78,9 @@ export function configureKubernetesMcp(
     image: "ghcr.io/containers/kubernetes-mcp-server:latest",
     serviceAccountName: sa.metadata.name,
     containerPort: 8000,
-    args: ["--port", "8000"],
-    dependencies: [sa],
+    args: ["--config", "/etc/kubernetes-mcp-server/config.toml"],
+    volumes: [{ name: "config", configMap: { name: runtimeConfig.metadata.name } }],
+    volumeMounts: [{ name: "config", mountPath: "/etc/kubernetes-mcp-server", readOnly: true }],
+    dependencies: [sa, runtimeConfig],
   });
 }

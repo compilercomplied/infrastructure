@@ -58,6 +58,7 @@ export type AppDeploymentStrategy = Omit<k8s.types.input.apps.v1.DeploymentStrat
 type SelfhostedAppCommonArgs = {
   namespace: pulumi.Input<string>;
   image: string;
+  imagePullPolicy?: "Always" | "IfNotPresent" | "Never";
   endpoints: [AppEndpoint, ...AppEndpoint[]];
   databases?: AppDatabase[];
   settings?: AppSettings;
@@ -251,6 +252,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             containers: [{
               name,
               image: args.image,
+              imagePullPolicy: args.imagePullPolicy,
               ports: endpoints.map(endpoint => ({
                 containerPort: endpoint.containerPort,
                 name: endpoint.name,
