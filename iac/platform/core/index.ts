@@ -30,7 +30,7 @@ export function configureInfrastructure() {
   // (installing kata packages and templating config.toml.tmpl via Ansible) and only keep the
   // RuntimeClass definition here.
   const kataDeploy = new k8s.helm.v3.Release("kata-deploy", {
-    chart: "./infrastructure/kata-deploy",
+    chart: "./platform/core/kata-deploy",
     namespace: "kube-system",
     values: {
       k8sDistribution: "k3s",
