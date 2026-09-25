@@ -228,7 +228,7 @@ sudo sh -c 'echo "192.168.50.200 auth.home.arpa tandoor.home.arpa linkwarden.hom
   ```bash
   pulumi config set authentik:insecure true --cwd iac --stack local
   ```
-- **Grafana Provider:** The code defines an explicit provider constructor (in `iac/selfhosted/grafana-mcp.ts`). Ensure `insecureSkipVerify: true` is passed to the `grafana.Provider` instantiation.
+- **Grafana Provider:** The code defines an explicit provider constructor (in `iac/workloads/agents/grafana-mcp.ts`). Ensure `insecureSkipVerify: true` is passed to the `grafana.Provider` instantiation.
 
 ---
 

@@ -1,18 +1,18 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { configureDocker } from "./modules/docker";
-import { configureMonitoring } from "./monitoring";
-import { configureAgents } from "./modules/agents";
-import { configureMaintenance } from "./modules/maintenance";
-import { configureSelfhosted } from "./selfhosted";
-import { configureCertManager } from "./modules/cert-manager";
-import { configureInfrastructure } from "./infrastructure";
-import { configureSharedResources } from "./shared-resources";
-import { configureForgejo } from "./forgejo";
-import { configureAgentSidekicks } from "./agent-sidekicks";
+import { configureDocker } from "./platform/docker";
+import { configureMonitoring } from "./workloads/monitoring";
+import { configureAgents } from "./workloads/agents/control-plane-index";
+import { configureMaintenance } from "./operations/maintenance";
+import { configureSelfhosted } from "./workloads/selfhosted";
+import { configureCertManager } from "./platform/cert-manager";
+import { configureInfrastructure } from "./platform/core";
+import { configureSharedResources } from "./platform/shared-resources";
+import { configureForgejo } from "./workloads/forgejo";
+import { configureAgentSidekicks } from "./workloads/agents";
 import { DirectDnsReconciler } from "./library/direct-dns-reconciler";
 import { GamePlatform } from "./library/game-platform";
-import { configureMinecraft } from "./games/minecraft";
+import { configureMinecraft } from "./workloads/games/minecraft";
 
 const { namespace } = configureAgents();
 

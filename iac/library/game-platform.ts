@@ -1,7 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { GameServer, GameServerArgs, GameServerProtocol } from "./game-server";
-import { configureNamespaceSecurity } from "../selfhosted/security";
+import { configureNamespaceSecurity } from "../workloads/selfhosted/security";
 import { DirectDnsRegistration } from "./direct-dns-reconciler";
 
 export interface PublicL4Registration {

@@ -15,9 +15,9 @@ Agent workloads are split into four namespaces plus a shared runtime:
 | Control plane | `agents-control-plane` | RBAC + service accounts for the orchestrator that coordinates worker agents |
 | Workers / sandbox | `agent-sandbox` | Untrusted, agent-generated code executed in isolation |
 
-The namespace and RBAC definitions live in `iac/modules/agents/` (namespaces,
+The namespace and RBAC definitions live in `iac/workloads/agents/control-plane/` (namespaces,
 rbac, secrets). Hermes Agent and the MCP servers are wired in
-`iac/agent-sidekicks/`.
+`iac/workloads/agents/`.
 
 ## Isolation model
 
@@ -30,7 +30,7 @@ Kata runtime class.
 Kata is installed entirely through the IaC with the `kata-deploy` Helm chart,
 which injects the host VM runtime and patches k3s' `containerd` to register the
 RuntimeClass. That chart is a single resource in the `infrastructure` module
-(`iac/infrastructure/index.ts`), which also keeps the required node label in
+(`iac/platform/core/index.ts`), which also keeps the required node label in
 place across reboots. The only thing left out of IaC is the OS-level Kata
 package install on the (single) node; the chart and node label are declarative.
 
@@ -43,7 +43,7 @@ package install on the (single) node; the chart and node label are declarative.
 
 The self-hosted Hermes Agent runs as a `custom:selfhosted:HermesAgent` component
 declared in `iac/library/hermes-agent.ts`, with its seeded deployment in
-`iac/agent-sidekicks/hermes-agent.ts`. It is itself
+`iac/workloads/agents/hermes-agent.ts`. It is itself
 pinned to the Kata runtime class, and talks to the LLM backend through the
 LiteLLM gateway in `infrastructure` rather than holding a key per model.
 

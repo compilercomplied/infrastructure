@@ -1,0 +1,66 @@
+import * as k8s from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
+import { configureTandoorRecipes } from "./tandoor-recipes";
+
+import { configureLinkwarden } from "./linkwarden";
+import { configureOutline } from "./outline";
+import { configureGrimmory } from "./grimmory";
+import { configureSyncthing } from "./syncthing";
+import { configureNamespaceSecurity } from "./security";
+import { configureCoreDnsCustom } from "../../platform/core/coredns";
+import { configureCloudflared } from "./cloudflared";
+import { configureNtfy } from "./ntfy";
+
+export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.core.v1.Service) {
+  const namespace = new k8s.core.v1.Namespace("selfhosted", {
+    metadata: { name: "selfhosted" }
+  });
+
+  const namespaceName = namespace.metadata.name;
+
+  const config = new pulumi.Config("selfhosted");
+  const cloudflareTunnelToken = config.requireSecret("cloudflareTunnelToken");
+
+	// Deployments
+  const tandoor = configureTandoorRecipes(namespaceName, [postgres]);
+  const linkwarden = configureLinkwarden(namespaceName, [postgres]);
+  const grimmory = configureGrimmory(namespaceName, mariadb, [postgres]);
+  const outline = configureOutline(namespaceName, [postgres]);
+  const ntfy = configureNtfy(namespaceName);
+  // Since Syncthing mounts Grimmory's bookdrop PVC externally, it has a runtime dependency
+  // on Grimmory's volume being created first. We pass grimmory.deployment as a dependency.
+  const syncthing = configureSyncthing(namespaceName, [grimmory.deployment]);
+
+  const security = configureNamespaceSecurity({
+    namespace: namespaceName,
+    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, syncthing.deployment, outline.outline.deployment, ntfy.deployment],
+    namePrefix: "selfhosted-",
+    aliases: {
+      defaultDeny: [{ name: "default-deny-ingress" }],
+      monitoring: [{ name: "allow-monitoring-scrape" }],
+      certManager: [{ name: "allow-cert-manager-solver" }],
+    },
+  });
+
+  const cloudflared = configureCloudflared(namespaceName, cloudflareTunnelToken, [security.defaultDeny]);
+
+  // Configure custom CoreDNS overrides for gdario.dev routing inside the cluster.
+  // This depends on no explicit resources as Traefik is pre-installed by the K3s runtime.
+  const corednsCustom = configureCoreDnsCustom([]);
+
+  return {
+    namespace: namespaceName,
+    postgres,
+    tandoor,
+    linkwarden,
+    grimmory,
+    outline,
+    syncthing,
+    ntfy,
+    corednsCustom,
+    cloudflared,
+    defaultDeny: security.defaultDeny,
+    allowMonitoringScrape: security.allowMonitoringScrape,
+    allowCertManagerSolver: security.allowCertManagerSolver,
+  };
+}

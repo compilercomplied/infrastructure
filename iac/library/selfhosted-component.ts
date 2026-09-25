@@ -1,7 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "./ingress";
-import { createBackupJob } from "../maintenance/backup";
+import { createBackupJob } from "../operations/maintenance/backup";
 import { AppHealthCheck, createWorkloadHealthProbe } from "./workload-health-probe";
 import { IngressPeerSelector, PeerIngressRule, createPeerIngressPolicies } from "./workload-network-policy";
 import { createPrivateService } from "./workload-service";

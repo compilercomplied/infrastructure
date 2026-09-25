@@ -1,0 +1,151 @@
+import * as k8s from "@pulumi/kubernetes";
+import * as pulumi from "@pulumi/pulumi";
+import { SelfhostedApp } from "../../library/selfhosted-component";
+import { Labels } from "./labels";
+
+// Syncthing Deployment & Services Configuration.
+// This sets up a future-proof personal sync service for Obsidian and other vaults.
+export function configureSyncthing(
+  namespace: pulumi.Input<string>,
+  dependencies: pulumi.Resource[] = []
+) {
+  const name = "syncthing";
+
+  // Create ForwardAuth middleware custom resource targeting the Authentik outpost endpoint.
+  // This interceptor blocks unauthenticated requests at the ingress layer.
+  const authMiddleware = new k8s.apiextensions.CustomResource(`${name}-auth-middleware`, {
+    apiVersion: "traefik.io/v1alpha1",
+    kind: "Middleware",
+    metadata: {
+      name: `${name}-auth`,
+      namespace,
+    },
+    spec: {
+      forwardAuth: {
+        address: "http://authentik-server.infrastructure.svc.cluster.local/outpost.goauthentik.io/auth/traefik",
+        trustForwardHeader: true,
+        authResponseHeaders: [
+          "X-Authentik-Username",
+          "X-Authentik-Groups",
+          "X-Authentik-Email",
+          "X-Authentik-Name",
+          "X-Authentik-Uid",
+          "Authorization",
+        ],
+      },
+    },
+  }, { dependsOn: dependencies });
+
+  // Provision the application using the self-hosted application component.
+  // The local GUI credentials inside Syncthing will be disabled since access
+  // is secured centrally via Authentik.
+  const app = new SelfhostedApp(name, {
+    namespace,
+    image: "syncthing/syncthing:1.27.8",
+    endpoints: [{
+      name: "http",
+      servicePort: 80,
+      containerPort: 8384,
+      ingress: {
+        name: "syncthing",
+        host: "syncthing.gdario.dev",
+        middlewares: [pulumi.interpolate`${namespace}-${authMiddleware.metadata.name}@kubernetescrd`],
+      },
+      healthCheck: { protocol: "tcp" },
+    }],
+    labels: {
+      [Labels.Network.AllowAuthentik]: "true",
+    },
+    env: [
+      { name: "PUID", value: "1000" },
+      { name: "PGID", value: "1000" },
+    ],
+    volumes: [
+      {
+        name: "syncthing-data",
+        mountPath: "/var/syncthing",
+        size: "2Gi",
+        pvcName: "syncthing-data-pvc",
+      },
+      // Mount Grimmory's bookdrop persistent volume directly inside Syncthing.
+      // This allows Syncthing to sync files directly from the phone into Grimmory's
+      // watch folder, avoiding the need for helper scripts or file-copying sidecars.
+      // Backup is disabled because this PVC is owned and backed up by Grimmory.
+      {
+        name: "grimmory-bookdrop",
+        mountPath: "/var/syncthing/bookdrop",
+        pvcName: "grimmory-bookdrop-pvc",
+        external: true,
+        enableBackup: false,
+      },
+    ],
+    affinity: {
+      podAffinity: {
+        requiredDuringSchedulingIgnoredDuringExecution: [
+          {
+            labelSelector: {
+              matchExpressions: [
+                {
+                  key: "app",
+                  operator: "In",
+                  values: ["grimmory"],
+                },
+              ],
+            },
+            topologyKey: "kubernetes.io/hostname",
+          },
+        ],
+      },
+    },
+    dependencies: [...dependencies, authMiddleware],
+  });
+
+  // Expose the sync protocol ports (22000 TCP and UDP) using a LoadBalancer service
+  // to allow direct client connections over the physical network interface.
+  // This enables high-speed, direct syncing on mobile/desktop without relay overhead.
+  const syncService = new k8s.core.v1.Service(`${name}-sync`, {
+    metadata: {
+      name: `${name}-sync`,
+      namespace,
+    },
+    spec: {
+      type: "LoadBalancer",
+      ports: [
+        { port: 22000, targetPort: 22000, protocol: "TCP", name: "sync-tcp" },
+        { port: 22000, targetPort: 22000, protocol: "UDP", name: "sync-udp" },
+      ],
+      selector: { app: name },
+    },
+  }, { dependsOn: app.deployment });
+
+  // Allowed from any source (from: []) because Syncthing enforces mutual TLS (mTLS) 
+  // authentication using unique, cryptographic Device IDs at the application layer.
+  const syncthingSyncPolicy = new k8s.networking.v1.NetworkPolicy("allow-syncthing-sync", {
+    metadata: {
+      name: "allow-syncthing-sync",
+      namespace,
+    },
+    spec: {
+      podSelector: {
+        matchLabels: {
+          app: name,
+        },
+      },
+      ingress: [
+        {
+          ports: [
+            { protocol: "TCP", port: 22000 },
+            { protocol: "UDP", port: 22000 },
+          ],
+        },
+      ],
+      policyTypes: ["Ingress"],
+    },
+  }, { dependsOn: app.deployment });
+
+  return {
+    deployment: app.deployment,
+    syncService,
+    syncthingSyncPolicy,
+  };
+}

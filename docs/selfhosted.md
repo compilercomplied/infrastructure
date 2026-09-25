@@ -7,7 +7,7 @@ shared-database model), see [architecture.md](./architecture.md).
 ## Services
 
 The current self-hosted applications, one module per app (all under
-`iac/selfhosted/`):
+`iac/workloads/selfhosted/`):
 
 | Workload | Public host | Data engine |
 |----------|-------------|-------------|
@@ -31,10 +31,10 @@ same module.
 Several apps share a single engine per flavor instead of running their own
 database server:
 
-- **Shared PostgreSQL** (`iac/shared-resources/shared-postgres.ts`) hosts one
+- **Shared PostgreSQL** (`iac/platform/shared-resources/shared-postgres.ts`) hosts one
   logical database + dedicated user for each app (Tandoor, Authentik, Linkwarden,
   Forgejo, LiteLLM, Outline).
-- **Shared MariaDB** (`iac/shared-resources/shared-mariadb.ts`) does the same
+- **Shared MariaDB** (`iac/platform/shared-resources/shared-mariadb.ts`) does the same
   for the MySQL-flavored app (Grimmory).
 
 Adding an app to a shared engine means registering a database + user in the
@@ -53,7 +53,7 @@ NetworkPolicy that lets the ingress reach the pods.
 Two external preconditions apply to any new public hostname:
 
 1. A matching **DNS record in Cloudflare** pointing the host at the tunnel.
-2. A **route entry in `iac/selfhosted/cloudflared.ts`** so `cloudflared` answers
+2. A **route entry in `iac/workloads/selfhosted/cloudflared.ts`** so `cloudflared` answers
    that host.
 
 Internal-only workloads (including the supporting services that back a

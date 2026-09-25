@@ -1,6 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createBackupJob } from "../maintenance/backup";
+import { createBackupJob } from "../operations/maintenance/backup";
 import { createPVC } from "./k8s-pvc";
 
 export interface BackupConsistencyHook {

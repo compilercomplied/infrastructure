@@ -16,6 +16,19 @@ project lifecycle tasks (`project-setup`, `preview-deployment`). See
 `mise.toml` for the exact tasks — in short, one command prepares a fresh checkout
 and another runs the validation dry-run against the local stack.
 
+```text
+iac/
+├── library/
+├── operations/
+├── platform/
+├── workloads/
+└── index.ts
+```
+
+`workloads/` groups application code by namespace or closely related workload domain.
+`platform/` contains cluster-wide foundations and shared stateful services.
+`library/` and `operations/` keep reusable and cross-cutting code separate from workload ownership.
+
 > **Operation guardrail:** this stack is **preview-only**. We never run
 > `pulumi up` by hand. Changes land through a pull request, and the CI preview
 > run on that PR is the source of truth that the diff is safe. The repository
@@ -41,7 +54,7 @@ Traefik is the ingress controller. TLS is automated:
 CoreDNS is customized to rewrite the cluster's internal hostnames straight to
 the Traefik service, so any pod can reach any workload by hostname without
 leaving the cluster and coming back through the tunnel. The rewrite map lives in
-`iac/selfhosted/coredns.ts`.
+`iac/platform/core/coredns.ts`.
 
 Every public Service is exposed through the shared ingress helper in
 `iac/library/ingress.ts`. The helper builds the Ingress, wires the Let's
@@ -86,9 +99,8 @@ namespace carries its own default-deny network policy (see Security).
 | `agent-sidekicks` | AI agent tooling | The MCP servers (Tandoor, Outline, Grafana, Kubernetes) and Hermes Agent |
 | `agents` / `agents-control-plane` / `agent-sandbox` | Sandboxed agents | Agent RBAC + control-plane, and the Kata-isolated sandbox for untrusted code |
 
-The namespace entry points live across `iac/` (each `configure*`/index file), and
-the agent-management namespaces are centralized in
-`iac/modules/agents/namespaces.ts`.
+The namespace entry points live under `iac/workloads/`, and the agent-management
+namespaces are centralized in `iac/workloads/agents/control-plane/namespaces.ts`.
 
 ### Why this split
 
@@ -109,7 +121,7 @@ namespace, a pod accepts no inbound traffic unless a `NetworkPolicy` explicitly
 opens a path. There is no implicit "anything in the same namespace may connect."
 
 The baseline policy is applied per namespace by
-`configureNamespaceSecurity(...)` in `iac/selfhosted/security.ts`. Per namespace
+`configureNamespaceSecurity(...)` in `iac/workloads/selfhosted/security.ts`. Per namespace
 it creates:
 
 - a **default-deny** ingress policy (matches every pod, denies all inbound),
@@ -119,7 +131,7 @@ it creates:
   reachable while a certificate is in flight.
 
 On top of the baseline, specific pods declare **label-based** grants. A shared
-label set (`Labels.Network` in `iac/selfhosted/labels.ts`) flags pods authorized
+label set (`Labels.Network` in `iac/workloads/selfhosted/labels.ts`) flags pods authorized
 to reach shared infrastructure, and the shared service's own NetworkPolicy only
 admits pods carrying the matching label:
 
@@ -134,7 +146,7 @@ opened. Cross-namespace rules constrain both the *source namespace* and the
 connect to this."
 
 > **Migration bridge (temporary):** a set of permissive *bridge* policies
-> (`iac/shared-resources/bridge-network-policies.ts`) currently allows broader
+> (`iac/platform/shared-resources/bridge-network-policies.ts`) currently allows broader
 > cross-namespace traffic between the legacy and current layouts. These exist to
 > keep the migration non-breaking and are slated for removal once fine-grained
 > policies cover every path.
@@ -143,7 +155,7 @@ Authentication to the apps is centralized in **Authentik** (`auth.gdario.dev`)
 as the OIDC provider, with **Google OAuth** as the identity source. Self-service
 signup is off — an administrator provisions users in Authentik up front, and
 those users authenticate with their existing Google accounts. Each integrating
-app is registered as an OIDC client in `iac/infrastructure/authentik.ts` and
+app is registered as an OIDC client in `iac/platform/core/authentik.ts` and
 its `templates/authentik-blueprints.yaml`.
 
 Two services intentionally bypass OIDC and authenticate with a bearer token
@@ -171,7 +183,7 @@ in the same namespace as that app (see below).
 ### Backup & recovery
 
 All state is backed up with **restic to Cloudflare R2**. The helper
-`createBackupJob` in `iac/maintenance/backup.ts` turns a *source* — a logical
+`createBackupJob` in `iac/operations/maintenance/backup.ts` turns a *source* — a logical
 database or a PVC — into a `CronJob` running a restic backup. Each database and
 important PVC declares its own backup job in the module that owns it:
 
@@ -207,8 +219,8 @@ simple, low-traffic services that would each otherwise waste a whole database
 engine. The accepted trade-off is that several apps share one engine's
 availability, but backups are centralized and regularly exercised.
 
-The shared services live in `iac/shared-resources/shared-postgres.ts` and
-`iac/shared-resources/shared-mariadb.ts`. An app opts in by adding its database +
+The shared services live in `iac/platform/shared-resources/shared-postgres.ts` and
+`iac/platform/shared-resources/shared-mariadb.ts`. An app opts in by adding its database +
 user to the relevant module and pointing at the shared in-cluster host
 (`shared-postgres.shared-resources.svc.cluster.local`).
 
@@ -225,7 +237,7 @@ The cluster hosts an AI-agent fleet, and treats it as security-critical:
   keys for every model. Its dashboard is fronted by Authentik OIDC; its
   OpenAI-compatible API endpoint uses its own bearer key. The component is
   `custom:selfhosted:HermesAgent`, declared in `iac/library/hermes-agent.ts`
-  and deployed from `iac/agent-sidekicks/hermes-agent.ts`.
+  and deployed from `iac/workloads/agents/hermes-agent.ts`.
 - **MCP servers** (`agent-sidekicks`) expose read/write tooling to agents for
   Tandoor, Outline, Grafana, and Kubernetes. They live in their own namespace,
   separate from the pods that actually *execute* arbitrary agent code.
@@ -233,10 +245,10 @@ The cluster hosts an AI-agent fleet, and treats it as security-critical:
   untrusted agent-generated code in **Kata Containers** — a real VM boundary per
   pod, not a container sandbox. Kata is installed entirely through the IaC via
   the `kata-deploy` Helm chart, which injects host runtimes and patches k3s'
-  `containerd` to register the RuntimeClass (`iac/infrastructure/index.ts`).
+  `containerd` to register the RuntimeClass (`iac/platform/core/index.ts`).
 
 Developers can model further staff and agents through the RBAC + namespace
-module (`iac/modules/agents/`), which separates the orchestrator's privileges
+module (`iac/workloads/agents/control-plane/`), which separates the orchestrator's privileges
 from the sandboxed workers that do the actual work.
 
 ---
@@ -272,16 +284,11 @@ Everything lives under `iac/`, split by responsibility:
 | Path | Contents |
 |------|----------|
 | `iac/index.ts` | Root program; wires namespaces together in dependency order |
-| `iac/shared-resources/` | Shared Postgres + MariaDB, bridge policies |
-| `iac/selfhosted/` | User-facing apps, `cloudflared` tunnel, CoreDNS, security baseline, shared labels, shared users |
-| `iac/infrastructure/` | Authentik, LiteLLM, Kata deployment, sysctl-tuner |
-| `iac/forgejo/` | Forgejo server + Actions runner |
-| `iac/agent-sidekicks/` | MCP servers + Hermes Agent |
-| `iac/library/hermes-agent.ts` | Reusable `HermesAgent` component declaration |
-| `iac/modules/agents/` | Agent namespaces, RBAC, secrets, cleanup cron |
-| `iac/monitoring/` | Prometheus, Loki, Alloy, Grafana, exporters |
-| `iac/maintenance/` | Backup jobs + scripts |
-| `iac/library/` | Reusable helpers: ingress, PVC, `SelfhostedApp` component, MCP server |
+| `iac/workloads/` | Namespace-owned application groups: selfhosted, Forgejo, monitoring, agents, and games |
+| `iac/platform/` | Cluster-wide foundations, CoreDNS/Kata/AuthentiK, and shared database services |
+| `iac/library/` | Reusable components and helpers, including `HermesAgent` and `SelfhostedApp` |
+| `iac/operations/` | Cross-cutting maintenance jobs and scripts |
+| `iac/sdks/` | Generated provider SDKs kept separate from handwritten infrastructure code |
 | `scripts/` | Standalone shell helpers (deploy, restore, …) |
 
 The repo also records the few things that still need a human hand
