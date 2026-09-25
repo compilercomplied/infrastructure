@@ -6,6 +6,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../library/selfhosted-component";
 import { Labels } from "../selfhosted/labels";
 import { postgresClientImage } from "../../platform/shared-resources/shared-postgres";
+import { forgejoSettings } from "./settings";
 
 // Load the standalone script files to satisfy the script-ownership guidelines.
 // This decouples script logic from the Pulumi infrastructure definition.
@@ -20,21 +21,7 @@ export function configureForgejo(
   const name = "forgejo";
   const image = "codeberg.org/forgejo/forgejo:16.0.1";
 
-  const config = new pulumi.Config("selfhosted");
-  const forgejoDbPassword = config.requireSecret("forgejoDbPassword");
-  const forgejoSecret = config.requireSecret("forgejo-secret");
-  const userGdarioEmail = config.requireSecret("user-gdario-email");
-  const postgresPassword = config.requireSecret("postgresPassword");
-
-  // Offline-runner secrets encode the runner UUID, so each daemon needs its own stable secret.
-  // Deriving them from the Forgejo secret preserves identity across reconciliations without
-  // allowing separate runner deployments to overwrite each other's labels in Forgejo.
-  const runnerSecret = pulumi.secret(forgejoSecret.apply(s =>
-    crypto.createHash("sha256").update(s + "runner-salt-v1").digest("hex").substring(0, 40)
-  ));
-  const androidRunnerSecret = pulumi.secret(forgejoSecret.apply(s =>
-    crypto.createHash("sha256").update(s + "android-runner-salt-v1").digest("hex").substring(0, 40)
-  ));
+  const settings = forgejoSettings;
 
   // 1. ConfigMaps for Database Init and Container Bootstrap Scripts
   const dbScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-db-init-scripts`, {
@@ -58,7 +45,7 @@ export function configureForgejo(
   }, { dependsOn: dependencies });
 
   // Generate a hash of OIDC secrets and script contents to trigger database initialization Job replacement when modified.
-  const dbInitHash = pulumi.all([forgejoDbPassword, postgresPassword, dbInitScriptContent]).apply(([dbPass, adminPass, script]) => {
+  const dbInitHash = pulumi.all([settings.databasePassword, settings.postgresMasterPassword, dbInitScriptContent]).apply(([dbPass, adminPass, script]) => {
     return crypto.createHash("sha256").update(dbPass + adminPass + script).digest("hex");
   });
 
@@ -137,8 +124,8 @@ export function configureForgejo(
       namespace,
     },
     stringData: {
-      "DB_PASSWORD": forgejoDbPassword,
-      "ADMIN_PASSWORD": postgresPassword,
+      "DB_PASSWORD": settings.databasePassword,
+      "ADMIN_PASSWORD": settings.postgresMasterPassword,
     },
   }, { dependsOn: dependencies });
 
@@ -155,43 +142,13 @@ export function configureForgejo(
       [Labels.Network.AllowAuthentik]: "true",
       "auth.gdario.dev/oidc-scopes": "offline-access-v1",
     },
-    secrets: {
-      "FORGEJO__database__PASSWD": forgejoDbPassword,
-      "AUTHENTIK_CLIENT_SECRET": forgejoSecret,
-      "USER_EMAIL": userGdarioEmail,
-      "RUNNER_SECRET": runnerSecret,
-      "ANDROID_RUNNER_SECRET": androidRunnerSecret,
-    },
-    env: [
-      { name: "FORGEJO__database__DB_TYPE", value: "postgres" },
-      { name: "FORGEJO__database__HOST", value: "shared-postgres.shared-resources.svc.cluster.local:5432" },
-      { name: "FORGEJO__database__NAME", value: name },
-      { name: "FORGEJO__database__USER", value: name },
-      { name: "FORGEJO__server__DOMAIN", value: "git.gdario.dev" },
-      { name: "FORGEJO__server__SSH_DOMAIN", value: "git.gdario.dev" },
-      { name: "FORGEJO__server__SSH_PORT", value: "2222" },
-      { name: "FORGEJO__server__SSH_LISTEN_PORT", value: "22" },
-      { name: "FORGEJO__server__ROOT_URL", value: "https://git.gdario.dev/" },
-      { name: "FORGEJO__security__INSTALL_LOCK", value: "true" },
-      { name: "FORGEJO__service__DISABLE_REGISTRATION", value: "true" },
-      { name: "FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION", value: "false" },
-      { name: "FORGEJO__service__ENABLE_BASIC_AUTHENTICATION", value: "false" },
-
-      { name: "FORGEJO__openid__ENABLE_OPENID_SIGNIN", value: "false" },
-      { name: "FORGEJO__oauth2_client__ENABLE_AUTO_REGISTRATION", value: "true" },
-      { name: "FORGEJO__oauth2_client__ACCOUNT_LINKING", value: "auto" },
-      { name: "FORGEJO__actions__ENABLED", value: "true" },
-      // Enabling push-to-create allows automation pipelines to provision repositories on the fly
-      // during their initial push, removing any manual UI interaction (ClickOps) for repo creation.
-      { name: "FORGEJO__repository__ENABLE_PUSH_CREATE_USER", value: "true" },
-      { name: "FORGEJO__repository__ENABLE_PUSH_CREATE_ORG", value: "true" },
-    ],
+    settings,
     databases: [{
       type: "postgres",
       databaseName: name,
       host: "shared-postgres.shared-resources.svc.cluster.local",
       username: name,
-      passwordSecret: forgejoDbPassword,
+      passwordSecret: settings.databasePassword,
     }],
     volumes: [
       {
@@ -427,8 +384,8 @@ export function configureForgejo(
     sshPolicy,
     internalHttpPolicy,
 
-    runnerSecret,
-    androidRunnerSecret,
+    runnerSecret: settings.secrets["RUNNER_SECRET"],
+    androidRunnerSecret: settings.secrets["ANDROID_RUNNER_SECRET"],
     pruneCronJob,
     pruneScriptsConfigMap,
   };

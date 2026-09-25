@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import * as crypto from "crypto";
 import { createLetsEncryptIngress } from "./ingress";
 import { createBackupJob } from "../operations/maintenance/backup";
 import { AppHealthCheck, createWorkloadHealthProbe } from "./workload-health-probe";
@@ -7,6 +8,18 @@ import { IngressPeerSelector, PeerIngressRule, createPeerIngressPolicies } from 
 import { createPrivateService } from "./workload-service";
 import { ManagedVolume, createManagedVolumeBackups, planManagedVolumes } from "./workload-volumes";
 import { createManagedEnvironment } from "./workload-environment";
+import { AppSettings } from "./app-settings";
+
+function environmentChecksum(values?: Record<string, pulumi.Input<string>>): pulumi.Output<string> | undefined {
+  if (!values || Object.keys(values).length === 0) {
+    return undefined;
+  }
+
+  return pulumi.output(values).apply(resolved => crypto
+    .createHash("sha256")
+    .update(JSON.stringify(Object.entries(resolved).sort(([left], [right]) => left.localeCompare(right))))
+    .digest("hex"));
+}
 
 export interface AppDatabase {
   type: "postgres" | "mariadb";
@@ -47,6 +60,7 @@ type SelfhostedAppCommonArgs = {
   image: string;
   endpoints: [AppEndpoint, ...AppEndpoint[]];
   databases?: AppDatabase[];
+  settings?: AppSettings;
   volumes?: AppVolume[];
   env?: k8s.types.input.core.v1.EnvVar[];
   config?: Record<string, pulumi.Input<string>>;
@@ -98,17 +112,21 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     const dependencies = args.dependencies || [];
     const endpoints = args.endpoints;
 
+    const config = args.settings?.config ?? args.config;
+    const secrets = args.settings?.secrets ?? args.secrets;
     const { configMap, secret, envFrom } = createManagedEnvironment({
       name,
       namespace: args.namespace,
-      config: args.config,
-      secrets: args.secrets,
+      config,
+      secrets,
       dependencies,
       parent: this,
       aliases: childAliases,
     });
     this.configMap = configMap;
     this.secret = secret;
+    const configChecksum = args.settings ? environmentChecksum(config) : undefined;
+    const secretChecksum = args.settings ? environmentChecksum(secrets) : undefined;
 
     const volConfig = planManagedVolumes({
       appName: name,
@@ -137,6 +155,8 @@ export class SelfhostedApp extends pulumi.ComponentResource {
       volConfig.volumeMounts,
       deploymentDeps,
       childOpts,
+      configChecksum,
+      secretChecksum,
     );
 
     this.service = createPrivateService({
@@ -204,7 +224,9 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     k8sVolumes: k8s.types.input.core.v1.Volume[],
     k8sVolumeMounts: k8s.types.input.core.v1.VolumeMount[],
     deploymentDeps: pulumi.Resource[],
-    childOpts: pulumi.CustomResourceOptions
+    childOpts: pulumi.CustomResourceOptions,
+    configChecksum?: pulumi.Output<string>,
+    secretChecksum?: pulumi.Output<string>,
   ): k8s.apps.v1.Deployment {
     return new k8s.apps.v1.Deployment(name, {
       metadata: { name, namespace: args.namespace },
@@ -213,7 +235,13 @@ export class SelfhostedApp extends pulumi.ComponentResource {
         strategy: args.strategy as k8s.types.input.apps.v1.DeploymentStrategy,
         selector: { matchLabels: { app: name } },
         template: {
-          metadata: { labels: { app: name, ...(args.labels || {}) } },
+          metadata: {
+            labels: { app: name, ...(args.labels || {}) },
+            annotations: {
+              ...(configChecksum ? { "homelab.gdario.dev/config-checksum": configChecksum } : {}),
+              ...(secretChecksum ? { "homelab.gdario.dev/secret-checksum": secretChecksum } : {}),
+            },
+          },
           spec: {
             serviceAccountName: args.serviceAccountName,
             automountServiceAccountToken: args.automountServiceAccountToken,

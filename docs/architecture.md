@@ -1,39 +1,13 @@
 # Cluster Architecture
 
-This document is the high-level map of the homelab k3s cluster. It describes the
-*why* and the *where*: which namespaces exist and what each one is for, the
-security and storage patterns they all follow, and how a workload travels from
-"repo" to "serving traffic." It is deliberately **not** a resource-by-resource
-inventory.
-
-The single source of truth for concrete detail is the code. Every section points
-to the Pulumi module that defines what it describes; nothing here repeats
-resource definitions. If this document and the code disagree, the code wins.
-
-The cluster is defined as code in the Pulumi project under `iac/`. The project
-is wrapped by **mise**, which manages the toolchain (pulumi, node) and the
-project lifecycle tasks (`project-setup`, `preview-deployment`). See
-`mise.toml` for the exact tasks — in short, one command prepares a fresh checkout
-and another runs the validation dry-run against the local stack.
-
 ```text
-iac/
-├── library/
-├── operations/
-├── platform/
-├── workloads/
+iac/							# iac definition for the cluster.
+├── library/			# candidates to be extracted to a library
+├── operations/		# cross-cutting code
+├── platform/			# cluster-wide foundations and shared stateful services
+├── workloads/		# app code grouped by namespace or closely related domains
 └── index.ts
 ```
-
-`workloads/` groups application code by namespace or closely related workload domain.
-`platform/` contains cluster-wide foundations and shared stateful services.
-`library/` and `operations/` keep reusable and cross-cutting code separate from workload ownership.
-
-> **Operation guardrail:** this stack is **preview-only**. We never run
-> `pulumi up` by hand. Changes land through a pull request, and the CI preview
-> run on that PR is the source of truth that the diff is safe. The repository
-> lives on the Code Forge at `git.gdario.dev` (`home/homelab-iac`).
-
 ---
 
 ## Cluster topology & ingress
@@ -85,7 +59,7 @@ ingress-helper calls, but at a glance:
 
 ## Namespaces and their purpose
 
-The cluster is partitioned by **workload purpose**, not by team or by repo. Each
+The cluster is partitioned by **workload purpose**. Each
 namespace carries its own default-deny network policy (see Security).
 
 | Namespace | Purpose | What lives there |
@@ -101,16 +75,6 @@ namespace carries its own default-deny network policy (see Security).
 
 The namespace entry points live under `iac/workloads/`, and the agent-management
 namespaces are centralized in `iac/workloads/agents/control-plane/namespaces.ts`.
-
-### Why this split
-
-Each namespace is a security boundary. Apps that take input from the internet
-(`selfhosted`) are separated from platform services (`infrastructure`) and from
-anything that can *execute* agent-generated code (`agent-sandbox`,
-`agent-sidekicks`). The split trades away a little operational simplicity for
-strong isolation precisely where isolation matters; well-understood, stable
-state can be consolidate across apps via the shared-database pattern instead of
-copying a whole engine per app.
 
 ---
 
@@ -276,20 +240,6 @@ and a new app is on the box once its PR merges and the CI-applied stack catches
 up.
 
 ---
-
-## Layout of the IaC repo
-
-Everything lives under `iac/`, split by responsibility:
-
-| Path | Contents |
-|------|----------|
-| `iac/index.ts` | Root program; wires namespaces together in dependency order |
-| `iac/workloads/` | Namespace-owned application groups: selfhosted, Forgejo, monitoring, agents, and games |
-| `iac/platform/` | Cluster-wide foundations, CoreDNS/Kata/AuthentiK, and shared database services |
-| `iac/library/` | Reusable components and helpers, including `HermesAgent` and `SelfhostedApp` |
-| `iac/operations/` | Cross-cutting maintenance jobs and scripts |
-| `iac/sdks/` | Generated provider SDKs kept separate from handwritten infrastructure code |
-| `scripts/` | Standalone shell helpers (deploy, restore, …) |
 
 The repo also records the few things that still need a human hand
 (`docs/manual-configuration.md`) and one-off recovery recipes that aren't part
