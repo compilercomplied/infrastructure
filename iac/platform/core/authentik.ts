@@ -6,32 +6,12 @@ import { createLetsEncryptIngress } from "../../library/ingress";
 import { createPVC } from "../../library/k8s-pvc";
 import { createBackupJob } from "../../operations/maintenance/backup";
 import { Labels } from "../../workloads/selfhosted/labels";
+import { authentikSettings } from "./authentik-settings";
 
 export function configureAuthentik(
   namespace: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = []
 ) {
-  const config = new pulumi.Config("selfhosted");
-  const authentikSecretKey = config.requireSecret("authentikSecretKey");
-  const authentikDbPassword = config.requireSecret("authentikDbPassword");
-  const acmeEmail = config.requireSecret("acmeEmail");
-  const authentikAdminPassword = config.requireSecret("authentikAdminPassword");
-  const authentikRedisPassword = config.requireSecret("authentikRedisPassword");
-
-  // Read secrets needed for client OIDC credentials and user profiles in the blueprints.
-  // We manage these values centrally in Pulumi to ensure credential strength and consistency.
-  const tandooriSecret = config.requireSecret("tandoori-secret");
-  const linkwardenSecret = config.requireSecret("linkwarden-secret");
-  const grafanaSecret = config.requireSecret("grafana-secret");
-  const grimmorySecret = config.requireSecret("grimmory-secret");
-  const hermesSecret = config.requireSecret("hermesSecret");
-  const forgejoSecret = config.requireSecret("forgejo-secret");
-  const litellmSecret = config.requireSecret("litellmSecret");
-  const googleClientId = config.require("googleClientId");
-  const googleClientSecret = config.requireSecret("googleClientSecret");
-  const userGdarioEmail = config.requireSecret("user-gdario-email");
-  const userAndreaEmail = config.requireSecret("user-andrea-email");
-
   const name = "authentik";
   const image = "ghcr.io/goauthentik/server:2026.5.2";
 
@@ -54,24 +34,7 @@ export function configureAuthentik(
       name: `${name}-secrets`,
       namespace,
     },
-    stringData: {
-      "AUTHENTIK_SECRET_KEY": authentikSecretKey,
-      "AUTHENTIK_POSTGRESQL__PASSWORD": authentikDbPassword,
-      "AUTHENTIK_BOOTSTRAP_PASSWORD": authentikAdminPassword,
-      "AUTHENTIK_BOOTSTRAP_EMAIL": acmeEmail,
-      "AUTHENTIK_REDIS__PASSWORD": authentikRedisPassword,
-      "AUTHENTIK_TANDOOR_CLIENT_SECRET": tandooriSecret,
-      "AUTHENTIK_LINKWARDEN_CLIENT_SECRET": linkwardenSecret,
-      "AUTHENTIK_GRAFANA_CLIENT_SECRET": grafanaSecret,
-      "AUTHENTIK_GRIMMORY_CLIENT_SECRET": grimmorySecret,
-      "AUTHENTIK_HERMES_CLIENT_SECRET": hermesSecret,
-      "AUTHENTIK_FORGEJO_CLIENT_SECRET": forgejoSecret,
-      "AUTHENTIK_LITELLM_CLIENT_SECRET": litellmSecret,
-      "AUTHENTIK_GOOGLE_CLIENT_ID": googleClientId,
-      "AUTHENTIK_GOOGLE_CLIENT_SECRET": googleClientSecret,
-      "AUTHENTIK_USER_GDARIO_EMAIL": userGdarioEmail,
-      "AUTHENTIK_USER_ANDREA_EMAIL": userAndreaEmail,
-    },
+    stringData: authentikSettings.secrets,
   }, { dependsOn: dependencies });
 
 	// Redis is a hard dependency for authentik.
@@ -119,157 +82,24 @@ export function configureAuthentik(
     },
   }, { dependsOn: redisDeployment });
 
+  const bootstrapOnlySecrets = new Set([
+    "AUTHENTIK_BOOTSTRAP_PASSWORD",
+    "AUTHENTIK_BOOTSTRAP_EMAIL",
+  ]);
   const commonEnv = [
     { name: "AUTHENTIK_REDIS__HOST", value: redisService.metadata.name },
-    { name: "AUTHENTIK_POSTGRESQL__HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
-    { name: "AUTHENTIK_POSTGRESQL__USER", value: "authentik" },
-    { name: "AUTHENTIK_POSTGRESQL__NAME", value: "authentik" },
-    { name: "AUTHENTIK_POSTGRESQL__PORT", value: "5432" },
-    { name: "AUTHENTIK_ERROR_REPORTING__ENABLED", value: "false" },
-    {
-      name: "AUTHENTIK_SECRET_KEY",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_SECRET_KEY",
+    ...Object.entries(authentikSettings.config).map(([name, value]) => ({ name, value })),
+    ...Object.keys(authentikSettings.secrets)
+      .filter(name => !bootstrapOnlySecrets.has(name))
+      .map(name => ({
+        name,
+        valueFrom: {
+          secretKeyRef: {
+            name: secrets.metadata.name,
+            key: name,
+          },
         },
-      },
-    },
-    {
-      name: "AUTHENTIK_POSTGRESQL__PASSWORD",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_POSTGRESQL__PASSWORD",
-        },
-      },
-    },
-    // {
-    //   name: "AUTHENTIK_BOOTSTRAP_PASSWORD",
-    //   valueFrom: {
-    //     secretKeyRef: {
-    //       name: secrets.metadata.name,
-    //       key: "AUTHENTIK_BOOTSTRAP_PASSWORD",
-    //     },
-    //   },
-    // },
-    // {
-    //   name: "AUTHENTIK_BOOTSTRAP_EMAIL",
-    //   valueFrom: {
-    //     secretKeyRef: {
-    //       name: secrets.metadata.name,
-    //       key: "AUTHENTIK_BOOTSTRAP_EMAIL",
-    //     },
-    //   },
-    // },
-    {
-      name: "AUTHENTIK_REDIS__PASSWORD",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_REDIS__PASSWORD",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_TANDOOR_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_TANDOOR_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_LINKWARDEN_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_LINKWARDEN_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_GRAFANA_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_GRAFANA_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_GRIMMORY_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_GRIMMORY_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_HERMES_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_HERMES_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_GOOGLE_CLIENT_ID",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_GOOGLE_CLIENT_ID",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_GOOGLE_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_GOOGLE_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_USER_GDARIO_EMAIL",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_USER_GDARIO_EMAIL",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_USER_ANDREA_EMAIL",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_USER_ANDREA_EMAIL",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_FORGEJO_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_FORGEJO_CLIENT_SECRET",
-        },
-      },
-    },
-    {
-      name: "AUTHENTIK_LITELLM_CLIENT_SECRET",
-      valueFrom: {
-        secretKeyRef: {
-          name: secrets.metadata.name,
-          key: "AUTHENTIK_LITELLM_CLIENT_SECRET",
-        },
-      },
-    },
+      })),
   ];
 
   // Load the standalone declarative YAML blueprint and package it in a ConfigMap.
@@ -395,7 +225,7 @@ export function configureAuthentik(
       databaseName: "authentik",
       dbHost: "shared-postgres.shared-resources.svc.cluster.local",
       dbUser: "authentik",
-      dbPasswordSecret: authentikDbPassword,
+      dbPasswordSecret: authentikSettings.databasePassword,
     },
     dependencies: [...dependencies, serverDeployment],
   });
