@@ -2,15 +2,14 @@ import * as pulumi from "@pulumi/pulumi";
 import { HermesAgent } from "../../library/hermes-agent";
 import { Labels } from "../selfhosted/labels";
 import { getAuthorizedUsers } from "../selfhosted/users";
+import { HermesAgentSettings } from "./hermes-agent-settings";
 
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = [],
 ) {
-  const config = new pulumi.Config("selfhosted");
-  const agentsConfig = new pulumi.Config("agents");
   const users = getAuthorizedUsers();
-  const oidcClientSecret = config.requireSecret("hermesSecret");
+  const settings = new HermesAgentSettings(users.map(user => user.telegramId));
 
   // Pulumi previews authorize server-side dry runs using the same Kubernetes verbs as an
   // update, so Hermes needs cluster-wide access even though it does not apply changes.
@@ -37,34 +36,12 @@ export function configureHermesAgent(
           ingress: { name: "hermes-agent-api", host: "hermes-api.gdario.dev" },
         },
       ],
-      config: {
-        "TELEGRAM_ALLOWED_USERS": pulumi.all(users.map(user => user.telegramId)).apply(chats => chats.join(",")),
-        "HERMES_DASHBOARD": "1",
-        "HERMES_DASHBOARD_PUBLIC_URL": "https://hermes.gdario.dev",
-        "HERMES_DASHBOARD_OIDC_ISSUER": "https://auth.gdario.dev/application/o/hermes/",
-        "HERMES_DASHBOARD_OIDC_CLIENT_ID": "hermes-client-id",
-        "HERMES_DASHBOARD_OIDC_SCOPES": "openid profile email offline_access",
-        "API_SERVER_ENABLED": "true",
-        "API_SERVER_HOST": "0.0.0.0",
-        "API_SERVER_CORS_ORIGINS": "https://hermes.gdario.dev",
-        "CUSTOM_BASE_URL": "http://litellm.infrastructure.svc.cluster.local/v1",
-        "PULUMI_BACKEND_URL": "https://api.pulumi.com",
-        "DOCKER_HOST": "tcp://localhost:2375",
-      },
+      settings,
       env: [{
         // ConfigMap envFrom does not replace the image's PATH, so this must be an explicit env var.
         name: "PATH",
         value: "/opt/data/profiles/engineer/home/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
       }],
-      secrets: {
-        "CUSTOM_API_KEY": config.requireSecret("hermesLitellmApiKey"),
-        "DEEPSEEK_API_KEY": config.requireSecret("deepseekApiKey"),
-        "TELEGRAM_BOT_TOKEN": config.requireSecret("telegramBotToken"),
-        "API_SERVER_KEY": oidcClientSecret,
-        "HERMES_DASHBOARD_OIDC_CLIENT_SECRET": oidcClientSecret,
-        "PULUMI_CONFIG_PASSPHRASE": agentsConfig.requireSecret("pulumiPassphrase"),
-        "PULUMI_ACCESS_TOKEN": agentsConfig.requireSecret("pulumiAccessToken"),
-      },
       labels: {
         [Labels.Network.AllowAuthentik]: "true",
       },

@@ -2,6 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../library/selfhosted-component";
 import { Labels } from "./labels";
+import { syncthingSettings } from "./syncthing-settings";
 
 // Syncthing Deployment & Services Configuration.
 // This sets up a future-proof personal sync service for Obsidian and other vaults.
@@ -56,10 +57,7 @@ export function configureSyncthing(
     labels: {
       [Labels.Network.AllowAuthentik]: "true",
     },
-    env: [
-      { name: "PUID", value: "1000" },
-      { name: "PGID", value: "1000" },
-    ],
+    settings: syncthingSettings,
     volumes: [
       {
         name: "syncthing-data",

@@ -5,6 +5,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { SelfhostedApp } from "../../library/selfhosted-component";
 import { Labels } from "./labels";
+import { GrimmorySettings } from "./grimmory-settings";
 
 export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.2.0";
 export const grimmoryMariaDbImage = "mariadb:11.4";
@@ -14,9 +15,8 @@ export function configureGrimmory(
   mariadbService: k8s.core.v1.Service,
   dependencies: pulumi.Resource[] = []
 ) {
-  const config = new pulumi.Config("selfhosted");
-  const grimmoryDbPassword = config.requireSecret("grimmoryDbPassword");
-  const grimmorySecret = config.requireSecret("grimmory-secret");
+  const mariadbHost = pulumi.interpolate`${mariadbService.metadata.name}.${mariadbService.metadata.namespace}.svc.cluster.local`;
+  const settings = new GrimmorySettings();
 
   // Configure the frontend/application using the self-hosted application component.
   // Standard volumes for book storage, watched folder (bookdrop), and application metadata.
@@ -28,28 +28,14 @@ export function configureGrimmory(
       [Labels.Network.AllowMariaDb]: "true",
       [Labels.Network.AllowAuthentik]: "true",
     },
-    secrets: {
-      "DATABASE_PASSWORD": grimmoryDbPassword,
-      "OIDC_CLIENT_SECRET": grimmorySecret,
-    },
-    env: [
-      {
-        name: "DATABASE_URL",
-        value: pulumi.interpolate`jdbc:mariadb://${mariadbService.metadata.name}.${mariadbService.metadata.namespace}.svc.cluster.local:3306/grimmory`,
-      },
-      { name: "DATABASE_USERNAME", value: "grimmory" },
-      { name: "USER_ID", value: "1000" },
-      { name: "GROUP_ID", value: "1000" },
-      { name: "TZ", value: "Europe/Rome" },
-      { name: "DISK_TYPE", value: "LOCAL" },
-    ],
+    settings,
     databases: [
       {
         type: "mariadb",
         databaseName: "grimmory",
-        host: pulumi.interpolate`${mariadbService.metadata.name}.${mariadbService.metadata.namespace}.svc.cluster.local`,
+        host: mariadbHost,
         username: "grimmory",
-        passwordSecret: grimmoryDbPassword,
+        passwordSecret: settings.secrets["DATABASE_PASSWORD"],
         clientImage: grimmoryMariaDbImage,
       }
     ],
@@ -90,7 +76,7 @@ export function configureGrimmory(
     },
   }, { dependsOn: dependencies });
 
-  const patchHash = pulumi.all([grimmorySecret, patchScriptContent]).apply(([secret, script]) => {
+  const patchHash = pulumi.all([settings.secrets["OIDC_CLIENT_SECRET"], patchScriptContent]).apply(([secret, script]) => {
     return crypto.createHash("sha256").update(secret + script).digest("hex");
   });
 
@@ -165,4 +151,3 @@ export function configureGrimmory(
     patchJob,
   };
 }
-
