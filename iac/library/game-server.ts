@@ -4,7 +4,7 @@ import { createManagedEnvironment } from "./workload-environment";
 import { createWorkloadHealthProbe, WorkloadHealthCheck } from "./workload-health-probe";
 import { PeerIngressRule, createPeerIngressPolicies } from "./workload-network-policy";
 import { createPrivateService } from "./workload-service";
-import { ManagedVolume, createManagedVolumeBackups, planManagedVolumes } from "./workload-volumes";
+import { createManagedVolumeBackups, planManagedVolumes } from "./workload-volumes";
 
 export type GameServerProtocol = "TCP" | "UDP" | "SCTP";
 
@@ -23,23 +23,33 @@ export interface GameServerLanEndpoint {
   servicePort: number;
 }
 
-export interface GameServerStateVolume extends ManagedVolume {
+export interface GameServerStorageMount {
   mountPath: string;
+  subPath?: string;
+}
+
+export interface GameServerStorage {
+  name: string;
+  mounts: [GameServerStorageMount, ...GameServerStorageMount[]];
+  size?: string;
+  storageClassName?: string;
+  accessModes?: string[];
+  pvcName?: string;
+  enableBackup?: boolean;
 }
 
 export interface GameServerArgs {
   namespace: pulumi.Input<string>;
   image: string;
   endpoints: [GameServerEndpoint, ...GameServerEndpoint[]];
-  stateVolume: GameServerStateVolume;
-  volumes?: ManagedVolume[];
+  storage: [GameServerStorage, ...GameServerStorage[]];
   env?: k8s.types.input.core.v1.EnvVar[];
   config?: Record<string, pulumi.Input<string>>;
   secrets?: Record<string, pulumi.Input<string>>;
   command?: string[];
   args?: string[];
   resources: k8s.types.input.core.v1.ResourceRequirements;
-  healthCheck: Extract<WorkloadHealthCheck, { protocol: "tcp" }> & { endpoint: string };
+  healthCheck?: Extract<WorkloadHealthCheck, { protocol: "tcp" }> & { endpoint: string };
   service: string;
   labels?: Record<string, string>;
   dependencies?: pulumi.Resource[];
@@ -71,11 +81,28 @@ export class GameServer extends pulumi.ComponentResource {
     if (!args.resources.requests || !args.resources.limits) {
       throw new Error(`Game server ${name} requires CPU and memory requests and limits.`);
     }
-    if (args.stateVolume.external || args.stateVolume.isEphemeral || args.stateVolume.enableBackup === false || !args.stateVolume.mountPath) {
-      throw new Error(`Game server ${name} requires a managed, mounted, backup-enabled state volume.`);
+
+    if (args.storage.some(storage => storage.enableBackup === false && storage.mounts.some(mount => !mount.subPath))) {
+      throw new Error(`Game server ${name} can disable backups only for storage mounted through subPaths.`);
     }
-    if (args.volumes?.some(volume => volume.name === args.stateVolume.name)) {
-      throw new Error(`Game server ${name} state volume ${args.stateVolume.name} must not be repeated in auxiliary volumes.`);
+    if (args.storage.some(storage => storage.mounts.some(mount => !mount.mountPath || mount.mountPath === "/"))) {
+      throw new Error(`Game server ${name} storage mounts require non-root mount paths.`);
+    }
+    if (args.storage.some(storage => storage.mounts.some(mount => mount.subPath?.startsWith("/")))) {
+      throw new Error(`Game server ${name} storage subPaths must be relative paths.`);
+    }
+    if (args.storage.some(storage => storage.mounts.some(mount => mount.subPath?.split("/").includes("..")))) {
+      throw new Error(`Game server ${name} storage subPaths must not traverse parent directories.`);
+    }
+    if (args.storage.some(storage => storage.mounts.length > 1 && storage.mounts.some(mount => !mount.subPath))) {
+      throw new Error(`Game server ${name} shared storage mounts require subPaths on every mount.`);
+    }
+
+    if (new Set(args.storage.map(storage => storage.name)).size !== args.storage.length) {
+      throw new Error(`Game server ${name} storage names must be unique.`);
+    }
+    if (new Set(args.storage.flatMap(storage => storage.mounts.map(mount => mount.mountPath))).size !== args.storage.flatMap(storage => storage.mounts.map(mount => mount.mountPath)).length) {
+      throw new Error(`Game server ${name} storage mount paths must be unique.`);
     }
 
     const dependencies = args.dependencies ?? [];
@@ -94,10 +121,23 @@ export class GameServer extends pulumi.ComponentResource {
     const volumePlan = planManagedVolumes({
       appName: name,
       namespace: args.namespace,
-      volumes: [args.stateVolume, ...(args.volumes ?? [])],
+      volumes: args.storage.map(storage => ({
+        name: storage.name,
+        mountPath: storage.mounts[0].mountPath,
+        size: storage.size,
+        storageClassName: storage.storageClassName,
+        accessModes: storage.accessModes,
+        pvcName: storage.pvcName,
+        enableBackup: storage.enableBackup,
+      })),
       dependencies,
       parent: this,
     });
+    volumePlan.volumeMounts.splice(0, volumePlan.volumeMounts.length, ...args.storage.flatMap(storage => storage.mounts.map(mount => ({
+      name: storage.name,
+      mountPath: mount.mountPath,
+      subPath: mount.subPath,
+    }))));
     this.pvcs = volumePlan.pvcs;
 
     const deploymentDependencies = [...dependencies, ...this.pvcs];
@@ -120,6 +160,13 @@ export class GameServer extends pulumi.ComponentResource {
             securityContext: args.podSecurityContext,
             nodeSelector: args.nodeSelector,
             affinity: args.affinity,
+            initContainers: args.storage.some(storage => storage.mounts.some(mount => mount.subPath)) ? [{
+              name: "init-storage",
+              image: "docker.io/library/busybox@sha256:b7f3d86d6e84fc17718c48bcde1450807faa2d56704205c697b4bd5df7b9e29f",
+              command: ["sh", "-c", args.storage.flatMap(storage => storage.mounts.map(mount => mount.subPath)).filter((subPath): subPath is string => Boolean(subPath)).map(subPath => `mkdir -p /data/${subPath}`).join(" && ")],
+              volumeMounts: args.storage.filter(storage => storage.mounts.some(mount => mount.subPath)).map(storage => ({ name: storage.name, mountPath: "/data" })),
+              resources: { requests: { cpu: "1m", memory: "4Mi" }, limits: { cpu: "10m", memory: "16Mi" } },
+            }] : undefined,
             containers: [{
               name,
               image: args.image,

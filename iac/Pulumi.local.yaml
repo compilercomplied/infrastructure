@@ -117,3 +117,5 @@ config:
   selfhosted:ntfyAdminPasswordHash:
     secure: v1:O9b7hke/nuFuqbG7:JBmnzx/TLEuh2jWup4lQgDQvtK9UnSL+AaouC5KLHbiNIUxRzrvlebKxJ9uDG1qo46xuAzqk+d2tIIc6N5JVC7TMg1QEQvB0pCFLpQ==
   selfhosted:cloudflareZoneId: 12d9c95687771964b740e92adab7ac56
+  selfhosted:valheimServerPassword:
+    secure: v1:Xkmmgw+nUqie9WZc:ZCl+FgvhU0ggfwH5JfLyTsGzGt3WeFgAT2Q=

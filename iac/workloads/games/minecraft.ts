@@ -17,13 +17,12 @@ export function configureMinecraft(platform: GamePlatform) {
       containerPort: minecraftPort,
       protocol: "TCP",
     }],
-    stateVolume: {
+    storage: [{
       name: "world",
-      mountPath: "/data",
+      mounts: [{ mountPath: "/data" }],
       size: "30Gi",
       storageClassName: "local-path",
-      enableBackup: true,
-    },
+    }],
     env: [
       { name: "EULA", value: "TRUE" },
       // Keep membership on the backed-up world volume and manage it with RCON;

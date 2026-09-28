@@ -13,6 +13,7 @@ import { configureAgentSidekicks } from "./workloads/agents";
 import { DirectDnsReconciler } from "./library/direct-dns-reconciler";
 import { GamePlatform } from "./library/game-platform";
 import { configureMinecraft } from "./workloads/games/minecraft";
+import { configureValheim } from "./workloads/games/valheim";
 
 const { namespace } = configureAgents();
 
@@ -31,8 +32,7 @@ const infrastructure = configureInfrastructure();
 const forgejo = configureForgejo([sharedResources.postgres]);
 
 const gamePlatform = new GamePlatform("games");
-// Disable minecraft server. Pending better way to tackle server toggling.
-// configureMinecraft(gamePlatform);
+configureValheim(gamePlatform);
 
 const directDnsConfig = new pulumi.Config("selfhosted");
 const directDnsRecords = [
