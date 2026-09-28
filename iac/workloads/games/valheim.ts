@@ -61,7 +61,9 @@ export function configureValheim(platform: GamePlatform) {
         command: [
           "/usr/local/bin/valheim-status",
           "--host", "127.0.0.1",
-          "--port", String(valheimQueryPort),
+          // The image's status client queries the dedicated server port; the
+          // separate query endpoint times out even after the server is ready.
+          "--port", String(valheimGamePort),
           "--timeout-is-error",
         ],
       },
