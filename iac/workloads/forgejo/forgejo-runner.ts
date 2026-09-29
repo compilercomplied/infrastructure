@@ -43,6 +43,7 @@ runner:
     DOCKER_HOST: DOCKER_HOST_REPLACE_ME
   labels:
     - "custom-runner:docker://catthehacker/ubuntu:act-latest"
+    - "docker:docker://catthehacker/ubuntu:act-latest"
     - "ubuntu-latest:docker://catthehacker/ubuntu:act-latest"
     - "ubuntu-22.04:docker://catthehacker/ubuntu:act-latest"
     - "ubuntu-20.04:docker://catthehacker/ubuntu:act-latest"
