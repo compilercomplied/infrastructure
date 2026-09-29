@@ -13,7 +13,6 @@ import { configureAgentSidekicks } from "./workloads/agents";
 import { DirectDnsReconciler } from "./library/direct-dns-reconciler";
 import { GamePlatform } from "./library/game-platform";
 import { configureMinecraft } from "./workloads/games/minecraft";
-import { configureValheim } from "./workloads/games/valheim";
 
 const { namespace } = configureAgents();
 
@@ -32,7 +31,7 @@ const infrastructure = configureInfrastructure();
 const forgejo = configureForgejo([sharedResources.postgres]);
 
 const gamePlatform = new GamePlatform("games");
-configureValheim(gamePlatform);
+configureMinecraft(gamePlatform);
 
 const directDnsConfig = new pulumi.Config("selfhosted");
 const directDnsRecords = [

@@ -28,7 +28,12 @@ export function configureMinecraft(platform: GamePlatform) {
       // Keep membership on the backed-up world volume and manage it with RCON;
       // a static IaC list would overwrite player changes on later rollouts.
       { name: "ENABLE_WHITELIST", value: "true" },
+      // Fabric keeps gameplay changes reproducible for every player; these
+      // server-side optimizations improve tick stability without changing play.
+      { name: "TYPE", value: "FABRIC" },
       { name: "VERSION", value: "26.3" },
+      { name: "MODRINTH_PROJECTS", value: "fabric-api\nlithium\nferrite-core" },
+      { name: "MODRINTH_DOWNLOAD_DEPENDENCIES", value: "required" },
       { name: "MEMORY", value: "6G" },
       { name: "VIEW_DISTANCE", value: "10" },
       { name: "SIMULATION_DISTANCE", value: "6" },
