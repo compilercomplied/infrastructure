@@ -364,6 +364,19 @@ entries:
   # ---------------------------------------------------------------------------
   # Windshift SSO (OIDC)
   # ---------------------------------------------------------------------------
+  # Authentik 2025.10+ intentionally emits email_verified=false from its managed
+  # email mapping. Windshift refuses to link an OIDC identity to the bootstrap
+  # administrator without a verified-email claim, so this client-specific mapping
+  # treats Authentik's locally administered email as authoritative.
+  - model: authentik_providers_oauth2.scopemapping
+    id: windshift-email-scope
+    identifiers:
+      name: Windshift verified email
+    attrs:
+      scope_name: email
+      expression: |
+        return {"email": request.user.email, "email_verified": True}
+
   - model: authentik_providers_oauth2.oauth2provider
     id: windshift-provider
     identifiers:
@@ -381,7 +394,7 @@ entries:
       property_mappings:
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
         - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
-        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+        - !KeyOf windshift-email-scope
       grant_types:
         - authorization_code
       access_token_validity: hours=1
