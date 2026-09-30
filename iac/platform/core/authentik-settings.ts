@@ -32,6 +32,7 @@ export class AuthentikSettings implements AppSettings {
       "AUTHENTIK_FORGEJO_CLIENT_SECRET": config.requireSecret("forgejo-secret"),
       "AUTHENTIK_LITELLM_CLIENT_SECRET": config.requireSecret("litellmSecret"),
       "AUTHENTIK_MEMOS_CLIENT_SECRET": config.requireSecret("memosOidcClientSecret"),
+      "AUTHENTIK_WINDSHIFT_CLIENT_SECRET": config.requireSecret("windshiftOidcClientSecret"),
     };
   }
 }

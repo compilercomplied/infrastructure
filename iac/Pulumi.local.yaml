@@ -123,3 +123,9 @@ config:
     secure: v1:zN0/g9ZvYV2EPxAB:GXCKSxGfVtjFSgMxbdcw9qbhrvyC5Nt4hjCf2qsRc4xNLWHtkzanwo5aVW9pkctS
   selfhosted:memosOidcClientSecret:
     secure: v1:GDt6KuKKJa+/nTqw:mYMktVBu5LSxqegeBv7ho9Lo9dH63pPGYtHf7lrElbcEdXSyb/hsERe0AnZHHRq1
+  selfhosted:windshiftSecret:
+    secure: v1:/6IDvwTFQ7rGUQ3d:6eO/o/8/+Sfy5kCvDWXE6DERfUjmeU5zvrUoHNITGJVv09LYzkccPMNdLoYWMyiGquHfTYtdhadvetDLPUj8qpyHR7O3IR2NNISAYE5/hlQ=
+  selfhosted:windshiftOidcClientSecret:
+    secure: v1:e6Q3xBSE43VsnKI1:CY/rhlfj28pEr7zDIm1QU6oxc19YQDneCLJaUoBj+pJMF4H9g/iTv24t38E3VBORHU8f/SrOl1ISuzGeRSpiZ675nEwTmzBfVr+999BV71g=
+  selfhosted:windshiftBootstrapPassword:
+    secure: v1:4WiAqbM6ZB5CXj46:NsYdjAJYfNu5I+xA2goI7f2ovGE8DZ5AH3n4MtgelZDQMnA9v8qIFrvEM+KQq7+SIZyZZTHgBYXmGiNA+4XGty8JUVSC/fJbnvKHnaapPz0=
