@@ -87,6 +87,11 @@ type SelfhostedAppCommonArgs = {
   additionalContainers?: k8s.types.input.core.v1.Container[];
   additionalVolumes?: k8s.types.input.core.v1.Volume[];
   additionalVolumeMounts?: k8s.types.input.core.v1.VolumeMount[];
+  // Applications that read mounted configuration only once at process start need a
+  // rollout when that configuration changes. A checksum passed here lands on the Pod
+  // template so an update replaces the Pods instead of silently leaving the old
+  // configuration in service.
+  podAnnotations?: Record<string, pulumi.Input<string>>;
   childAliases?: pulumi.Alias[];
 };
 
@@ -241,6 +246,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             annotations: {
               ...(configChecksum ? { "homelab.gdario.dev/config-checksum": configChecksum } : {}),
               ...(secretChecksum ? { "homelab.gdario.dev/secret-checksum": secretChecksum } : {}),
+              ...(args.podAnnotations || {}),
             },
           },
           spec: {

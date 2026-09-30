@@ -119,3 +119,7 @@ config:
   selfhosted:cloudflareZoneId: 12d9c95687771964b740e92adab7ac56
   selfhosted:valheimServerPassword:
     secure: v1:Xkmmgw+nUqie9WZc:ZCl+FgvhU0ggfwH5JfLyTsGzGt3WeFgAT2Q=
+  selfhosted:memosDbPassword:
+    secure: v1:zN0/g9ZvYV2EPxAB:GXCKSxGfVtjFSgMxbdcw9qbhrvyC5Nt4hjCf2qsRc4xNLWHtkzanwo5aVW9pkctS
+  selfhosted:memosOidcClientSecret:
+    secure: v1:GDt6KuKKJa+/nTqw:mYMktVBu5LSxqegeBv7ho9Lo9dH63pPGYtHf7lrElbcEdXSyb/hsERe0AnZHHRq1

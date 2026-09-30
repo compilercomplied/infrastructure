@@ -17,6 +17,7 @@ The current self-hosted applications, one module per app (all under
 | Outline (wiki) | `outline.gdario.dev` | Redis + MinIO (own) |
 | Syncthing | `syncthing.gdario.dev` | own PVC (forward-auth middleware) |
 | ntfy (notifications) | `notifications.gdario.dev` | own PVC (cache and auth database) |
+| Memos (notes) | `notes.gdario.dev` | shared PostgreSQL + own PVC (attachments) |
 
 Each app is declared through the reusable **`SelfhostedApp` component**
 (`iac/library/selfhosted-component.ts`), which takes one compact config and
@@ -33,7 +34,7 @@ database server:
 
 - **Shared PostgreSQL** (`iac/platform/shared-resources/shared-postgres.ts`) hosts one
   logical database + dedicated user for each app (Tandoor, Authentik, Linkwarden,
-  Forgejo, LiteLLM, Outline).
+  Forgejo, LiteLLM, Outline, Memos).
 - **Shared MariaDB** (`iac/platform/shared-resources/shared-mariadb.ts`) does the same
   for the MySQL-flavored app (Grimmory).
 
@@ -75,6 +76,25 @@ Sign in as `gdario` at `https://notifications.gdario.dev/app`, then create a
 token-only publisher user and restrict it to its notification topic. Keep that
 token in the work laptop's secret store. The ntfy iOS app uses `ntfy.sh` only
 to wake the app; it retrieves messages from `notifications.gdario.dev`.
+
+### Memos sign-in
+
+Memos reads SSO, its sign-in policy, and its access mode from JSON files mounted
+at `/etc/secrets` (`iac/workloads/selfhosted/memos.ts`), because it has no
+environment variable for them. Keeping those files in IaC also makes the
+instance API reject edits to them. Two consequences are worth knowing before the
+first sign-in:
+
+- The first visitor creates the **owner account** on the setup page with a
+  username and password. This is the one password sign-in Memos keeps available,
+  and the documented recovery path if Authentik is unreachable.
+- Every other account is created on first SSO sign-in through the `Authentik`
+  provider, which matches users on the Authentik `sub` claim so an account
+  survives a username rename.
+
+The access mode is pinned to private, so anonymous visitors get the sign-in page
+instead of an Explore feed. Change it in the same deployment file if public
+sharing is ever wanted; the API will not change it.
 
 ## Notes the code encodes
 

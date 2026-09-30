@@ -51,6 +51,7 @@ ingress-helper calls, but at a glance:
 | `outline.gdario.dev` | Outline (wiki) | `selfhosted` |
 | `syncthing.gdario.dev` | Syncthing | `selfhosted` |
 | `notifications.gdario.dev` | ntfy notifications | `selfhosted` |
+| `notes.gdario.dev` | Memos (notes) | `selfhosted` |
 | `grafana.gdario.dev` | Grafana | `monitoring` |
 | `litellm.gdario.dev` | LiteLLM (LLM gateway) | `infrastructure` |
 | `hermes.gdario.dev` / `hermes-api.gdario.dev` | Hermes Agent | `agent-sidekicks` |
