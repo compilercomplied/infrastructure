@@ -13,6 +13,7 @@ import { configureAgentSidekicks } from "./workloads/agents";
 import { DirectDnsReconciler } from "./library/direct-dns-reconciler";
 import { GamePlatform } from "./library/game-platform";
 import { configureMinecraft } from "./workloads/games/minecraft";
+import { configureKvmDevicePlugin } from "./platform/core/kvm-device-plugin";
 
 const { namespace } = configureAgents();
 
@@ -53,4 +54,5 @@ if (directDnsRecords.length > 0) {
 }
 
 // Phase 2: Stateless Agent & MCP Migration
-const sidekicks = configureAgentSidekicks(selfhosted);
+const kvmDevicePlugin = configureKvmDevicePlugin();
+const sidekicks = configureAgentSidekicks(selfhosted, kvmDevicePlugin);

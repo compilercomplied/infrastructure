@@ -5,7 +5,7 @@ import { configureGrafanaMcp } from "./grafana-mcp";
 import { configureKubernetesMcp } from "./kubernetes-mcp";
 import { configureHermesAgent } from "./hermes-agent";
 
-export function configureAgentSidekicks(selfhosted: any) {
+export function configureAgentSidekicks(selfhosted: any, kvmDevicePlugin: k8s.apps.v1.DaemonSet) {
   const namespaceName = "agent-sidekicks";
 
   const tandoorMcp = configureTandoorMcp(namespaceName, [selfhosted.postgres, selfhosted.tandoor.deployment]);
@@ -19,6 +19,7 @@ export function configureAgentSidekicks(selfhosted: any) {
     grafanaMcp.service,
     kubernetesMcp.service,
     outlineMcp.service,
+    kvmDevicePlugin,
   ]);
 
   return {

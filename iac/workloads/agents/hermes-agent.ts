@@ -4,6 +4,8 @@ import { Labels } from "../selfhosted/labels";
 import { getAuthorizedUsers } from "../selfhosted/users";
 import { HermesAgentSettings } from "./hermes-agent-settings";
 
+const androidImage = "git.gdario.dev/hermes/hermes-android@sha256:30298bc5b07f19459d36783a1ecbce8acf0733fab315ba8f2c0bc898b0179b97";
+
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = [],
@@ -21,7 +23,11 @@ export function configureHermesAgent(
       clusterRoleName: "cluster-admin",
     },
     app: {
-      image: "nousresearch/hermes-agent:latest",
+      image: androidImage,
+      imagePullPolicy: "IfNotPresent",
+      nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
+      podSecurityContext: { supplementalGroups: [990] },
+      containerSecurityContext: { privileged: false },
       endpoints: [
         {
           name: "http",
@@ -40,18 +46,30 @@ export function configureHermesAgent(
       env: [{
         // ConfigMap envFrom does not replace the image's PATH, so this must be an explicit env var.
         name: "PATH",
-        value: "/opt/data/profiles/engineer/home/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        value: "/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/emulator:/opt/android-sdk/platform-tools:/usr/local/bin:/opt/data/profiles/engineer/home/.local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin",
+      }, {
+        name: "ANDROID_HOME",
+        value: "/opt/android-sdk",
+      }, {
+        name: "ANDROID_SDK_ROOT",
+        value: "/opt/android-sdk",
+      }, {
+        name: "ANDROID_AVD_HOME",
+        value: "/opt/android-data/avd",
+      }, {
+        name: "GRADLE_USER_HOME",
+        value: "/opt/android-data/gradle",
       }],
       labels: {
         [Labels.Network.AllowAuthentik]: "true",
       },
       args: ["gateway", "run"],
-      strategy: { type: "RollingUpdate" },
+      strategy: { type: "RollingUpdate", rollingUpdate: { maxSurge: 0, maxUnavailable: 1 } },
       ipFamilyPolicy: "SingleStack",
       ipFamilies: ["IPv4"],
       resources: {
-        limits: { memory: "6Gi" },
-        requests: { memory: "2Gi" },
+        limits: { cpu: "4", memory: "12Gi", "devic.es/kvm": "1" },
+        requests: { cpu: "500m", memory: "2Gi", "devic.es/kvm": "1" },
       },
       volumes: [{
         name: "data",
@@ -59,9 +77,8 @@ export function configureHermesAgent(
         size: "256Mi",
         pvcName: "hermes-agent-pvc",
       }, {
-        // Retain development data until its disposal is explicitly approved, but do not expose
-        // it to Hermes while direct emulator execution is disabled on this shared host.
         name: "android",
+        mountPath: "/opt/android-data",
         size: "20Gi",
         enableBackup: false,
       }],
