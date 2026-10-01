@@ -1,3 +1,4 @@
+import { memosIdentity } from "./memos-identity";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -7,6 +8,7 @@ import { SelfhostedApp } from "../../library/selfhosted-component";
 import { postgresClientImage } from "../../platform/shared-resources/shared-postgres";
 import { Labels } from "./labels";
 import { memosSettings } from "./memos-settings";
+import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../library/oidc-app";
 
 // The shared PostgreSQL instance only runs its init scripts on a fresh data
 // directory, so an existing cluster needs an idempotent Job to create this
@@ -20,7 +22,7 @@ export function configureMemos(
 ) {
   const name = "memos";
   const config = new pulumi.Config("selfhosted");
-  const oidcClientSecret = config.requireSecret("memosOidcClientSecret");
+  const clientSecretOutput = oidcClientSecret(memosIdentity, config);
 
   // Memos configures SSO, its sign-in policy, and its access mode only through
   // JSON files mounted at /etc/secrets: there is no matching environment
@@ -31,18 +33,18 @@ export function configureMemos(
   //
   // The identity key is `sub`: it survives an Authentik username rename, unlike
   // preferred_username. Users can still rename their Memos account afterwards.
-  const identityProviderFile = oidcClientSecret.apply(clientSecret => JSON.stringify({
+  const identityProviderFile = clientSecretOutput.apply(clientSecret => JSON.stringify({
     uid: "authentik",
     name: "Authentik",
     type: "OAUTH2",
     config: {
       oauth2Config: {
-        clientId: "memos-client-id",
+        clientId: memosIdentity.clientId,
         clientSecret,
-        authUrl: "https://auth.gdario.dev/application/o/authorize/",
-        tokenUrl: "https://auth.gdario.dev/application/o/token/",
-        userInfoUrl: "https://auth.gdario.dev/application/o/userinfo/",
-        scopes: ["openid", "profile", "email"],
+        authUrl: authentikAuthorizeUrl,
+        tokenUrl: authentikTokenUrl,
+        userInfoUrl: authentikUserInfoUrl,
+        scopes: memosIdentity.scopes,
         fieldMapping: {
           identifier: "sub",
           displayName: "name",
@@ -193,7 +195,7 @@ export function configureMemos(
       name: "http",
       servicePort: 80,
       containerPort: 5230,
-      ingress: { name: "memos", host: "notes.gdario.dev" },
+      ingress: { name: "memos", host: memosIdentity.host },
       healthCheck: { protocol: "http", path: "/healthz" },
     }],
     labels: {

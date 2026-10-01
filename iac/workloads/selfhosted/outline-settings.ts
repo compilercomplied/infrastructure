@@ -1,12 +1,14 @@
+import { outlineIdentity } from "./outline-identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../library/app-settings";
+import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../library/oidc-app";
 
 export class OutlineSettings implements AppSettings {
   public readonly config: AppConfig = {
     "NODE_ENV": "production",
     "PORT": "3000",
     "HOST": "::",
-    "URL": "https://outline.gdario.dev",
+    "URL": outlineIdentity.url,
     "FORCE_HTTPS": "false",
     "PGSSLMODE": "disable",
     "REDIS_URL": "redis://outline-redis.selfhosted.svc.cluster.local:80",
@@ -17,13 +19,13 @@ export class OutlineSettings implements AppSettings {
     "FILE_STORAGE_UPLOAD_MAX_SIZE": "26214400",
     "AWS_S3_FORCE_PATH_STYLE": "true",
     "AWS_S3_ACL": "private",
-    "OIDC_CLIENT_ID": "outline-client-id",
-    "OIDC_AUTH_URI": "https://auth.gdario.dev/application/o/authorize/",
-    "OIDC_TOKEN_URI": "https://auth.gdario.dev/application/o/token/",
-    "OIDC_USERINFO_URI": "https://auth.gdario.dev/application/o/userinfo/",
+    "OIDC_CLIENT_ID": outlineIdentity.clientId,
+    "OIDC_AUTH_URI": authentikAuthorizeUrl,
+    "OIDC_TOKEN_URI": authentikTokenUrl,
+    "OIDC_USERINFO_URI": authentikUserInfoUrl,
     "OIDC_USERNAME_CLAIM": "preferred_username",
     "OIDC_DISPLAY_NAME": "Authentik",
-    "OIDC_SCOPES": "openid profile email offline_access",
+    "OIDC_SCOPES": outlineIdentity.scopes.join(" "),
   };
   public readonly secrets: AppSecrets;
 
@@ -35,7 +37,7 @@ export class OutlineSettings implements AppSettings {
       "UTILS_SECRET": config.requireSecret("outlineUtilsSecret"),
       "DATABASE_URL": pulumi.interpolate`postgres://outline:${databasePassword}@shared-postgres.shared-resources.svc.cluster.local:5432/outline`,
       "AWS_SECRET_ACCESS_KEY": config.requireSecret("outlineMinioPassword"),
-      "OIDC_CLIENT_SECRET": config.requireSecret("outlineOidcClientSecret"),
+      "OIDC_CLIENT_SECRET": oidcClientSecret(outlineIdentity, config),
     };
   }
 }

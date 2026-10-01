@@ -1,3 +1,4 @@
+import { forgejoIdentity } from "./forgejo-identity";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -136,7 +137,7 @@ export function configureForgejo(
   const app = new SelfhostedApp(name, {
     namespace,
     image,
-    endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "forgejo", host: "git.gdario.dev" } }],
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "forgejo", host: forgejoIdentity.host } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
       [Labels.Network.AllowAuthentik]: "true",

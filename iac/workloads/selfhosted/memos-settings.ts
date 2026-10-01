@@ -1,3 +1,4 @@
+import { memosIdentity } from "./memos-identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../library/app-settings";
 
@@ -12,7 +13,7 @@ export class MemosSettings implements AppSettings {
     "MEMOS_DATA": "/var/opt/memos",
     // Memos builds OAuth redirect and cookie URLs from this canonical address,
     // which is also the address registered as the callback in Authentik.
-    "MEMOS_INSTANCE_URL": "https://notes.gdario.dev",
+    "MEMOS_INSTANCE_URL": memosIdentity.url,
   };
   public readonly secrets: AppSecrets;
   public readonly databasePassword: pulumi.Output<string>;

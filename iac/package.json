@@ -1,8 +1,13 @@
 {
     "name": "infrastructure",
     "main": "index.ts",
+    "scripts": {
+        "validate:oidc": "node scripts/validate-oidc.cjs",
+        "check": "tsc --noEmit && npm run validate:oidc"
+    },
     "devDependencies": {
         "@types/node": "^18",
+        "js-yaml": "^4.3.2",
         "typescript": "^5.0.0"
     },
     "dependencies": {

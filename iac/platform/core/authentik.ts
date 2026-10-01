@@ -2,11 +2,13 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
 import * as path from "path";
+import * as crypto from "crypto";
 import { createLetsEncryptIngress } from "../../library/ingress";
 import { createPVC } from "../../library/k8s-pvc";
 import { createBackupJob } from "../../operations/maintenance/backup";
 import { Labels } from "../../workloads/selfhosted/labels";
 import { authentikSettings } from "./authentik-settings";
+import { renderAuthentikBlueprint } from "./oidc-blueprint";
 
 export function configureAuthentik(
   namespace: pulumi.Input<string>,
@@ -102,15 +104,19 @@ export function configureAuthentik(
       })),
   ];
 
-  // Load the standalone declarative YAML blueprint and package it in a ConfigMap.
-  // This complies with the Tenets for Script Management (keeping blueprints out of code string blocks).
+  const blueprint = renderAuthentikBlueprint(fs.readFileSync(path.join(__dirname, "templates", "authentik-blueprints.yaml"), "utf-8"));
+  const blueprintChecksum = pulumi.all([blueprint, ...Object.values(authentikSettings.secrets)]).apply(values =>
+    crypto.createHash("sha256").update(values.join("\n")).digest("hex"));
+
+  // Authentik reads blueprint files from the mounted volume; a pod restart also refreshes
+  // its environment when an OIDC secret changes.
   const blueprintsConfigMap = new k8s.core.v1.ConfigMap(`${name}-blueprints`, {
     metadata: {
       name: `${name}-blueprints`,
       namespace,
     },
     data: {
-      "cluster-bootstrap.yaml": fs.readFileSync(path.join(__dirname, "templates", "authentik-blueprints.yaml"), "utf-8"),
+      "cluster-bootstrap.yaml": blueprint,
     },
   }, { dependsOn: dependencies });
 
@@ -125,6 +131,7 @@ export function configureAuthentik(
       selector: { matchLabels: { app: serverName } },
       template: {
         metadata: {
+          annotations: { "auth.gdario.dev/blueprint-checksum": blueprintChecksum },
           labels: {
             app: serverName,
             [Labels.Network.AllowPostgres]: "true",
@@ -175,6 +182,7 @@ export function configureAuthentik(
       selector: { matchLabels: { app: workerName } },
       template: {
         metadata: {
+          annotations: { "auth.gdario.dev/blueprint-checksum": blueprintChecksum },
           labels: {
             app: workerName,
             [Labels.Network.AllowPostgres]: "true",
@@ -254,8 +262,8 @@ export function configureAuthentik(
     dependencies: [...dependencies, templatesPvc],
   });
 
-  // Ingress is restricted to pods carrying the network/allow-authentik label. Internal pods require direct access
-  // to the Authentik Server to perform OIDC authentication and token validation.
+  // Apps opt in through a pod label because a namespace allowlist would require
+  // changing Authentik whenever a workload moves or a new namespace is added.
   const internalPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-server-allow-internal`, {
     metadata: {
       name: `${name}-server-allow-internal`,
@@ -269,42 +277,7 @@ export function configureAuthentik(
         {
           from: [
             {
-              podSelector: {
-                matchLabels: {
-                  [Labels.Network.AllowAuthentik]: "true",
-                },
-              },
-            },
-            {
-              namespaceSelector: {
-                matchLabels: {
-                  "kubernetes.io/metadata.name": "infrastructure",
-                },
-              },
-              podSelector: {
-                matchLabels: {
-                  [Labels.Network.AllowAuthentik]: "true",
-                },
-              },
-            },
-            {
-              namespaceSelector: {
-                matchLabels: {
-                  "kubernetes.io/metadata.name": "forgejo",
-                },
-              },
-              podSelector: {
-                matchLabels: {
-                  [Labels.Network.AllowAuthentik]: "true",
-                },
-              },
-            },
-            {
-              namespaceSelector: {
-                matchLabels: {
-                  "kubernetes.io/metadata.name": "agent-sidekicks",
-                },
-              },
+              namespaceSelector: {},
               podSelector: {
                 matchLabels: {
                   [Labels.Network.AllowAuthentik]: "true",

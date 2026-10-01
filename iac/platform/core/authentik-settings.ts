@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../library/app-settings";
+import { oidcSecretEnvironment } from "./oidc-apps";
 
 export class AuthentikSettings implements AppSettings {
   public readonly config: AppConfig = {
@@ -20,19 +21,11 @@ export class AuthentikSettings implements AppSettings {
       "AUTHENTIK_BOOTSTRAP_PASSWORD": config.requireSecret("authentikAdminPassword"),
       "AUTHENTIK_BOOTSTRAP_EMAIL": config.requireSecret("acmeEmail"),
       "AUTHENTIK_REDIS__PASSWORD": config.requireSecret("authentikRedisPassword"),
-      "AUTHENTIK_TANDOOR_CLIENT_SECRET": config.requireSecret("tandoori-secret"),
-      "AUTHENTIK_LINKWARDEN_CLIENT_SECRET": config.requireSecret("linkwarden-secret"),
-      "AUTHENTIK_GRAFANA_CLIENT_SECRET": config.requireSecret("grafana-secret"),
-      "AUTHENTIK_GRIMMORY_CLIENT_SECRET": config.requireSecret("grimmory-secret"),
-      "AUTHENTIK_HERMES_CLIENT_SECRET": config.requireSecret("hermesSecret"),
+      ...oidcSecretEnvironment(config),
       "AUTHENTIK_GOOGLE_CLIENT_ID": config.require("googleClientId"),
       "AUTHENTIK_GOOGLE_CLIENT_SECRET": config.requireSecret("googleClientSecret"),
       "AUTHENTIK_USER_GDARIO_EMAIL": config.requireSecret("user-gdario-email"),
       "AUTHENTIK_USER_ANDREA_EMAIL": config.requireSecret("user-andrea-email"),
-      "AUTHENTIK_FORGEJO_CLIENT_SECRET": config.requireSecret("forgejo-secret"),
-      "AUTHENTIK_LITELLM_CLIENT_SECRET": config.requireSecret("litellmSecret"),
-      "AUTHENTIK_MEMOS_CLIENT_SECRET": config.requireSecret("memosOidcClientSecret"),
-      "AUTHENTIK_WINDSHIFT_CLIENT_SECRET": config.requireSecret("windshiftOidcClientSecret"),
     };
   }
 }

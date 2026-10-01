@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createMCPServer } from "../../library/mcp-server";
+import { tandoorIdentity } from "../selfhosted/tandoor-recipes-identity";
 
 export function configureTandoorMcp(
   namespace: pulumi.Input<string>,
@@ -27,7 +28,7 @@ export function configureTandoorMcp(
       {
         // Constructed public URLs are returned by the MCP to ensure client links resolve correctly externally.
         name: "TANDOOR_PUBLIC_URL",
-        value: "https://recipes.gdario.dev",
+        value: tandoorIdentity.url,
       },
       {
         // JSON format is enabled for unified ingest into Loki and structured observability.

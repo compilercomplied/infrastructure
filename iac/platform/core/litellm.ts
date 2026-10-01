@@ -1,3 +1,4 @@
+import { litellmIdentity } from "./litellm-identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as fs from "fs";
@@ -7,6 +8,7 @@ import { SelfhostedApp } from "../../library/selfhosted-component";
 import { configureNamespaceSecurity } from "../../workloads/selfhosted/security";
 import { Labels } from "../../workloads/selfhosted/labels";
 import { postgresClientImage } from "../shared-resources/shared-postgres";
+import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../library/oidc-app";
 
 export interface DeployLitellmArgs {
   namespace: k8s.core.v1.Namespace;
@@ -29,7 +31,7 @@ export function deployLitellm(args: DeployLitellmArgs) {
   const namespaceName = namespace.metadata.name;
 
   const litellmDbPassword = config.requireSecret("litellmDbPassword");
-  const litellmSecret = config.requireSecret("litellmSecret");
+  const litellmSecret = oidcClientSecret(litellmIdentity, config);
   const litellmMasterKey = config.requireSecret("litellmMasterKey");
   const postgresPassword = config.requireSecret("postgresPassword");
   const deepseekApiKey = config.requireSecret("deepseekApiKey");
@@ -207,7 +209,7 @@ litellm_settings:
   const app = new SelfhostedApp("litellm", {
     namespace: namespaceName,
     image: "ghcr.io/berriai/litellm:latest",
-    endpoints: [{ name: "http", servicePort: 80, containerPort: 4000, ingress: { name: "litellm", host: "litellm.gdario.dev", rateLimit: false }, healthCheck: { protocol: "http", path: "/health/readiness" } }],
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 4000, ingress: { name: "litellm", host: litellmIdentity.host, rateLimit: false }, healthCheck: { protocol: "http", path: "/health/readiness" } }],
     // uvicorn binds to 0.0.0.0 (IPv4 only). The default dual-stack service policy
     // generates an IPv6 endpoint alongside the IPv4 one, which Traefik round-robins
     // to — causing every other request to fail with connection refused → 502.
@@ -246,12 +248,12 @@ litellm_settings:
       "MOONSHOT_API_KEY": kimiApiKey,
     },
     env: [
-      { name: "GENERIC_CLIENT_ID", value: "litellm-client-id" },
-      { name: "GENERIC_AUTHORIZATION_ENDPOINT", value: "https://auth.gdario.dev/application/o/authorize/" },
-      { name: "GENERIC_TOKEN_ENDPOINT", value: "https://auth.gdario.dev/application/o/token/" },
-      { name: "GENERIC_USERINFO_ENDPOINT", value: "https://auth.gdario.dev/application/o/userinfo/" },
-      { name: "GENERIC_SCOPE", value: "openid profile email offline_access" },
-      { name: "PROXY_BASE_URL", value: "https://litellm.gdario.dev" },
+      { name: "GENERIC_CLIENT_ID", value: litellmIdentity.clientId },
+      { name: "GENERIC_AUTHORIZATION_ENDPOINT", value: authentikAuthorizeUrl },
+      { name: "GENERIC_TOKEN_ENDPOINT", value: authentikTokenUrl },
+      { name: "GENERIC_USERINFO_ENDPOINT", value: authentikUserInfoUrl },
+      { name: "GENERIC_SCOPE", value: litellmIdentity.scopes.join(" ") },
+      { name: "PROXY_BASE_URL", value: litellmIdentity.url },
       { name: "FORWARDED_ALLOW_IPS", value: "*" },
       { name: "GENERIC_ROLE_MAPPINGS_GROUP_CLAIM", value: "groups" },
       // Maps the Authentik group "litellm-admins" to LiteLLM's internal "proxy_admin" role.
@@ -313,7 +315,7 @@ litellm_settings:
     spec: {
       entryPoints: ["websecure"],
       routes: [{
-        match: "Host(`litellm.gdario.dev`) && PathPrefix(`/metrics`)",
+        match: `Host(\`${litellmIdentity.host}\`) && PathPrefix(\`/metrics\`)`,
         // Priority must exceed the default catch-all route priority (rule length = ~25)
         // to ensure this rule is evaluated first by Traefik's router.
         priority: 1000,

@@ -1,3 +1,4 @@
+import { tandoorIdentity } from "./tandoor-recipes-identity";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../library/selfhosted-component";
 import { Labels } from "./labels";
@@ -15,7 +16,7 @@ export function configureTandoorRecipes(
       name: "http",
       servicePort: 80,
       containerPort: 8080,
-      ingress: { name: "tandoor-recipes", host: "recipes.gdario.dev" },
+      ingress: { name: "tandoor-recipes", host: tandoorIdentity.host },
       healthCheck: { protocol: "http", path: "/api/health" },
       allowIngressFrom: [{
         podSelector: { app: "tandoor-mcp" },

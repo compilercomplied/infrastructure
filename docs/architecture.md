@@ -72,7 +72,7 @@ namespace carries its own default-deny network policy (see Security).
 | `infrastructure` | Core platform | Authentik (SSO) + its Redis, LiteLLM proxy, Kata deployment |
 | `forgejo` | Code forge | Forgejo (git) + Forgejo Actions runner |
 | `agent-sidekicks` | AI agent tooling | The MCP servers (Tandoor, Outline, Grafana, Kubernetes) and Hermes Agent |
-| `agents` / `agents-control-plane` / `agent-sandbox` | Sandboxed agents | Agent RBAC + control-plane, and the Kata-isolated sandbox for untrusted code |
+| `agents` / `agents-control-plane` / `agent-sandbox` | Agent resources | Agent RBAC and control-plane resources; a namespace for sandbox experiments |
 
 The namespace entry points live under `iac/workloads/`, and the agent-management
 namespaces are centralized in `iac/workloads/agents/control-plane/namespaces.ts`.
@@ -106,9 +106,9 @@ admits pods carrying the matching label:
 
 So network access is opt-in, per pod, enforced at the resource it wants to
 reach — the default-deny posture stays intact while exactly the needed links are
-opened. Cross-namespace rules constrain both the *source namespace* and the
-*source pod label*, so a grant reads like "only pods of type X in namespace Y may
-connect to this."
+opened. Some cross-namespace rules also constrain the source namespace. Authentik
+accepts labeled pods from any namespace, so adding an OIDC workload does not
+require editing its NetworkPolicy.
 
 > **Migration bridge (temporary):** a set of permissive *bridge* policies
 > (`iac/platform/shared-resources/bridge-network-policies.ts`) currently allows broader
@@ -120,8 +120,8 @@ Authentication to the apps is centralized in **Authentik** (`auth.gdario.dev`)
 as the OIDC provider, with **Google OAuth** as the identity source. Self-service
 signup is off — an administrator provisions users in Authentik up front, and
 those users authenticate with their existing Google accounts. Each integrating
-app is registered as an OIDC client in `iac/platform/core/authentik.ts` and
-its `templates/authentik-blueprints.yaml`.
+app has a co-located `*-identity.ts` registration collected by `iac/platform/core/oidc-apps.ts`; Authentik's OIDC blueprint entries
+are generated from those registrations. See [Adding an OIDC application](./authentik-oidc.md).
 
 Two services intentionally bypass OIDC and authenticate with a bearer token
 instead of an SSO login: Forgejo (which has its own user/SSH model) and the
@@ -207,25 +207,23 @@ user to the relevant module and pointing at the shared in-cluster host
 The cluster hosts an AI-agent fleet, and treats it as security-critical:
 
 - **Hermes Agent** (`agent-sidekicks`) is the assistant that drives messaging,
-  cron, and tool integration. It runs under the **`kata-qemu` RuntimeClass**
-  (deep isolation even for the assistant itself) and talks to the LLM backend
-  through the LiteLLM gateway in `infrastructure` rather than holding provider
-  keys for every model. Its dashboard is fronted by Authentik OIDC; its
+  cron, and tool integration. It has a shell with the Docker CLI, Android SDK,
+  and emulator tools. A dedicated DinD sidecar provides its Docker daemon;
+  the main container receives a KVM allocation for accelerated Android emulation.
+  It talks to the LLM backend through the LiteLLM gateway in `infrastructure`.
+  Its dashboard is fronted by Authentik OIDC; its
   OpenAI-compatible API endpoint uses its own bearer key. The component is
   `custom:selfhosted:HermesAgent`, declared in `iac/library/hermes-agent.ts`
   and deployed from `iac/workloads/agents/hermes-agent.ts`.
 - **MCP servers** (`agent-sidekicks`) expose read/write tooling to agents for
-  Tandoor, Outline, Grafana, and Kubernetes. They live in their own namespace,
-  separate from the pods that actually *execute* arbitrary agent code.
-- **Sandboxed execution** (`agent-sandbox`, the `agents*` namespaces) runs
-  untrusted agent-generated code in **Kata Containers** — a real VM boundary per
-  pod, not a container sandbox. Kata is installed entirely through the IaC via
-  the `kata-deploy` Helm chart, which injects host runtimes and patches k3s'
-  `containerd` to register the RuntimeClass (`iac/platform/core/index.ts`).
+  Tandoor, Outline, Grafana, and Kubernetes.
+- **Kata experiments** can use the `agent-sandbox` namespace and the Kata runtime
+  installed by the `kata-deploy` Helm chart (`iac/platform/core/index.ts`). Kata
+  is included solely for virtualization experiments; the namespace currently
+  defines no execution workload.
 
-Developers can model further staff and agents through the RBAC + namespace
-module (`iac/workloads/agents/control-plane/`), which separates the orchestrator's privileges
-from the sandboxed workers that do the actual work.
+Agent RBAC and namespace definitions live in
+`iac/workloads/agents/control-plane/`.
 
 ---
 

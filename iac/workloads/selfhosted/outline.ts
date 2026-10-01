@@ -1,3 +1,4 @@
+import { outlineIdentity } from "./outline-identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../library/selfhosted-component";
@@ -76,7 +77,7 @@ export function configureOutline(
       name: "http",
       servicePort: 80,
       containerPort: 3000,
-      ingress: { name: "outline", host: "outline.gdario.dev" },
+      ingress: { name: "outline", host: outlineIdentity.host },
       healthCheck: { protocol: "tcp" },
       allowIngressFrom: [{
         podSelector: { app: "outline-mcp" },

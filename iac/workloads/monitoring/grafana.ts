@@ -1,7 +1,9 @@
+import { grafanaIdentity } from "./grafana-identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "../../library/ingress";
 import { createBackupJob } from "../../operations/maintenance/backup";
+import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../library/oidc-app";
 
 /**
  * Standalone Grafana Visualization Layer
@@ -14,7 +16,7 @@ export function configureGrafana(
   const adminPassword = config.requireSecret("grafanaAdminPassword");
 
   const selfhostedConfig = new pulumi.Config("selfhosted");
-  const grafanaSecret = selfhostedConfig.requireSecret("grafana-secret");
+  const grafanaSecret = oidcClientSecret(grafanaIdentity, selfhostedConfig);
 
   const grafana = new k8s.helm.v3.Chart("grafana", {
     namespace: namespace,
@@ -34,7 +36,7 @@ export function configureGrafana(
 
       "grafana.ini": {
         server: {
-          root_url: "https://grafana.gdario.dev",
+          root_url: grafanaIdentity.url,
         },
         plugins: {
           enable_alpha: true,
@@ -48,12 +50,12 @@ export function configureGrafana(
           enabled: true,
           name: "Authentik",
           allow_sign_up: true,
-          client_id: "grafana-client-id",
+          client_id: grafanaIdentity.clientId,
           client_secret: grafanaSecret,
-          scopes: "openid profile email offline_access",
-          auth_url: "https://auth.gdario.dev/application/o/authorize/",
-          token_url: "https://auth.gdario.dev/application/o/token/",
-          api_url: "https://auth.gdario.dev/application/o/userinfo/",
+          scopes: grafanaIdentity.scopes.join(" "),
+          auth_url: authentikAuthorizeUrl,
+          token_url: authentikTokenUrl,
+          api_url: authentikUserInfoUrl,
           role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || 'Viewer'",
         }
       },
@@ -106,7 +108,7 @@ export function configureGrafana(
   createLetsEncryptIngress({
     name: "grafana",
     namespace: namespace,
-    host: "grafana.gdario.dev",
+    host: grafanaIdentity.host,
     serviceName: "grafana",
     servicePort: 80,
     dependencies: [grafana],

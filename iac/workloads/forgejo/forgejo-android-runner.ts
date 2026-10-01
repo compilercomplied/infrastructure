@@ -3,6 +3,7 @@ import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../../library/k8s-pvc";
+import { forgejoIdentity } from "./forgejo-identity";
 
 // Both runners use the same registration protocol. Sharing the script prevents the Android
 // runner from drifting from the generic runner when Forgejo changes its bootstrap requirements.
@@ -177,7 +178,7 @@ container:
                 },
                 { name: "DOCKER_HOST", value: "unix:///var/run/docker.sock" },
                 { name: "FORGEJO_INTERNAL_URL", value: "http://forgejo.forgejo.svc.cluster.local:80/" },
-                { name: "FORGEJO_PUBLIC_URL", value: "https://git.gdario.dev" },
+                { name: "FORGEJO_PUBLIC_URL", value: forgejoIdentity.url },
                 // The original Android deployment shared the generic runner UUID. Bumping this
                 // generation replaces only its old local registration after Forgejo registers
                 // the dedicated secret, leaving the generic runner's PVC untouched.

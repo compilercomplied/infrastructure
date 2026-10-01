@@ -62,6 +62,11 @@ Hermes' DinD sidecar stores its graph in an `emptyDir`. Docker state is
 intentionally ephemeral; source code and other durable Hermes state belong on
 the normal Hermes data PVC instead.
 
+The Docker CLI in Hermes connects to the sidecar through
+`DOCKER_HOST=tcp://localhost:2375`. The KVM resource is allocated to the main
+Hermes container. Containers launched by DinD have no established KVM path;
+running an emulator inside one of those containers requires separate validation.
+
 ## Forgejo Android runner
 
 `forgejo-android-runner` is a dedicated runner with capacity one. Its control
@@ -146,8 +151,6 @@ workflow so they cover the runner-to-DinD-to-job-container device path.
 
 ## Known follow-up work
 
-- Set an `fsGroup` for Hermes' PVCs so the `hermes` application user can manage
-  AVD and Gradle data without relying on root-owned directories.
 - Re-layer and reduce the Android image. Its current large SDK layer makes cold
   pulls exceed the deployment readiness timeout.
 - Align the deployment timeout with a legitimate cold pull, while retaining a
@@ -157,4 +160,3 @@ workflow so they cover the runner-to-DinD-to-job-container device path.
 - Decide and document the supported emulator concurrency, then set the device
   plugin count and workload resource limits to match.
 - Replace the fixed KVM GID contract if KVM-capable nodes become heterogeneous.
-

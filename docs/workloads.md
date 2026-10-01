@@ -1,51 +1,42 @@
-# Agentic & Sandboxed Workloads
+# Agent Workloads
 
-The cluster runs an AI-agent fleet alongside the self-hosted apps. This page
+The cluster runs agent workloads alongside the self-hosted apps. This page
 covers how those workloads are structured. For the general architecture
 (namespaces, security, storage) see [architecture.md](./architecture.md).
 
 ## The pieces
 
-Agent workloads are split into four namespaces plus a shared runtime:
+Agent resources are organized across these namespaces:
 
 | Component | Namespace | Purpose |
 |-----------|-----------|---------|
 | Hermes Agent | `agent-sidekicks` | The assistant driving messaging, cron, and tool integration |
 | MCP sidekicks | `agent-sidekicks` | Read/write tooling for Tandoor, Outline, Grafana, Kubernetes |
 | Control plane | `agents-control-plane` | RBAC + service accounts for the orchestrator that coordinates worker agents |
-| Workers / sandbox | `agent-sandbox` | Untrusted, agent-generated code executed in isolation |
+| Sandbox namespace | `agent-sandbox` | Namespace and network-policy baseline for experiments |
 
 The namespace and RBAC definitions live in `iac/workloads/agents/control-plane/` (namespaces,
 rbac, secrets). Hermes Agent and the MCP servers are wired in
 `iac/workloads/agents/`.
 
-## Isolation model
+## Experimental Kata runtime
 
-Untrusted code is executed in **Kata Containers** — a real virtual machine per
-pod, not a container sandbox. This is the important line: the orchestrator and
-its MCP tooling run in `agent-sidekicks` under normal isolation, but anything
-that *executes arbitrary agent-generated code* runs in `agent-sandbox` under the
-Kata runtime class.
+Kata is included in the cluster solely for virtualization experiments. The
+`agent-sandbox` namespace has a default-deny ingress policy and provides a
+place for experiments; it does not currently define an execution workload.
 
 Kata is installed entirely through the IaC with the `kata-deploy` Helm chart,
 which injects the host VM runtime and patches k3s' `containerd` to register the
 RuntimeClass. That chart is a single resource in the `infrastructure` module
-(`iac/platform/core/index.ts`), which also keeps the required node label in
-place across reboots. The only thing left out of IaC is the OS-level Kata
-package install on the (single) node; the chart and node label are declarative.
-
-> **Design note:** if installing Kata via a privileged DaemonSet ever fights with
-> a k3s upgrade, the `infrastructure` module has the prepared fallback — move the
-> binary install and `config.toml` templating to the node's Ansible setup and keep
-> only the RuntimeClass in IaC.
+(`iac/platform/core/index.ts`), which also manages the node label. The chart's
+privileged installer handles the host runtime setup.
 
 ## Hermes Agent
 
 The self-hosted Hermes Agent runs as a `custom:selfhosted:HermesAgent` component
-declared in `iac/library/hermes-agent.ts`, with its seeded deployment in
-`iac/workloads/agents/hermes-agent.ts`. It is itself
-pinned to the Kata runtime class, and talks to the LLM backend through the
-LiteLLM gateway in `infrastructure` rather than holding a key per model.
+declared in `iac/library/hermes-agent.ts`, with its deployment in
+`iac/workloads/agents/hermes-agent.ts`. It talks to the LLM backend through the
+LiteLLM gateway in `infrastructure`.
 
 Two access paths are exposed:
 
@@ -57,7 +48,10 @@ Its persistent data lives on a PVC mounted at `/opt/data` (configuration,
 memories, skills) and is backed up daily via the standard restic backup job
 described in `architecture.md`.
 
-Hermes also has an image-owned Android SDK, a persistent AVD volume, KVM device
-allocation, and a DinD sidecar for code compilation and verification. The
-shared execution goal, security boundaries, CI-runner design, and operational
+Hermes provides a shell with the Docker CLI, Android SDK, and emulator tools.
+Its main container receives a KVM device allocation and a persistent AVD volume.
+A dedicated DinD sidecar supplies the Docker daemon through `DOCKER_HOST`;
+Docker images and containers use ephemeral storage. The main container has the
+device and tools needed for an accelerated emulator. KVM access inside containers
+started by DinD has not been validated. The device path, CI-runner design, and operational
 checks are documented in [android-emulation.md](./android-emulation.md).

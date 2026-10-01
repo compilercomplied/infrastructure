@@ -1,0 +1,13 @@
+# Adding an OIDC application
+
+Define each app's OIDC registration in a `*-identity.ts` file beside its workload, using [`defineOidcApp`](../iac/library/oidc-app.ts). Set its name, public host, callback path, and Pulumi secret key. The public URL, client ID, Authentik environment key, and standard scopes are derived. Add overrides only when the app needs different values. Export the registration and add it to the import list in [`iac/platform/core/oidc-apps.ts`](../iac/platform/core/oidc-apps.ts), which collects registrations for Authentik.
+
+The app still needs a small adapter for its own configuration format. Import its local identity and use `oidcIssuer`, the shared endpoint URLs, and `oidcClientSecret` from `iac/library/oidc-app.ts` instead of copying values. Use the identity's `host` for ingress and `url` for public app settings. The existing adapters show the formats: environment variables for Outline, JSON for Memos, a bootstrap API request for Windshift, and a shell script for Forgejo. Keep application-specific account provisioning and permissions in that adapter or its bootstrap job.
+
+The Authentik blueprint template in [`iac/platform/core/templates/authentik-blueprints.yaml`](../iac/platform/core/templates/authentik-blueprints.yaml) holds users, groups, Google OAuth, Syncthing's proxy provider, and Windshift's verified-email mapping. [`iac/platform/core/oidc-blueprint.ts`](../iac/platform/core/oidc-blueprint.ts) inserts OIDC providers and applications from the registration. Windshift references its fixed mapping; Outline keeps its existing provider name.
+
+Store each client secret with `pulumi config set --secret selfhosted:<secretKey> ... --cwd iac --stack local`. The generated blueprint refers to Authentik environment variables, so its ConfigMap contains no client secret values. `mise run preview-deployment` runs TypeScript and blueprint validation before the Pulumi preview. Authentik's server and worker pod templates carry a checksum of the blueprint and related secrets so changes restart those processes for reconciliation.
+
+An Authentik registration does not itself create a user or API token inside an application. Add a separate, idempotent provisioning path where that is needed.
+
+Changing a client ID or secret must also update an existing app-side OIDC provider. Forgejo's bootstrap script and Windshift's bootstrap job reconcile their existing providers. Callback changes require coordination with the app's externally visible URL. Keep the Authentik `slug` and blueprint provider identifiers stable unless intentionally migrating the provider, because the slug is part of the OIDC issuer URL and blueprint identifiers select existing resources.

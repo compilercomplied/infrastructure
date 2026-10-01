@@ -1,5 +1,7 @@
+import { grimmoryIdentity } from "./grimmory-identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../library/app-settings";
+import { oidcClientSecret } from "../../library/oidc-app";
 
 export class GrimmorySettings implements AppSettings {
   public readonly config: AppConfig;
@@ -17,7 +19,7 @@ export class GrimmorySettings implements AppSettings {
 
     this.secrets = {
       "DATABASE_PASSWORD": config.requireSecret("grimmoryDbPassword"),
-      "OIDC_CLIENT_SECRET": config.requireSecret("grimmory-secret"),
+      "OIDC_CLIENT_SECRET": oidcClientSecret(grimmoryIdentity, config),
     };
   }
 }

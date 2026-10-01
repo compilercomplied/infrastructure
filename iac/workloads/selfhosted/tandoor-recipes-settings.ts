@@ -1,5 +1,7 @@
+import { tandoorIdentity } from "./tandoor-recipes-identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../library/app-settings";
+import { oidcClientSecret, oidcDiscoveryUrl } from "../../library/oidc-app";
 
 export class TandoorRecipesSettings implements AppSettings {
   public readonly config: AppConfig = {
@@ -8,7 +10,7 @@ export class TandoorRecipesSettings implements AppSettings {
     "POSTGRES_PORT": "5432",
     "POSTGRES_DB": "tandoor",
     "POSTGRES_USER": "tandoor",
-    "ALLOWED_HOSTS": "recipes.gdario.dev,tandoor-recipes,tandoor-recipes.selfhosted.svc.cluster.local",
+    "ALLOWED_HOSTS": `${tandoorIdentity.host},tandoor-recipes,tandoor-recipes.selfhosted.svc.cluster.local`,
     "TANDOOR_PORT": "8080",
     "SOCIAL_PROVIDERS": "allauth.socialaccount.providers.openid_connect",
     "HIDE_LOGIN_FORM": "1",
@@ -16,22 +18,22 @@ export class TandoorRecipesSettings implements AppSettings {
   public readonly secrets: AppSecrets;
 
   constructor(config = new pulumi.Config("selfhosted")) {
-    const oidcClientSecret = config.requireSecret("tandoori-secret");
+    const clientSecret = oidcClientSecret(tandoorIdentity, config);
     this.secrets = {
       "SECRET_KEY": config.requireSecret("tandoorSecretKey"),
       "POSTGRES_PASSWORD": config.requireSecret("tandoorDbPassword"),
       "SOCIALACCOUNT_PROVIDERS": pulumi.interpolate`{
     "openid_connect": {
-      "SCOPE": ["openid", "profile", "email", "offline_access"],
+      "SCOPE": ${JSON.stringify(tandoorIdentity.scopes)},
       "SERVERS": [
         {
           "id": "authentik",
           "name": "Authentik",
-          "server_url": "https://auth.gdario.dev/application/o/tandoor-recipes/.well-known/openid-configuration",
+          "server_url": "${oidcDiscoveryUrl(tandoorIdentity)}",
           "token_auth_method": "client_secret_basic",
           "APP": {
-            "client_id": "tandoor-recipes-client-id",
-            "secret": "${oidcClientSecret}"
+            "client_id": "${tandoorIdentity.clientId}",
+            "secret": "${clientSecret}"
           }
         }
       ]

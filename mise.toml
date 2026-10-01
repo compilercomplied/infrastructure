@@ -5,6 +5,7 @@ node = "lts"
 [tasks.preview-deployment]
 description = "Perform a Pulumi dry-run (preview)"
 run = """
+npm run check
 pulumi login
 pulumi preview --stack local "$@"
 """

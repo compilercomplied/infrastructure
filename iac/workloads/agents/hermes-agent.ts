@@ -1,3 +1,4 @@
+import { hermesIdentity } from "./hermes-agent-identity";
 import * as pulumi from "@pulumi/pulumi";
 import { HermesAgent } from "../../library/hermes-agent";
 import { Labels } from "../selfhosted/labels";
@@ -39,7 +40,7 @@ export function configureHermesAgent(
           name: "http",
           containerPort: 9119,
           servicePort: 80,
-          ingress: { name: "hermes-agent", host: "hermes.gdario.dev" },
+          ingress: { name: "hermes-agent", host: hermesIdentity.host },
         },
         {
           name: "api",

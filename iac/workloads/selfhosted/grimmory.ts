@@ -1,3 +1,4 @@
+import { grimmoryIdentity } from "./grimmory-identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as crypto from "crypto";
@@ -6,6 +7,7 @@ import * as path from "path";
 import { SelfhostedApp } from "../../library/selfhosted-component";
 import { Labels } from "./labels";
 import { GrimmorySettings } from "./grimmory-settings";
+import { oidcIssuer } from "../../library/oidc-app";
 
 export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.2.0";
 export const grimmoryMariaDbImage = "mariadb:11.4";
@@ -23,7 +25,7 @@ export function configureGrimmory(
   const app = new SelfhostedApp("grimmory", {
     namespace,
     image: grimmoryImage,
-    endpoints: [{ name: "http", servicePort: 80, containerPort: 6060, ingress: { name: "grimmory", host: "grimmory.gdario.dev" }, healthCheck: { protocol: "tcp" } }],
+    endpoints: [{ name: "http", servicePort: 80, containerPort: 6060, ingress: { name: "grimmory", host: grimmoryIdentity.host }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowMariaDb]: "true",
       [Labels.Network.AllowAuthentik]: "true",
@@ -104,6 +106,9 @@ export function configureGrimmory(
             image: grimmoryMariaDbImage,
             command: ["/bin/sh", "/scripts/patch.sh"],
             env: [
+              { name: "OIDC_CLIENT_ID", value: grimmoryIdentity.clientId },
+              { name: "OIDC_ISSUER", value: oidcIssuer(grimmoryIdentity) },
+              { name: "OIDC_SCOPES", value: grimmoryIdentity.scopes.join(" ") },
               { name: "DB_HOST", value: pulumi.interpolate`${mariadbService.metadata.name}.${mariadbService.metadata.namespace}.svc.cluster.local` },
               { name: "DB_USER", value: "grimmory" },
               {

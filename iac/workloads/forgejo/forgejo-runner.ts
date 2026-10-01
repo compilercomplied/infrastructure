@@ -4,6 +4,7 @@ import * as crypto from "crypto";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../../library/k8s-pvc";
+import { forgejoIdentity } from "./forgejo-identity";
 
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "../../operations/maintenance/scripts/bootstrap-forgejo-runner.sh"), "utf8");
 
@@ -121,7 +122,7 @@ container:
                 },
                 {
                   name: "FORGEJO_PUBLIC_URL",
-                  value: "https://git.gdario.dev",
+                  value: forgejoIdentity.url,
                 },
               ],
               volumeMounts: [

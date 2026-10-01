@@ -1,6 +1,8 @@
+import { forgejoIdentity } from "./forgejo-identity";
 import * as crypto from "crypto";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../library/app-settings";
+import { oidcClientSecret, oidcDiscoveryUrl } from "../../library/oidc-app";
 
 export class ForgejoSettings implements AppSettings {
   public readonly config: AppConfig = {
@@ -8,11 +10,11 @@ export class ForgejoSettings implements AppSettings {
     "FORGEJO__database__HOST": "shared-postgres.shared-resources.svc.cluster.local:5432",
     "FORGEJO__database__NAME": "forgejo",
     "FORGEJO__database__USER": "forgejo",
-    "FORGEJO__server__DOMAIN": "git.gdario.dev",
-    "FORGEJO__server__SSH_DOMAIN": "git.gdario.dev",
+    "FORGEJO__server__DOMAIN": forgejoIdentity.host,
+    "FORGEJO__server__SSH_DOMAIN": forgejoIdentity.host,
     "FORGEJO__server__SSH_PORT": "2222",
     "FORGEJO__server__SSH_LISTEN_PORT": "22",
-    "FORGEJO__server__ROOT_URL": "https://git.gdario.dev/",
+    "FORGEJO__server__ROOT_URL": `${forgejoIdentity.url}/`,
     "FORGEJO__security__INSTALL_LOCK": "true",
     "FORGEJO__service__DISABLE_REGISTRATION": "true",
     "FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION": "false",
@@ -20,6 +22,9 @@ export class ForgejoSettings implements AppSettings {
     "FORGEJO__openid__ENABLE_OPENID_SIGNIN": "false",
     "FORGEJO__oauth2_client__ENABLE_AUTO_REGISTRATION": "true",
     "FORGEJO__oauth2_client__ACCOUNT_LINKING": "auto",
+    "AUTHENTIK_CLIENT_ID": forgejoIdentity.clientId,
+    "AUTHENTIK_DISCOVERY_URL": oidcDiscoveryUrl(forgejoIdentity),
+    "AUTHENTIK_SCOPES": forgejoIdentity.scopes.join(" "),
     "FORGEJO__actions__ENABLED": "true",
     // This permits automation to create repositories and organizations without UI setup.
     "FORGEJO__repository__ENABLE_PUSH_CREATE_USER": "true",
@@ -30,7 +35,7 @@ export class ForgejoSettings implements AppSettings {
   public readonly postgresMasterPassword: pulumi.Output<string>;
 
   constructor(config = new pulumi.Config("selfhosted")) {
-    const forgejoSecret = config.requireSecret("forgejo-secret");
+    const forgejoSecret = oidcClientSecret(forgejoIdentity, config);
 
     this.databasePassword = config.requireSecret("forgejoDbPassword");
     this.postgresMasterPassword = config.requireSecret("postgresPassword");

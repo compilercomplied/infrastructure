@@ -7,8 +7,8 @@ state is hosted on Pulumi.
 - **[architecture.md](./docs/architecture.md)** — the high-level map: cluster
   topology, namespaces, security & storage patterns, and the shared-database
   model.
-- **[workloads.md](./docs/workloads.md)** — the agentic and sandboxed workflows
-  (Hermes Agent, MCP sidekicks, Kata-isolated sandbox).
+- **[workloads.md](./docs/workloads.md)** — Hermes Agent, MCP sidekicks,
+  agent namespaces, and the experimental Kata runtime.
 - **[android-emulation.md](./docs/android-emulation.md)** — Docker build and
   hardware-accelerated Android execution for Hermes and Forgejo CI.
 - **[selfhosted.md](./docs/selfhosted.md)** — how self-hosted services are
