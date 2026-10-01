@@ -11,6 +11,7 @@ export class WindshiftSettings implements AppSettings {
     "WINDSHIFT_MEMORY_LIMIT_MB": "512",
     "SESSION_IP_BINDING": "log",
     "LOG_FORMAT": "json",
+    "MCP_ENABLED": "true",
   };
   public readonly secrets: AppSecrets;
 
