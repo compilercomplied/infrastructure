@@ -1,28 +1,22 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
-# Exit immediately if a command exits with a non-zero status.
-set -e
+set -eu
 
-if ! command -v restic >/dev/null 2>&1; then
-  echo "Installing restic..."
-  if command -v apk >/dev/null 2>&1; then
-    apk add --no-cache restic
-  elif command -v apt-get >/dev/null 2>&1; then
-    apt-get update && apt-get install -y restic
-  else
-    echo "Unsupported package manager. Please install restic manually."
+export MYSQL_PWD="$DB_PASSWORD"
+
+# CNI policy programming can briefly lag Pod startup; retrying the dump here avoids
+# turning that transient window into a failed nightly backup or a duplicate snapshot.
+attempt=1
+while ! mariadb-dump \
+  -h "$DB_HOST" \
+  -u "$DB_USER" \
+  --result-file="$BACKUP_PATH/${DB_NAME}.sql" \
+  "$DB_NAME"; do
+  if [ "$attempt" -ge 12 ]; then
+    echo "MariaDB dump failed after $attempt attempts" >&2
     exit 1
   fi
-fi
-
-echo "Checking restic repository status..."
-restic snapshots >/dev/null 2>&1 || restic init
-
-echo "Performing MariaDB database dump and streaming to restic..."
-export MYSQL_PWD="$DB_PASSWORD"
-mariadb-dump -h "$DB_HOST" -u "$DB_USER" "$DB_NAME" | \
-  restic backup --stdin --stdin-filename "${DB_NAME}.sql" --tag database --tag mariadb --tag "$APP_NAME"
-
-echo "Pruning old snapshots according to retention policy..."
-restic forget --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --prune
-echo "Backup process completed successfully!"
+  echo "MariaDB is not ready; retrying dump in 5 seconds ($attempt/12)" >&2
+  attempt=$((attempt + 1))
+  sleep 5
+done

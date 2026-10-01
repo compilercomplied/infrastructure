@@ -152,11 +152,22 @@ All state is backed up with **restic to Cloudflare R2**. The helper
 database or a PVC — into a `CronJob` running a restic backup. Each database and
 important PVC declares its own backup job in the module that owns it:
 
-- **Databases** are dumped with the app's DB client image and addressed by
-  logical database name, so each app's schema is restored independently.
-- **PVCs** are tarred read-only from the mounted volume (never written back
-  into). Backup jobs default to a daily 03:00 schedule, forbid overlap, and keep
-  a bounded history.
+- **Databases** are dumped by an init container with the app's DB client image.
+  Restic only starts after that dump succeeds, so a failed or partial dump cannot
+  be recorded as a successful backup.
+- **PVCs** are read from a read-only mount (never written back into).
+- Backup jobs use a digest-pinned Restic image, stable source identity, bounded
+  retries, and deterministic scheduling across the 03:00-03:44 window in the
+  `Europe/Madrid` timezone. A completed Job therefore means that its snapshot
+  was committed to R2.
+
+Retention is deliberately separate from backup creation. The singleton
+`restic-maintenance` CronJob runs at 05:00 and applies the 7 daily, 4 weekly, and
+12 monthly policy with `tags,paths` grouping. Excluding Kubernetes-generated Pod
+hostnames from grouping prevents each daily Pod from becoming a permanent
+retention group, while running one maintenance job prevents concurrent prune
+locks. Prometheus alerts if a backup has never succeeded or its last successful
+snapshot is older than 36 hours.
 
 For a **fresh cluster**, `scripts/restore-cluster.sh` is the single entry point
 that hydrates PVCs and databases from the R2 restic repository. It is destructive

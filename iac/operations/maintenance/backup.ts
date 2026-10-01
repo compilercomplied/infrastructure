@@ -10,12 +10,36 @@ import { Labels } from "../../workloads/selfhosted/labels";
 const postgresBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-postgres.sh"), "utf8");
 const mariadbBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-mariadb.sh"), "utf8");
 const pvcBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-pvc.sh"), "utf8");
+const resticBackupScript = fs.readFileSync(path.join(__dirname, "scripts", "backup-restic.sh"), "utf8");
+
+// A digest keeps backup behavior stable even if the upstream tag is later replaced.
+export const resticImage = "restic/restic@sha256:9940e6c7421ab3a21ee9fdc4e91596d04c792b600d31b102696c75cbf3ac4481";
 
 const config = new pulumi.Config("maintenance");
 const resticRepository = config.requireSecret("resticRepository");
 const resticPassword = config.requireSecret("resticPassword");
 const r2AccessKeyId = config.requireSecret("r2AccessKeyId");
 const r2SecretAccessKey = config.requireSecret("r2SecretAccessKey");
+
+export function resticEnvironment(): k8s.types.input.core.v1.EnvVar[] {
+  return [
+    { name: "RESTIC_REPOSITORY", value: resticRepository },
+    { name: "RESTIC_PASSWORD", value: resticPassword },
+    { name: "AWS_ACCESS_KEY_ID", value: r2AccessKeyId },
+    { name: "AWS_SECRET_ACCESS_KEY", value: r2SecretAccessKey },
+    // Cloudflare R2 is S3-compatible but requires a region for the S3 client.
+    { name: "AWS_DEFAULT_REGION", value: "us-east-1" },
+    { name: "RESTIC_CACHE_DIR", value: "/tmp/restic-cache" },
+  ];
+}
+
+function stableScheduleMinute(value: string): number {
+  let hash = 0;
+  for (const character of value) {
+    hash = ((hash * 31) + character.charCodeAt(0)) >>> 0;
+  }
+  return hash % 45;
+}
 
 export type BackupSource =
   | {
@@ -60,7 +84,7 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
   const {
     appName,
     namespace,
-    schedule = "0 3 * * *", // Default schedule runs daily at 3 AM
+    schedule,
     source,
     dependencies = [],
     parent,
@@ -83,21 +107,15 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       "backup-postgres.sh": postgresBackupScript,
       "backup-mariadb.sh": mariadbBackupScript,
       "backup-pvc.sh": pvcBackupScript,
+      "backup-restic.sh": resticBackupScript,
     },
   }, { dependsOn: dependencies, parent, aliases });
 
-  let image: string;
-  let scriptName: string;
-  const env: k8s.types.input.core.v1.EnvVar[] = [
-    { name: "RESTIC_REPOSITORY", value: resticRepository },
-    { name: "RESTIC_PASSWORD", value: resticPassword },
-    { name: "AWS_ACCESS_KEY_ID", value: r2AccessKeyId },
-    { name: "AWS_SECRET_ACCESS_KEY", value: r2SecretAccessKey },
-    // Cloudflare R2 is S3-compatible but requires a dummy region to satisfy Restic's S3 driver.
-    { name: "AWS_DEFAULT_REGION", value: "us-east-1" },
-  ];
+  let dumpContainer: k8s.types.input.core.v1.Container | undefined;
+  const env = resticEnvironment();
   const volumes: k8s.types.input.core.v1.Volume[] = [];
   const volumeMounts: k8s.types.input.core.v1.VolumeMount[] = [];
+  const backupId = cronJobName;
 
   // Always mount the ConfigMap containing our parameterized scripts.
   volumes.push({
@@ -115,39 +133,36 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
   });
 
   if (source.type === "postgres") {
-    scriptName = "backup-postgres.sh";
-    image = postgresClientImage;
-
-    env.push(
+    const dumpEnv: k8s.types.input.core.v1.EnvVar[] = [
       { name: "DB_HOST", value: source.dbHost },
       { name: "DB_USER", value: source.dbUser },
       { name: "DB_NAME", value: source.databaseName },
       { name: "DB_PASSWORD", value: source.dbPasswordSecret },
-      { name: "APP_NAME", value: appName }
-    );
+      { name: "BACKUP_PATH", value: "/backup" },
+    ];
+    dumpContainer = {
+      name: "database-dump",
+      image: postgresClientImage,
+      command: ["/bin/sh", "/scripts/backup-postgres.sh"],
+      env: dumpEnv,
+      volumeMounts: [volumeMounts[0], { name: "backup-source-volume", mountPath: "/backup" }],
+    };
   } else if (source.type === "mariadb") {
-    scriptName = "backup-mariadb.sh";
-    image = source.clientImage;
-
-    env.push(
+    const dumpEnv: k8s.types.input.core.v1.EnvVar[] = [
       { name: "DB_HOST", value: source.dbHost },
       { name: "DB_USER", value: source.dbUser },
       { name: "DB_NAME", value: source.databaseName },
       { name: "DB_PASSWORD", value: source.dbPasswordSecret },
-      { name: "APP_NAME", value: appName }
-    );
+      { name: "BACKUP_PATH", value: "/backup" },
+    ];
+    dumpContainer = {
+      name: "database-dump",
+      image: source.clientImage,
+      command: ["/bin/sh", "/scripts/backup-mariadb.sh"],
+      env: dumpEnv,
+      volumeMounts: [volumeMounts[0], { name: "backup-source-volume", mountPath: "/backup" }],
+    };
   } else {
-    scriptName = "backup-pvc.sh";
-    // Use standard Alpine image for simple directory backups.
-    image = "alpine:3.19";
-
-    env.push(
-      { name: "BACKUP_PATH", value: source.mountPath },
-      { name: "APP_NAME", value: appName }
-    );
-
-    // Mount target PVC in read-only mode to prevent any chance of application
-		// data corruption.
     volumes.push({
       name: "backup-source-volume",
       persistentVolumeClaim: {
@@ -162,6 +177,22 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       readOnly: true,
     });
   }
+
+  if (source.type !== "pvc") {
+    // Database dumps are materialized before Restic starts so a failed dump can never
+    // produce a successful-looking repository snapshot.
+    volumes.push({ name: "backup-source-volume", emptyDir: {} });
+    volumeMounts.push({ name: "backup-source-volume", mountPath: "/backup", readOnly: true });
+  }
+
+  env.push(
+    { name: "BACKUP_PATH", value: source.type === "pvc" ? source.mountPath : "/backup" },
+    { name: "BACKUP_FILE", value: source.type === "pvc" ? "" : `${source.databaseName}.sql` },
+    { name: "BACKUP_KIND", value: source.type === "pvc" ? "pvc" : "database" },
+    { name: "BACKUP_ENGINE", value: source.type === "pvc" ? "" : source.type },
+    { name: "BACKUP_ID", value: backupId },
+    { name: "APP_NAME", value: appName },
+  );
 
   const jobDeps = [scriptsConfigMap, ...dependencies];
 
@@ -178,23 +209,27 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
       namespace: namespace,
     },
     spec: {
-      schedule: schedule,
-      concurrencyPolicy: "Forbid", // Avoid concurrent backups on the same bucket to prevent lock contention
+      // Spreading repository writes reduces R2 pressure without relying on mutable per-app configuration.
+      schedule: schedule ?? `${stableScheduleMinute(cronJobName)} 3 * * *`,
+      timeZone: "Europe/Madrid",
+      concurrencyPolicy: "Forbid",
       successfulJobsHistoryLimit: 3,
       failedJobsHistoryLimit: 5,
       jobTemplate: {
         spec: {
+          backoffLimit: 1,
+          activeDeadlineSeconds: 7200,
           template: {
             metadata: {
               labels: cronJobLabels,
             },
             spec: {
               restartPolicy: "OnFailure",
+              initContainers: dumpContainer ? [dumpContainer] : undefined,
               containers: [{
                 name: "restic-backup",
-                image: image,
-                // Execute the mounted script directly from the ConfigMap volume
-                command: ["/bin/sh", `/scripts/${scriptName}`],
+                image: resticImage,
+                command: ["/bin/sh", "/scripts/backup-restic.sh"],
                 env: env,
                 volumeMounts: volumeMounts,
               }],
