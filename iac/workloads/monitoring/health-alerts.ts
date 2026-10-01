@@ -42,6 +42,24 @@ export function configureHealthAlerts(
             summary: "Backup has never succeeded: {{ $labels.namespace }}/{{ $labels.cronjob }}",
             description: "The backup CronJob has existed for 36 hours without recording a successful run.",
           },
+        }, {
+          alert: "PvcExporterScanFailed",
+          expr: "pvc_exporter_scan_success == 0",
+          for: "10m",
+          labels: { severity: "warning" },
+          annotations: {
+            summary: "PVC exporter filesystem scan failed",
+            description: "The exporter is serving cached metrics, but its latest top-level filesystem scan failed.",
+          },
+        }, {
+          alert: "PvcExporterScanStale",
+          expr: "time() - pvc_exporter_last_scan_timestamp_seconds > 900",
+          for: "5m",
+          labels: { severity: "critical" },
+          annotations: {
+            summary: "PVC exporter filesystem data is stale",
+            description: "The exporter has not completed a filesystem scan in more than 15 minutes.",
+          },
         }],
       }],
     },

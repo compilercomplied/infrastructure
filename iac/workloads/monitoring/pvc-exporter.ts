@@ -46,6 +46,9 @@ export function configurePvcExporter(
             ports: [{ containerPort: 9123, name: "metrics" }],
             env: [
               { name: "PYTHONDONTWRITEBYTECODE", value: "1" },
+              // A five-minute scan cadence keeps filesystem walking independent of the
+              // 30-second Prometheus scrape interval and bounds background I/O pressure.
+              { name: "SCAN_INTERVAL_SECONDS", value: "300" },
             ],
             securityContext: {
               allowPrivilegeEscalation: false,
@@ -67,8 +70,18 @@ export function configurePvcExporter(
               },
             ],
             resources: {
-              limits: { memory: "64Mi", cpu: "100m" },
-              requests: { memory: "16Mi", cpu: "10m" },
+              limits: { memory: "128Mi", cpu: "500m" },
+              requests: { memory: "32Mi", cpu: "25m" },
+            },
+            readinessProbe: {
+              httpGet: { path: "/healthz", port: "metrics" },
+              initialDelaySeconds: 2,
+              periodSeconds: 10,
+            },
+            livenessProbe: {
+              httpGet: { path: "/healthz", port: "metrics" },
+              initialDelaySeconds: 10,
+              periodSeconds: 30,
             },
           }],
           volumes: [
@@ -116,6 +129,7 @@ export function configurePvcExporter(
         port: "metrics",
         path: "/metrics",
         interval: "30s",
+        scrapeTimeout: "5s",
       }],
     },
   }, { dependsOn: [service] });
