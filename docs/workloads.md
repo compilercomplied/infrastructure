@@ -56,3 +56,8 @@ Two access paths are exposed:
 Its persistent data lives on a PVC mounted at `/opt/data` (configuration,
 memories, skills) and is backed up daily via the standard restic backup job
 described in `architecture.md`.
+
+Hermes also has an image-owned Android SDK, a persistent AVD volume, KVM device
+allocation, and a DinD sidecar for code compilation and verification. The
+shared execution goal, security boundaries, CI-runner design, and operational
+checks are documented in [android-emulation.md](./android-emulation.md).

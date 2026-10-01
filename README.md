@@ -9,6 +9,8 @@ state is hosted on Pulumi.
   model.
 - **[workloads.md](./docs/workloads.md)** — the agentic and sandboxed workflows
   (Hermes Agent, MCP sidekicks, Kata-isolated sandbox).
+- **[android-emulation.md](./docs/android-emulation.md)** — Docker build and
+  hardware-accelerated Android execution for Hermes and Forgejo CI.
 - **[selfhosted.md](./docs/selfhosted.md)** — how self-hosted services are
   declared and exposed.
 

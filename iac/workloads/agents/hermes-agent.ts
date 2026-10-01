@@ -26,7 +26,13 @@ export function configureHermesAgent(
       image: androidImage,
       imagePullPolicy: "IfNotPresent",
       nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
-      podSecurityContext: { supplementalGroups: [990] },
+      podSecurityContext: {
+        // Hermes services drop to GID 10000 after s6 initialization, so the PVCs need a
+        // Kubernetes-managed group instead of relying on root-owned legacy directories.
+        fsGroup: 10000,
+        fsGroupChangePolicy: "OnRootMismatch",
+        supplementalGroups: [990],
+      },
       containerSecurityContext: { privileged: false },
       endpoints: [
         {
