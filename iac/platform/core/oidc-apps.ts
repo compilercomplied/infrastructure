@@ -1,15 +1,15 @@
 import * as pulumi from "@pulumi/pulumi";
 import { OidcAppRegistration } from "../../library/oidc-app";
-import { tandoorIdentity } from "../../workloads/selfhosted/tandoor-recipes-identity";
-import { linkwardenIdentity } from "../../workloads/selfhosted/linkwarden-identity";
-import { grafanaIdentity } from "../../workloads/monitoring/grafana-identity";
-import { grimmoryIdentity } from "../../workloads/selfhosted/grimmory-identity";
-import { hermesIdentity } from "../../workloads/agents/hermes-agent-identity";
-import { forgejoIdentity } from "../../workloads/forgejo/forgejo-identity";
+import { tandoorIdentity } from "../../workloads/selfhosted/tandoor-recipes/identity";
+import { linkwardenIdentity } from "../../workloads/selfhosted/linkwarden/identity";
+import { grafanaIdentity } from "../../workloads/monitoring/grafana/identity";
+import { grimmoryIdentity } from "../../workloads/selfhosted/grimmory/identity";
+import { hermesIdentity } from "../../workloads/agents/hermes-agent/identity";
+import { forgejoIdentity } from "../../workloads/forgejo/app/identity";
 import { litellmIdentity } from "./litellm-identity";
-import { memosIdentity } from "../../workloads/selfhosted/memos-identity";
-import { windshiftIdentity } from "../../workloads/selfhosted/windshift-identity";
-import { outlineIdentity } from "../../workloads/selfhosted/outline-identity";
+import { memosIdentity } from "../../workloads/selfhosted/memos/identity";
+import { windshiftIdentity } from "../../workloads/selfhosted/windshift/identity";
+import { outlineIdentity } from "../../workloads/selfhosted/outline/identity";
 
 export const oidcApps: readonly OidcAppRegistration[] = [
   tandoorIdentity,

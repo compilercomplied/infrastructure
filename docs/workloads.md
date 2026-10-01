@@ -35,7 +35,7 @@ privileged installer handles the host runtime setup.
 
 The self-hosted Hermes Agent runs as a `custom:selfhosted:HermesAgent` component
 declared in `iac/library/hermes-agent.ts`, with its deployment in
-`iac/workloads/agents/hermes-agent.ts`. It talks to the LLM backend through the
+`iac/workloads/agents/hermes-agent/index.ts`. It talks to the LLM backend through the
 LiteLLM gateway in `infrastructure`.
 
 Two access paths are exposed:

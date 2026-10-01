@@ -54,7 +54,7 @@ NetworkPolicy that lets the ingress reach the pods.
 Two external preconditions apply to any new public hostname:
 
 1. A matching **DNS record in Cloudflare** pointing the host at the tunnel.
-2. A **route entry in `iac/workloads/selfhosted/cloudflared.ts`** so `cloudflared` answers
+2. A **route entry in `iac/workloads/selfhosted/cloudflared/index.ts`** so `cloudflared` answers
    that host.
 
 Internal-only workloads (including the supporting services that back a
@@ -80,7 +80,7 @@ to wake the app; it retrieves messages from `notifications.gdario.dev`.
 ### Memos sign-in
 
 Memos reads SSO, its sign-in policy, and its access mode from JSON files mounted
-at `/etc/secrets` (`iac/workloads/selfhosted/memos.ts`), because it has no
+at `/etc/secrets` (`iac/workloads/selfhosted/memos/index.ts`), because it has no
 environment variable for them. Keeping those files in IaC also makes the
 instance API reject edits to them. Two consequences are worth knowing before the
 first sign-in:

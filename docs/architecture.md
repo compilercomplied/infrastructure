@@ -120,7 +120,7 @@ Authentication to the apps is centralized in **Authentik** (`auth.gdario.dev`)
 as the OIDC provider, with **Google OAuth** as the identity source. Self-service
 signup is off — an administrator provisions users in Authentik up front, and
 those users authenticate with their existing Google accounts. Each integrating
-app has a co-located `*-identity.ts` registration collected by `iac/platform/core/oidc-apps.ts`; Authentik's OIDC blueprint entries
+app has a co-located `identity.ts` registration collected by `iac/platform/core/oidc-apps.ts`; Authentik's OIDC blueprint entries
 are generated from those registrations. See [Adding an OIDC application](./authentik-oidc.md).
 
 Two services intentionally bypass OIDC and authenticate with a bearer token
@@ -214,7 +214,7 @@ The cluster hosts an AI-agent fleet, and treats it as security-critical:
   Its dashboard is fronted by Authentik OIDC; its
   OpenAI-compatible API endpoint uses its own bearer key. The component is
   `custom:selfhosted:HermesAgent`, declared in `iac/library/hermes-agent.ts`
-  and deployed from `iac/workloads/agents/hermes-agent.ts`.
+  and deployed from `iac/workloads/agents/hermes-agent/index.ts`.
 - **MCP servers** (`agent-sidekicks`) expose read/write tooling to agents for
   Tandoor, Outline, Grafana, and Kubernetes.
 - **Kata experiments** can use the `agent-sandbox` namespace and the Kata runtime

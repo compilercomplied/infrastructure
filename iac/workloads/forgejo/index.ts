@@ -2,9 +2,9 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { configureNamespaceSecurity } from "../selfhosted/security";
 
-import { configureForgejo as configureForgejoApp } from "./forgejo";
-import { configureForgejoRunner } from "./forgejo-runner";
-import { configureForgejoAndroidRunner } from "./forgejo-android-runner";
+import { configureForgejo as configureForgejoApp } from "./app";
+import { configureForgejoRunner } from "./runner";
+import { configureForgejoAndroidRunner } from "./android-runner";
 
 
 export function configureForgejo(dependencies: pulumi.Resource[] = []) {
