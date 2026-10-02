@@ -20,6 +20,7 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
   const bootstrapConfig = {
     "BOOTSTRAP_ADMIN_EMAIL": config.requireSecret("user-gdario-email"),
     "BOOTSTRAP_ADMIN_PASSWORD": config.requireSecret("windshiftBootstrapPassword"),
+    "WINDSHIFT_FORGEJO_PAT": config.requireSecret("windshiftForgejoPat"),
     "OIDC_CLIENT_SECRET": oidcClientSecret(windshiftIdentity, config),
     "OIDC_CLIENT_ID": windshiftIdentity.clientId,
     "OIDC_ISSUER": oidcIssuer(windshiftIdentity),

@@ -129,3 +129,5 @@ config:
     secure: v1:e6Q3xBSE43VsnKI1:CY/rhlfj28pEr7zDIm1QU6oxc19YQDneCLJaUoBj+pJMF4H9g/iTv24t38E3VBORHU8f/SrOl1ISuzGeRSpiZ675nEwTmzBfVr+999BV71g=
   selfhosted:windshiftBootstrapPassword:
     secure: v1:4WiAqbM6ZB5CXj46:NsYdjAJYfNu5I+xA2goI7f2ovGE8DZ5AH3n4MtgelZDQMnA9v8qIFrvEM+KQq7+SIZyZZTHgBYXmGiNA+4XGty8JUVSC/fJbnvKHnaapPz0=
+  selfhosted:windshiftForgejoPat:
+    secure: v1:2TOcv4pFKSk2tk2b:0Vfx/n73OFG7Xre53jJaDFg4znGkEv9A2POLCjmLzeQv7srAORIPaVdggpmHQZQVOQBjapW/qBA=
