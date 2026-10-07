@@ -53,5 +53,4 @@ Its main container receives a KVM device allocation and a persistent AVD volume.
 A dedicated DinD sidecar supplies the Docker daemon through `DOCKER_HOST`;
 Docker images and containers use ephemeral storage. The main container has the
 device and tools needed for an accelerated emulator. KVM access inside containers
-started by DinD has not been validated. The device path, CI-runner design, and operational
-checks are documented in [android-emulation.md](./android-emulation.md).
+started by DinD has not been validated.

@@ -31,11 +31,8 @@ export function configureForgejoAndroidRunner(
     config.get("androidRunnerImage") ?? "code.forgejo.org/forgejo/runner:3.3.0";
   const dindImage = config.get("androidDindImage") ?? "docker:dind";
 
-  // Bootstrap and runner-config ConfigMaps. The runner config leaves container.options empty:
-  // forward the host /dev/kvm from DinD into the *job* container requires config that we cannot
-  // claim works end-to-end. KVM device forwarding from the privileged dind into the subsequent
-  // unprivileged job container must be validated live and is tracked in the android-kvm runner
-  // issue; until then this is the hook where the --device flag would be added.
+  // Docker job containers are constrained independently so a single emulator cannot consume all
+  // CPU or memory retained by DinD on a shared worker.
   const bootstrapConfigMap = new k8s.core.v1.ConfigMap(`${name}-bootstrap-scripts`, {
     metadata: { name: `${name}-bootstrap-scripts`, namespace },
     data: {
@@ -59,7 +56,7 @@ runner:
 
 container:
   docker_host: DOCKER_HOST_REPLACE_ME
-  options: "--device=/dev/kvm"
+  options: "--device=/dev/kvm --cpus=1 --memory=2g --memory-swap=2g"
 `,
     },
   }, { dependsOn: dependencies });
@@ -147,8 +144,8 @@ container:
   const deployment = new k8s.apps.v1.Deployment(name, {
     metadata: { name, namespace },
     spec: {
-      // This host has only two physical CPU cores, so even capacity-one emulator execution can
-      // starve control-plane and application workloads. Re-enable only with an isolated worker.
+      // The labelled node is also the control-plane worker; re-enable only after an isolated
+      // worker has demonstrated that the bounded emulator workload leaves core services healthy.
       replicas: 0,
       selector: { matchLabels: { app: name } },
       template: {
@@ -157,8 +154,7 @@ container:
           serviceAccountName: serviceAccount.metadata.name,
           automountServiceAccountToken: false,
           // Lock down host exposure: no hostNetwork/hostPID/hostIPC and no docker.sock hostPath.
-          // dind gets its own emptyDir dockersock, and /dev/kvm comes in as an explicit CharDevice
-          // mounted only into the privileged dind sidecar.
+          // The device plugin injects /dev/kvm only after scheduler allocation to the DinD sidecar.
           nodeSelector: { [androidRunnerNodeLabel]: "true" },
           // runtimeClassName intentionally omitted so pods run on the default (runc) runtime, not kata.
           containers: [
@@ -184,6 +180,10 @@ container:
                 // the dedicated secret, leaving the generic runner's PVC untouched.
                 { name: "RUNNER_REGISTRATION_GENERATION", value: "2" },
               ],
+              resources: {
+                requests: { cpu: "100m", memory: "128Mi" },
+                limits: { cpu: "250m", memory: "256Mi" },
+              },
               volumeMounts: [
                 { name: "data", mountPath: "/data" },
                 { name: "config", mountPath: "/config" },
@@ -199,10 +199,13 @@ container:
               args: ["dockerd", "--host=unix:///var/run/docker.sock"],
               securityContext: { privileged: true },
               env: [{ name: "DOCKER_TLS_CERTDIR", value: "" }],
+              resources: {
+                requests: { cpu: "1", memory: "2Gi", "devic.es/kvm": "1" },
+                limits: { cpu: "1500m", memory: "3Gi", "devic.es/kvm": "1" },
+              },
               volumeMounts: [
                 { name: "docker-storage", mountPath: "/var/lib/docker" },
                 { name: "dind-socket", mountPath: "/var/run" },
-                { name: "dev-kvm", mountPath: "/dev/kvm" },
               ],
             },
           ],
@@ -215,12 +218,6 @@ container:
             },
             { name: "docker-storage", emptyDir: {} },
             { name: "dind-socket", emptyDir: {} },
-            // Pass the host's KVM accelerator into the dind pods. Forwarding it onward into the
-            // unprivileged job container is a separate open question (see container options above).
-            {
-              name: "dev-kvm",
-              hostPath: { path: "/dev/kvm", type: "CharDevice" },
-            },
           ],
         },
       },

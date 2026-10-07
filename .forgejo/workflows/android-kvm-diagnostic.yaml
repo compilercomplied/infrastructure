@@ -13,7 +13,7 @@ jobs:
       image: catthehacker/ubuntu:act-latest
       # forgejo-runner v3.3.0 applies this workflow-level option to an explicit job container;
       # its global container.options is not propagated when the workflow declares container.image.
-      options: --device=/dev/kvm
+      options: --device=/dev/kvm --cpus=1 --memory=2g --memory-swap=2g
     steps:
       - name: Verify the restricted job boundary
         shell: bash
