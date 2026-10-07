@@ -2,6 +2,14 @@ name: Android KVM diagnostic
 
 on:
   workflow_dispatch:
+  pull_request:
+    paths:
+      - .forgejo/workflows/android-kvm-diagnostic.yaml
+  push:
+    branches:
+      - master
+    paths:
+      - .forgejo/workflows/android-kvm-diagnostic.yaml
 
 jobs:
   android-kvm:
@@ -13,7 +21,7 @@ jobs:
       image: catthehacker/ubuntu:act-latest
       # forgejo-runner v3.3.0 applies this workflow-level option to an explicit job container;
       # its global container.options is not propagated when the workflow declares container.image.
-      options: --device=/dev/kvm --cpus=1 --memory=2g --memory-swap=2g
+      options: --device=/dev/kvm --cpus=1 --memory=2g --memory-swap=2g --sysctl net.ipv6.conf.all.disable_ipv6=1
     steps:
       - name: Verify the restricted job boundary
         shell: bash
@@ -56,7 +64,7 @@ jobs:
           sdkmanager --install \
             'platform-tools' \
             'emulator' \
-            'system-images;android-35;google_apis;x86_64'
+            'system-images;android-28;google_apis;x86_64'
 
       - name: Require Android KVM acceleration
         shell: bash
@@ -76,7 +84,7 @@ jobs:
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
           mkdir -p "$ANDROID_AVD_HOME"
           printf 'no\n' | avdmanager create avd --force --name ci-kvm \
-            --package 'system-images;android-35;google_apis;x86_64'
+            --package 'system-images;android-28;google_apis;x86_64'
 
           cleanup() {
             adb devices -l || true
@@ -87,6 +95,7 @@ jobs:
 
           emulator -avd ci-kvm \
             -accel on \
+            -memory 1536 \
             -no-window \
             -no-audio \
             -no-boot-anim \
