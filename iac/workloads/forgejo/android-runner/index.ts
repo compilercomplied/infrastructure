@@ -181,8 +181,10 @@ container:
                 { name: "RUNNER_REGISTRATION_GENERATION", value: "2" },
               ],
               resources: {
-                requests: { cpu: "100m", memory: "128Mi" },
-                limits: { cpu: "250m", memory: "256Mi" },
+                // The runner buffers workflow output while the emulator job is active; 256Mi
+                // OOM-killed it during the real Maestro smoke and orphaned the job container.
+                requests: { cpu: "100m", memory: "512Mi" },
+                limits: { cpu: "250m", memory: "1Gi" },
               },
               volumeMounts: [
                 { name: "data", mountPath: "/data" },
