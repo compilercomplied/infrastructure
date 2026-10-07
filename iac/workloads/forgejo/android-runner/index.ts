@@ -144,9 +144,9 @@ container:
   const deployment = new k8s.apps.v1.Deployment(name, {
     metadata: { name, namespace },
     spec: {
-      // The labelled node is also the control-plane worker; re-enable only after an isolated
-      // worker has demonstrated that the bounded emulator workload leaves core services healthy.
-      replicas: 0,
+      // The only KVM-capable node is shared with control-plane workloads. The runner stays bounded
+      // by the Pod and Docker job limits so its one emulator cannot claim unbounded host capacity.
+      replicas: 1,
       selector: { matchLabels: { app: name } },
       template: {
         metadata: { labels: { app: name } },
