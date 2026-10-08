@@ -147,6 +147,8 @@ container:
       // The only KVM-capable node is shared with control-plane workloads. The runner stays bounded
       // by the Pod and Docker job limits so its one emulator cannot claim unbounded host capacity.
       replicas: 1,
+      // The sole KVM allocation prevents surge Pods; update in-place with bounded downtime.
+      strategy: { type: "RollingUpdate", rollingUpdate: { maxSurge: 0, maxUnavailable: 1 } },
       selector: { matchLabels: { app: name } },
       template: {
         metadata: { labels: { app: name } },
