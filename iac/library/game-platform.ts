@@ -50,7 +50,7 @@ export class GamePlatform extends pulumi.ComponentResource {
       dependencies: [namespace],
       namePrefix: `${namespaceName}-`,
       allowMonitoringScrape: false,
-      allowCertManagerSolver: false,
+      allowCertManagerSolver: Boolean(args.httpIngresses?.length),
     });
 
     const server = new GameServer(name, {

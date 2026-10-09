@@ -10,12 +10,22 @@ export function configureMinecraft(platform: GamePlatform) {
     service: "minecraft",
     // Java 25 is required by Minecraft 26.3; VERSION remains explicit so a
     // normal rollout cannot silently change the server or world format.
-    image: "itzg/minecraft-server:java25",
+    image: "itzg/minecraft-server@sha256:46cfd0bcbd9bbd16900a765fcdd5d6f57bc0cf3471c383ad96f87e84998d93e8",
     endpoints: [{
       name: "minecraft",
       hostname: "minecraft.barpepe.party",
       containerPort: minecraftPort,
       protocol: "TCP",
+    }, {
+      name: "map",
+      containerPort: 8080,
+      protocol: "TCP",
+      exposeOnLan: false,
+    }],
+    httpIngresses: [{
+      name: "minecraft-map",
+      host: "map.minecraft.gdario.dev",
+      endpoint: "map",
     }],
     storage: [{
       name: "world",
@@ -32,7 +42,7 @@ export function configureMinecraft(platform: GamePlatform) {
       // server-side optimizations improve tick stability without changing play.
       { name: "TYPE", value: "FABRIC" },
       { name: "VERSION", value: "26.3" },
-      { name: "MODRINTH_PROJECTS", value: "fabric-api\nlithium\nferrite-core" },
+      { name: "MODRINTH_PROJECTS", value: "fabric-api\nlithium\nferrite-core\nsquaremap:FJzk5i6o" },
       { name: "MODRINTH_DOWNLOAD_DEPENDENCIES", value: "required" },
       { name: "MEMORY", value: "6G" },
       { name: "VIEW_DISTANCE", value: "10" },

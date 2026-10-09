@@ -1,6 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createManagedEnvironment } from "./workload-environment";
+import { LetsEncryptIngressResult, RateLimitConfig, createLetsEncryptIngress } from "./ingress";
 import { createWorkloadHealthProbe, WorkloadHealthCheck } from "./workload-health-probe";
 import { PeerIngressRule, createPeerIngressPolicies } from "./workload-network-policy";
 import { createPrivateService } from "./workload-service";
@@ -14,7 +15,15 @@ export interface GameServerEndpoint {
   containerPort: number;
   servicePort?: number;
   protocol: GameServerProtocol;
+  exposeOnLan?: boolean;
   allowIngressFrom?: PeerIngressRule[];
+}
+
+export interface GameServerHttpIngress {
+  name: string;
+  host: string;
+  endpoint: string;
+  rateLimit?: RateLimitConfig | false;
 }
 
 export interface GameServerLanEndpoint {
@@ -42,6 +51,7 @@ export interface GameServerArgs {
   namespace: pulumi.Input<string>;
   image: string;
   endpoints: [GameServerEndpoint, ...GameServerEndpoint[]];
+  httpIngresses?: GameServerHttpIngress[];
   storage: [GameServerStorage, ...GameServerStorage[]];
   env?: k8s.types.input.core.v1.EnvVar[];
   config?: Record<string, pulumi.Input<string>>;
@@ -72,6 +82,7 @@ export class GameServer extends pulumi.ComponentResource {
   public readonly lanService?: k8s.core.v1.Service;
   public readonly lanEndpoints: readonly GameServerLanEndpoint[];
   public readonly lanPolicies: k8s.networking.v1.NetworkPolicy[];
+  public readonly httpIngresses: LetsEncryptIngressResult[];
   public readonly backupJobs: k8s.batch.v1.CronJob[];
   public readonly healthProbe?: k8s.apiextensions.CustomResource;
 
@@ -211,7 +222,27 @@ export class GameServer extends pulumi.ComponentResource {
       parent: this,
     }));
 
-    const lanEndpoints = args.endpoints;
+    this.httpIngresses = (args.httpIngresses ?? []).map(httpIngress => {
+      const endpoint = args.endpoints.find(candidate => candidate.name === httpIngress.endpoint);
+      if (!endpoint) {
+        throw new Error(`Game server ${name} HTTP ingress targets undeclared endpoint ${httpIngress.endpoint}.`);
+      }
+
+      return createLetsEncryptIngress({
+        name: httpIngress.name,
+        namespace: args.namespace,
+        host: httpIngress.host,
+        serviceName: this.service.metadata.name,
+        servicePort: endpoint.servicePort ?? endpoint.containerPort,
+        rateLimit: httpIngress.rateLimit,
+        dependencies: [this.service],
+        parent: this,
+        targetPort: endpoint.containerPort,
+        podSelector: { app: name },
+      });
+    });
+
+    const lanEndpoints = args.endpoints.filter(endpoint => endpoint.exposeOnLan !== false);
     this.lanEndpoints = lanEndpoints.map(endpoint => ({
       name: endpoint.name,
       protocol: endpoint.protocol,
