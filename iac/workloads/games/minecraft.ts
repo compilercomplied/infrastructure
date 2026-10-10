@@ -24,7 +24,7 @@ export function configureMinecraft(platform: GamePlatform) {
     }],
     httpIngresses: [{
       name: "minecraft-map",
-      host: "map.minecraft.gdario.dev",
+      host: "map-minecraft.gdario.dev",
       endpoint: "map",
     }],
     storage: [{
