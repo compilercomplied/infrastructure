@@ -131,3 +131,13 @@ config:
     secure: v1:4WiAqbM6ZB5CXj46:NsYdjAJYfNu5I+xA2goI7f2ovGE8DZ5AH3n4MtgelZDQMnA9v8qIFrvEM+KQq7+SIZyZZTHgBYXmGiNA+4XGty8JUVSC/fJbnvKHnaapPz0=
   selfhosted:windshiftForgejoPat:
     secure: v1:2TOcv4pFKSk2tk2b:0Vfx/n73OFG7Xre53jJaDFg4znGkEv9A2POLCjmLzeQv7srAORIPaVdggpmHQZQVOQBjapW/qBA=
+  selfhosted:excalidashDbPassword:
+    secure: v1:Y6iWeLw0hELM5tWw:Wsav+Mk5XmTJ89nwQkniA6b0zdGmAm8zotAj+eWhnZ88jLTt7Pd28h0SXjkq1jo6t8G4Smm/hnpKqkkUsKPi6Wy5k9sxKm6mElWzlNqeRlw=
+  selfhosted:excalidashOidcClientSecret:
+    secure: v1:VuUxoqu3LLiWyi8K:V74F0tlwkQ2S3Hw+D70ocDeB5ivvbcO2MqD1A2ImGrU5ToGFpzOaWvTERgaWjoIQmD69MR/0pEm0rLOgwPmsPSblxCQ/K205+PCOq3/vLlI=
+  selfhosted:excalidashJwtSecret:
+    secure: v1:7we9HC+nAq5S2/Wt:jR9JYRU+Tw9DummwsKe66dDNIE0pmmkhxfJqJMFSF/yc5V8yGHLrS2iOhAKjzREpLmXP3sFi7+825EsuR+GU21sC/ChGG41ExLe3rVKMRp0=
+  selfhosted:excalidashCsrfSecret:
+    secure: v1:ZU7l5Mx4cRm5aC2q:EjRRwNOoIoAiiK6XD7mxwICthSyypOMtm6YmWhZbp+UXsPSQQ+4VoHZEcFSokOKkv3Vyx6f5UQWGOlLaqmlECXRZpo5bcNdLSjHVj6dDMGw=
+  selfhosted:excalidashApiKeyHashPepper:
+    secure: v1:VznkzH7DsiuXQVfc:gbYbonMZw3NHC17/i1PPn9q4S+WIBqjQIyHLxZDUHIpNGSuLFJwzc1O4DPfFUKnfeNalKKenMqlTlfOt9MxgjNXQNxuDJn0l8l2T/M+vpt4=

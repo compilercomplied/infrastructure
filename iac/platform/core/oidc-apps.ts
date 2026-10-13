@@ -10,6 +10,7 @@ import { litellmIdentity } from "./litellm-identity";
 import { memosIdentity } from "../../workloads/selfhosted/memos/identity";
 import { windshiftIdentity } from "../../workloads/selfhosted/windshift/identity";
 import { outlineIdentity } from "../../workloads/selfhosted/outline/identity";
+import { excalidashIdentity } from "../../workloads/selfhosted/excalidash/identity";
 
 export const oidcApps: readonly OidcAppRegistration[] = [
   tandoorIdentity,
@@ -22,6 +23,7 @@ export const oidcApps: readonly OidcAppRegistration[] = [
   memosIdentity,
   windshiftIdentity,
   outlineIdentity,
+  excalidashIdentity,
 ];
 
 export function oidcSecretEnvironment(config = new pulumi.Config("selfhosted")): Record<string, pulumi.Output<string>> {

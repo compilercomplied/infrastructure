@@ -21,6 +21,7 @@ export function configureSharedResources() {
   const outlineDbPassword = config.requireSecret("outlineDbPassword");
   const grimmoryDbPassword = config.requireSecret("grimmoryDbPassword");
   const memosDbPassword = config.requireSecret("memosDbPassword");
+  const excalidashDbPassword = config.requireSecret("excalidashDbPassword");
 
   const postgres = configureSharedPostgres(namespaceName, [
     { name: "tandoor", password: tandoorDbPassword },
@@ -30,6 +31,7 @@ export function configureSharedResources() {
     { name: "litellm", password: litellmDbPassword },
     { name: "outline", password: outlineDbPassword },
     { name: "memos", password: memosDbPassword },
+    { name: "excalidash", password: excalidashDbPassword },
   ], [namespace]);
 
   const mariadb = configureSharedMariaDb(namespaceName, [
