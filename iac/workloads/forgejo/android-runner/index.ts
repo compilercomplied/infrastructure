@@ -56,7 +56,7 @@ runner:
 
 container:
   docker_host: DOCKER_HOST_REPLACE_ME
-  options: "--device=/dev/kvm --cpus=1 --memory=2g --memory-swap=2g"
+  options: "--device=/dev/kvm --cpus=3 --memory=2g --memory-swap=2g"
 `,
     },
   }, { dependsOn: dependencies });
@@ -205,7 +205,7 @@ container:
               env: [{ name: "DOCKER_TLS_CERTDIR", value: "" }],
               resources: {
                 requests: { cpu: "1", memory: "2Gi", "devic.es/kvm": "1" },
-                limits: { cpu: "1500m", memory: "3Gi", "devic.es/kvm": "1" },
+                limits: { cpu: "3", memory: "3Gi", "devic.es/kvm": "1" },
               },
               volumeMounts: [
                 { name: "docker-storage", mountPath: "/var/lib/docker" },
