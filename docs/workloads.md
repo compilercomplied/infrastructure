@@ -54,3 +54,19 @@ A dedicated DinD sidecar supplies the Docker daemon through `DOCKER_HOST`;
 Docker images and containers use ephemeral storage. The main container has the
 device and tools needed for an accelerated emulator. KVM access inside containers
 started by DinD has not been validated.
+
+### Node diagnostics
+
+`node-diagnostics` is a DaemonSet restricted to the Android/KVM node. Its
+collector reads the host's persistent and volatile systemd journals plus root
+cgroup-v2 pressure and memory counters through read-only mounts. It publishes
+a rolling 24-hour snapshot through an internal-only service. Hermes is the only
+workload allowed to read it:
+
+- `http://node-diagnostics.agent-sidekicks.svc.cluster.local:8080/kernel.log`
+- `http://node-diagnostics.agent-sidekicks.svc.cluster.local:8080/kubelet.log`
+- `http://node-diagnostics.agent-sidekicks.svc.cluster.local:8080/cgroup-root.log`
+- `http://node-diagnostics.agent-sidekicks.svc.cluster.local:8080/generated-at.txt`
+
+The HTTP container has no host mounts and serves generated files only, so the
+agent cannot use it to execute arbitrary commands on the Debian node.
