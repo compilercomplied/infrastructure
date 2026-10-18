@@ -81,7 +81,6 @@ type SelfhostedAppCommonArgs = {
   ipFamilies?: string[];
   serviceAccountName?: pulumi.Input<string>;
   automountServiceAccountToken?: boolean;
-  runtimeClassName?: pulumi.Input<string>;
   resources?: k8s.types.input.core.v1.ResourceRequirements;
   initContainers?: k8s.types.input.core.v1.Container[];
   additionalContainers?: k8s.types.input.core.v1.Container[];
@@ -252,7 +251,6 @@ export class SelfhostedApp extends pulumi.ComponentResource {
           spec: {
             serviceAccountName: args.serviceAccountName,
             automountServiceAccountToken: args.automountServiceAccountToken,
-            runtimeClassName: args.runtimeClassName,
             nodeSelector: args.nodeSelector,
             securityContext: args.podSecurityContext,
             containers: [{

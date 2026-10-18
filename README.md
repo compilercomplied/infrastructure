@@ -8,7 +8,7 @@ state is hosted on Pulumi.
   topology, namespaces, security & storage patterns, and the shared-database
   model.
 - **[workloads.md](./docs/workloads.md)** — Hermes Agent, MCP sidekicks,
-  agent namespaces, and the experimental Kata runtime.
+  and agent namespaces.
 - **[selfhosted.md](./docs/selfhosted.md)** — how self-hosted services are
   declared and exposed.
 

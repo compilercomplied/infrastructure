@@ -19,27 +19,6 @@ export function configureInfrastructure() {
     config,
   });
 
-  // Kata Containers Deployment (kata-deploy)
-  // This Helm chart deploys a privileged DaemonSet that installs the Kata Containers runtime
-  // onto the host nodes and configures k3s' containerd to use it. It also automatically creates
-  // the `kata` RuntimeClass.
-  //
-  // NOTE: This approach was chosen to respect the "Zero ClickOps" rule and keep all cluster
-  // configuration centralized in the IaC. If managing host-level binaries via DaemonSet becomes
-  // problematic, consider migrating this setup to the `ansible-playbook` host setup directly
-  // (installing kata packages and templating config.toml.tmpl via Ansible) and only keep the
-  // RuntimeClass definition here.
-  const kataDeploy = new k8s.helm.v3.Release("kata-deploy", {
-    chart: "./platform/core/kata-deploy",
-    namespace: "kube-system",
-    values: {
-      k8sDistribution: "k3s",
-      runtimeClasses: {
-        createDefault: true,
-      },
-    },
-  });
-
   // DaemonSet to bump inotify limits on all nodes to fix fsnotify watcher errors
   // in applications like Grafana or Syncthing.
   const sysctlTuner = new k8s.apps.v1.DaemonSet("sysctl-tuner", {
@@ -74,26 +53,23 @@ export function configureInfrastructure() {
     },
   });
 
-  // Keep runtime and Android-execution capability labels in the same patch so rebuilding the
-  // single worker cannot leave a runner unschedulable. This is deliberately a label only: a
-  // NoSchedule taint on the cluster's only node would prevent ordinary workloads from recovering.
-  const kataNodeLabel = new k8s.core.v1.NodePatch("kata-node-label-debian", {
+  // The device plugin, runners, and diagnostics share this capability label. Keeping the
+  // existing patch identity avoids removing it while retiring the Kata runtime.
+  const androidKvmNodeLabel = new k8s.core.v1.NodePatch("android-kvm-node-label-debian", {
     metadata: {
       name: "debian",
       labels: {
-        "katacontainers.io/kata-runtime": "true",
         "ci.gdario.dev/android-kvm": "true",
       },
     },
-  }, { dependsOn: [kataDeploy] });
+  }, { aliases: [{ name: "kata-node-label-debian" }] });
 
   const authentik = configureAuthentik(namespaceName, []);
 
   return {
     namespace: namespaceName,
     ...litellm,
-    kataDeploy,
-    kataNodeLabel,
+    androidKvmNodeLabel,
     sysctlTuner,
     authentik,
   };

@@ -12,24 +12,9 @@ Agent resources are organized across these namespaces:
 |-----------|-----------|---------|
 | Hermes Agent | `agent-sidekicks` | The assistant driving messaging, cron, and tool integration |
 | MCP sidekicks | `agent-sidekicks` | Read/write tooling for Tandoor, Outline, Grafana, Kubernetes |
-| Control plane | `agents-control-plane` | RBAC + service accounts for the orchestrator that coordinates worker agents |
-| Sandbox namespace | `agent-sandbox` | Namespace and network-policy baseline for experiments |
 
-The namespace and RBAC definitions live in `iac/workloads/agents/control-plane/` (namespaces,
-rbac, secrets). Hermes Agent and the MCP servers are wired in
+The namespace, security policies, Hermes Agent, and MCP servers are wired in
 `iac/workloads/agents/`.
-
-## Experimental Kata runtime
-
-Kata is included in the cluster solely for virtualization experiments. The
-`agent-sandbox` namespace has a default-deny ingress policy and provides a
-place for experiments; it does not currently define an execution workload.
-
-Kata is installed entirely through the IaC with the `kata-deploy` Helm chart,
-which injects the host VM runtime and patches k3s' `containerd` to register the
-RuntimeClass. That chart is a single resource in the `infrastructure` module
-(`iac/platform/core/index.ts`), which also manages the node label. The chart's
-privileged installer handles the host runtime setup.
 
 ## Hermes Agent
 
@@ -70,3 +55,6 @@ workload allowed to read it:
 
 The HTTP container has no host mounts and serves generated files only, so the
 agent cannot use it to execute arbitrary commands on the Debian node.
+
+Hermes still requires the `agents:pulumiPassphrase` and `agents:pulumiAccessToken`
+stack settings for its Pulumi tooling.

@@ -65,17 +65,16 @@ namespace carries its own default-deny network policy (see Security).
 
 | Namespace | Purpose | What lives there |
 |-----------|---------|------------------|
-| `kube-system` | Cluster plumbing | Traefik ingress, CoreDNS rewrite, `cert-manager` solver, Kata runtime, sysctl-tuner, image-gc cron |
+| `kube-system` | Cluster plumbing | Traefik ingress, CoreDNS rewrite, `cert-manager` solver, sysctl-tuner, image-gc cron |
 | `monitoring` | Observability | Prometheus + Loki (storage), Alloy (collection), Grafana (visualization), PVC + DeepSeek-budget exporters |
 | `shared-resources` | Shared stateful foundations | The shared PostgreSQL and shared MariaDB clusters and their access policies |
 | `selfhosted` | User-facing apps | Tandoor, Linkwarden, Grimmory, Outline, Syncthing, ntfy, the `cloudflared` tunnel agent |
-| `infrastructure` | Core platform | Authentik (SSO) + its Redis, LiteLLM proxy, Kata deployment |
+| `infrastructure` | Core platform | Authentik (SSO) + its Redis, LiteLLM proxy |
 | `forgejo` | Code forge | Forgejo (git) + Forgejo Actions runner |
 | `agent-sidekicks` | AI agent tooling | The MCP servers (Tandoor, Outline, Grafana, Kubernetes) and Hermes Agent |
-| `agents` / `agents-control-plane` / `agent-sandbox` | Agent resources | Agent RBAC and control-plane resources; a namespace for sandbox experiments |
 
-The namespace entry points live under `iac/workloads/`, and the agent-management
-namespaces are centralized in `iac/workloads/agents/control-plane/namespaces.ts`.
+The namespace entry points live under `iac/workloads/`, and the agent-sidekicks
+namespace is declared in `iac/workloads/agents/index.ts`.
 
 ---
 
@@ -217,13 +216,9 @@ The cluster hosts an AI-agent fleet, and treats it as security-critical:
   and deployed from `iac/workloads/agents/hermes-agent/index.ts`.
 - **MCP servers** (`agent-sidekicks`) expose read/write tooling to agents for
   Tandoor, Outline, Grafana, and Kubernetes.
-- **Kata experiments** can use the `agent-sandbox` namespace and the Kata runtime
-  installed by the `kata-deploy` Helm chart (`iac/platform/core/index.ts`). Kata
-  is included solely for virtualization experiments; the namespace currently
-  defines no execution workload.
 
-Agent RBAC and namespace definitions live in
-`iac/workloads/agents/control-plane/`.
+Agent namespace and security definitions live in
+`iac/workloads/agents/index.ts`.
 
 ---
 

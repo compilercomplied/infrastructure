@@ -158,7 +158,6 @@ container:
           // Lock down host exposure: no hostNetwork/hostPID/hostIPC and no docker.sock hostPath.
           // The device plugin injects /dev/kvm only after scheduler allocation to the DinD sidecar.
           nodeSelector: { [androidRunnerNodeLabel]: "true" },
-          // runtimeClassName intentionally omitted so pods run on the default (runc) runtime, not kata.
           containers: [
             {
               name: "runner",

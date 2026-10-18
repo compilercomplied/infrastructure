@@ -51,8 +51,7 @@ export function configureSharedResources() {
     "infrastructure", 
     "forgejo", 
     "agent-sidekicks", 
-    "shared-resources",
-    "agents-control-plane"
+    "shared-resources"
   ];
   
   const allowedNamespaces = [
