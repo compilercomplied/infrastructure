@@ -19,7 +19,6 @@ if [ -z "$PULUMI_CONFIG_PASSPHRASE" ]; then
   exit 1
 fi
 
-npm install
 pulumi install
 pulumi login
 pulumi stack select local

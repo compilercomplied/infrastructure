@@ -1,4 +1,4 @@
-name: Pulumi Infrastructure
+name: cicd
 
 on:
   push:
@@ -25,8 +25,12 @@ jobs:
       - name: Install Pulumi CLI
         run: curl -fsSL https://get.pulumi.com | sh -s -- --version 3.228.0 && echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
 
-      - name: Install Node Dependencies
-        run: npm ci
+      - name: Generate Provider SDKs and Install Dependencies
+        run: pulumi install --non-interactive
+        working-directory: ./iac
+
+      - name: Validate Infrastructure
+        run: npm run check
         working-directory: ./iac
 
       - name: Configure Kubeconfig

@@ -141,3 +141,5 @@ config:
     secure: v1:ZU7l5Mx4cRm5aC2q:EjRRwNOoIoAiiK6XD7mxwICthSyypOMtm6YmWhZbp+UXsPSQQ+4VoHZEcFSokOKkv3Vyx6f5UQWGOlLaqmlECXRZpo5bcNdLSjHVj6dDMGw=
   selfhosted:excalidashApiKeyHashPepper:
     secure: v1:VznkzH7DsiuXQVfc:gbYbonMZw3NHC17/i1PPn9q4S+WIBqjQIyHLxZDUHIpNGSuLFJwzc1O4DPfFUKnfeNalKKenMqlTlfOt9MxgjNXQNxuDJn0l8l2T/M+vpt4=
+  forgejo:apiToken:
+    secure: v1:88Vaalyg4O3H/nW/:lgLJbhjfzUTFp2SV8stWE4dGwTd1YL8RV7s0ICIsPjk91YB6UkCgBoE62Ti3L2kho3uU1YQYw0Q=

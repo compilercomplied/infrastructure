@@ -26,9 +26,10 @@ export class ForgejoSettings implements AppSettings {
     "AUTHENTIK_DISCOVERY_URL": oidcDiscoveryUrl(forgejoIdentity),
     "AUTHENTIK_SCOPES": forgejoIdentity.scopes.join(" "),
     "FORGEJO__actions__ENABLED": "true",
-    // This permits automation to create repositories and organizations without UI setup.
+    // Personal repos remain self-service; organization repos go through policy provisioning.
     "FORGEJO__repository__ENABLE_PUSH_CREATE_USER": "true",
-    "FORGEJO__repository__ENABLE_PUSH_CREATE_ORG": "true",
+    "FORGEJO__repository__ENABLE_PUSH_CREATE_ORG": "false",
+    "FORGEJO__admin__DISABLE_REGULAR_ORG_CREATION": "true",
   };
   public readonly secrets: AppSecrets;
   public readonly databasePassword: pulumi.Output<string>;

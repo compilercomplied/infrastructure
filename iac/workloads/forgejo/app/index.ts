@@ -8,6 +8,7 @@ import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { Labels } from "../../selfhosted/labels";
 import { postgresClientImage } from "../../../platform/shared-resources/shared-postgres";
 import { forgejoSettings } from "./settings";
+import { configureRepositories } from "../repositories";
 
 // The database initializer is shared with Memos and LiteLLM; Forgejo's other scripts belong to this app.
 const dbInitScriptContent = fs.readFileSync(path.join(__dirname, "../../../operations/maintenance/scripts/init-forgejo-db.sh"), "utf8");
@@ -19,7 +20,7 @@ export function configureForgejo(
   dependencies: pulumi.Resource[] = []
 ) {
   const name = "forgejo";
-  const image = "codeberg.org/forgejo/forgejo:16.0.1";
+  const image = "codeberg.org/forgejo/forgejo:16.0.5";
 
   const settings = forgejoSettings;
 
@@ -378,6 +379,8 @@ export function configureForgejo(
     },
   }, { dependsOn: [...dependencies, app.deployment, pruneScriptsConfigMap] });
 
+  const repositories = configureRepositories([app.deployment]);
+
   return {
     deployment: app.deployment,
     sshService,
@@ -388,5 +391,6 @@ export function configureForgejo(
     androidRunnerSecret: settings.secrets["ANDROID_RUNNER_SECRET"],
     pruneCronJob,
     pruneScriptsConfigMap,
+    repositories,
   };
 }
