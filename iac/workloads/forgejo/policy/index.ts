@@ -119,7 +119,7 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
       approvalsWhitelistUsernames: [],
       dismissStaleApprovals: true,
       enableStatusCheck: true,
-      statusCheckContexts: ["cicd"],
+      statusCheckContexts: ["cicd / cicd (pull_request)"],
       blockOnRejectedReviews: true,
       blockOnOfficialReviewRequests: true,
       blockOnOutdatedBranch: true,
