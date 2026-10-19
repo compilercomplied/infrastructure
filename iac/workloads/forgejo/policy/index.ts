@@ -1,7 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as forgejo from "@pulumi/forgejo";
 import { forgejoIdentity } from "../app/identity";
-import { existingRepositories, existingContributorTeams } from "./adoption";
 
 export interface CreateRepoArgs {
   name: string;
@@ -52,7 +51,6 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
     }, {
       provider,
       protect: true,
-      import: existingContributorTeams.has(organization) ? `${organization}/Contributors` : undefined,
       ignoreChanges: ["description"],
     });
     const result = { name, owners: owners.name, contributors };
@@ -63,7 +61,6 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
   return function createRepo({ name, organization = "home", isPublic = true }: CreateRepoArgs) {
     const teams = organizationTeams(organization);
     const identity = `${organization}/${name}`;
-    const adoptedBranches = existingRepositories[identity];
     const repo = new forgejo.Repository(`forgejo-${identity}`, {
       owner: teams.name,
       name,
@@ -88,8 +85,8 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
       hasActions: true,
       hasWiki: false,
       hasProjects: false,
-      hasReleases: false,
-      hasPackages: false,
+      hasReleases: true,
+      hasPackages: true,
       internalTracker: {
         enableTimeTracker: true,
         allowOnlyContributorsToTrackTime: true,
@@ -98,42 +95,41 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
     }, {
       provider,
       protect: true,
+      // Git history must survive provider replacement or removal from Pulumi state.
+      retainOnDelete: true,
       dependsOn: [teams.contributors],
-      import: adoptedBranches === undefined ? undefined : identity,
-      // Adoption must preserve metadata outside the helper's configuration surface.
+      // Repository descriptions and templates remain editable outside this policy surface.
       ignoreChanges: ["description", "website", "template"],
     });
 
-    const protections = [...new Set(["master", ...(adoptedBranches ?? [])])].map(branch =>
-      new forgejo.BranchProtection(`forgejo-${identity}/${branch}`, {
-        repositoryId: repo.repositoryId,
-        branchName: branch,
-        enablePush: true,
-        enablePushWhitelist: true,
-        pushWhitelistTeams: [teams.owners],
-        pushWhitelistUsernames: [],
-        pushWhitelistDeployKeys: false,
-        enableMergeWhitelist: true,
-        mergeWhitelistTeams: [teams.owners],
-        mergeWhitelistUsernames: [],
-        requiredApprovals: 1,
-        enableApprovalsWhitelist: true,
-        approvalsWhitelistTeams: [teams.owners],
-        approvalsWhitelistUsernames: [],
-        dismissStaleApprovals: true,
-        enableStatusCheck: true,
-        statusCheckContexts: ["cicd"],
-        blockOnRejectedReviews: true,
-        blockOnOfficialReviewRequests: true,
-        blockOnOutdatedBranch: true,
-        requireSignedCommits: false,
-        protectedFilePatterns: "",
-        unprotectedFilePatterns: "",
-      }, {
-        provider,
-        protect: true,
-        import: adoptedBranches?.includes(branch) ? `${identity}/${branch}` : undefined,
-      }));
-    return { repo, protections };
+    const protection = new forgejo.BranchProtection(`forgejo-${identity}/master`, {
+      repositoryId: repo.repositoryId,
+      branchName: "master",
+      enablePush: true,
+      enablePushWhitelist: true,
+      pushWhitelistTeams: [teams.owners],
+      pushWhitelistUsernames: [],
+      pushWhitelistDeployKeys: false,
+      enableMergeWhitelist: true,
+      mergeWhitelistTeams: [teams.owners],
+      mergeWhitelistUsernames: [],
+      requiredApprovals: 1,
+      enableApprovalsWhitelist: true,
+      approvalsWhitelistTeams: [teams.owners],
+      approvalsWhitelistUsernames: [],
+      dismissStaleApprovals: true,
+      enableStatusCheck: true,
+      statusCheckContexts: ["cicd"],
+      blockOnRejectedReviews: true,
+      blockOnOfficialReviewRequests: true,
+      blockOnOutdatedBranch: true,
+      requireSignedCommits: false,
+      protectedFilePatterns: "",
+      unprotectedFilePatterns: "",
+    }, {
+      provider,
+      protect: true,
+    });
+    return { repo, protection };
   };
 }

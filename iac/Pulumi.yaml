@@ -9,12 +9,6 @@ config:
     value:
       pulumi:template: kubernetes-typescript
 packages:
-  authentik:
-    source: terraform-provider
-    version: 1.1.3
-    parameters:
-      - goauthentik/authentik
-      - 2026.2.0
   forgejo:
     source: terraform-provider
     version: 1.1.3

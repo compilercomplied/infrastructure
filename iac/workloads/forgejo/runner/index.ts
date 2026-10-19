@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import * as path from "path";
-import * as crypto from "crypto";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../../../library/k8s-pvc";

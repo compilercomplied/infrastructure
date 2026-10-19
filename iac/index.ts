@@ -1,4 +1,3 @@
-import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { configureMonitoring } from "./workloads/monitoring";
 import { configureMaintenance } from "./operations/maintenance";
@@ -18,13 +17,12 @@ configureMonitoring();
 configureCertManager();
 configureMaintenance();
 
-// Phase 1: Initialize new namespaces (no workloads migrated yet)
 const sharedResources = configureSharedResources();
 
 const selfhosted = configureSelfhosted(sharedResources.postgres, sharedResources.mariadb);
-const infrastructure = configureInfrastructure();
+configureInfrastructure();
 
-const forgejo = configureForgejo([sharedResources.postgres]);
+configureForgejo([sharedResources.postgres]);
 
 const gamePlatform = new GamePlatform("games");
 configureMinecraft(gamePlatform);
@@ -48,6 +46,5 @@ if (directDnsRecords.length > 0) {
   });
 }
 
-// Phase 2: Stateless Agent & MCP Migration
 const kvmDevicePlugin = configureKvmDevicePlugin();
-const sidekicks = configureAgentSidekicks(selfhosted, kvmDevicePlugin);
+configureAgentSidekicks(selfhosted, kvmDevicePlugin);

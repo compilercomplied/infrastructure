@@ -283,6 +283,9 @@ export function configureForgejo(
                   app: "hermes-agent",
                 },
               },
+              namespaceSelector: {
+                matchLabels: { "kubernetes.io/metadata.name": "agent-sidekicks" },
+              },
             },
           ],
           ports: [

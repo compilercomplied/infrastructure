@@ -138,41 +138,25 @@ export function configureSharedPostgres(
     },
   }, { dependsOn: statefulSet });
 
-  // NetworkPolicy to allow PostgreSQL ingress only from pods with AllowPostgres capability label
-  const postgresPolicy = new k8s.networking.v1.NetworkPolicy("allow-postgres-ingress", {
+  // Namespace and capability must match together so apps, initialization jobs, and
+  // backups can reach PostgreSQL without granting access to unrelated pods.
+  new k8s.networking.v1.NetworkPolicy("allow-postgres-ingress", {
     metadata: {
       name: "allow-postgres-ingress",
       namespace,
     },
     spec: {
-      podSelector: {
-        matchLabels: {
-          app: name,
-        },
-      },
+      podSelector: { matchLabels: { app: name } },
       ingress: [
         {
-          from: [
-            {
-              podSelector: {
-                matchLabels: {
-                  [Labels.Network.AllowPostgres]: "true",
-                },
-              },
+          from: ["shared-resources", "selfhosted", "infrastructure", "forgejo"].map(sourceNamespace => ({
+            namespaceSelector: {
+              matchLabels: { "kubernetes.io/metadata.name": sourceNamespace },
             },
-            {
-              namespaceSelector: {
-                matchLabels: {
-                  "kubernetes.io/metadata.name": "infrastructure",
-                },
-              },
-              podSelector: {
-                matchLabels: {
-                  [Labels.Network.AllowPostgres]: "true",
-                },
-              },
+            podSelector: {
+              matchLabels: { [Labels.Network.AllowPostgres]: "true" },
             },
-          ],
+          })),
           ports: [{ port: 5432 }],
         },
       ],

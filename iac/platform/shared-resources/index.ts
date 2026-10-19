@@ -1,7 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { configureNamespaceSecurity } from "../../workloads/selfhosted/security";
-import { configureBridgePolicies } from "./bridge-network-policies";
 import { configureSharedPostgres } from "./shared-postgres";
 import { configureSharedMariaDb } from "./shared-mariadb";
 
@@ -44,28 +43,9 @@ export function configureSharedResources() {
     namePrefix: "shared-resources-",
   });
 
-  // Pre-emptive bridge NetworkPolicy allowing other namespaces to connect 
-  // to each other during the migration.
-  const bridgeNamespaces = [
-    "selfhosted", 
-    "infrastructure", 
-    "forgejo", 
-    "agent-sidekicks", 
-    "shared-resources"
-  ];
-  
-  const allowedNamespaces = [
-    ...bridgeNamespaces,
-    "monitoring",
-    "kube-system"
-  ];
-
-  const bridgePolicies = configureBridgePolicies(bridgeNamespaces, allowedNamespaces);
-
   return {
     namespace: namespaceName,
     security,
-    bridgePolicies,
     postgres,
     mariadb,
   };

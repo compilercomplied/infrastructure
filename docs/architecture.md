@@ -109,11 +109,18 @@ opened. Some cross-namespace rules also constrain the source namespace. Authenti
 accepts labeled pods from any namespace, so adding an OIDC workload does not
 require editing its NetworkPolicy.
 
-> **Migration bridge (temporary):** a set of permissive *bridge* policies
-> (`iac/platform/shared-resources/bridge-network-policies.ts`) currently allows broader
-> cross-namespace traffic between the legacy and current layouts. These exist to
-> keep the migration non-breaking and are slated for removal once fine-grained
-> policies cover every path.
+Cross-namespace access uses explicit workload and port grants:
+
+- PostgreSQL accepts capability-labeled app, initialization, and backup pods from
+  `selfhosted`, `infrastructure`, `forgejo`, and `shared-resources` on TCP 5432.
+- MariaDB accepts capability-labeled pods from `selfhosted` on TCP 3306.
+- Hermes reaches LiteLLM in `infrastructure` and Forgejo in `forgejo`; MCP servers
+  reach their corresponding apps through workload-specific policies.
+- Outline alone reaches its Redis; Outline and its setup Job reach MinIO.
+- Cloudflared routes through Traefik, which has explicit grants to app HTTP ports.
+
+There are no migration bridge policies granting unrestricted namespace-to-namespace
+access.
 
 Authentication to the apps is centralized in **Authentik** (`auth.gdario.dev`)
 as the OIDC provider, with **Google OAuth** as the identity source. Self-service

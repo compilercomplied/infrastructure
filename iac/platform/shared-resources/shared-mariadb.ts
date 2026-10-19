@@ -111,7 +111,7 @@ export function configureSharedMariaDb(
     },
   }, { dependsOn: statefulSet });
 
-  const mariadbPolicy = new k8s.networking.v1.NetworkPolicy("allow-mariadb-ingress", {
+  new k8s.networking.v1.NetworkPolicy("allow-mariadb-ingress", {
     metadata: {
       name: "allow-mariadb-ingress",
       namespace,

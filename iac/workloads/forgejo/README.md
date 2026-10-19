@@ -7,3 +7,7 @@ requests. Repos share the same CI checks, branch protection, and squash merging.
 Add repos in [repositories.ts](./repositories.ts) with `createRepo({ name })`.
 The organization defaults to `home` and repos are public unless `isPublic: false`.
 Organizations must already exist. Personal repos stay under their owners' control.
+
+Repositories use `master` as their default and only managed protected branch.
+Existing repositories and teams are already adopted into Pulumi state; normal
+configuration does not carry import IDs.

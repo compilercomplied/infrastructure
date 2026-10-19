@@ -11,10 +11,8 @@
         "typescript": "^5.0.0"
     },
     "dependencies": {
-        "@pulumi/authentik": "file:sdks/authentik",
         "@pulumi/forgejo": "file:sdks/forgejo",
         "@pulumi/kubernetes": "^4.0.0",
-        "@pulumi/pulumi": "^3.113.0",
-        "@pulumiverse/grafana": "^2.32.0"
+        "@pulumi/pulumi": "^3.113.0"
     }
 }
