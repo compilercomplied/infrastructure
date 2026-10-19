@@ -1,0 +1,15 @@
+---
+- name: Provision homelab cluster
+  hosts: cluster
+  become: true
+  pre_tasks:
+    - name: Verify the supported cluster host
+      ansible.builtin.assert:
+        that:
+          - ansible_host | default(inventory_hostname) == '192.168.50.200'
+          - ansible_facts['distribution'] == 'Debian'
+        fail_msg: This playbook supports only the Debian cluster at 192.168.50.200.
+  roles:
+    - users
+    - common
+    - cluster

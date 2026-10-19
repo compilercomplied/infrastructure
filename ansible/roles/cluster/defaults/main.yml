@@ -1,0 +1,23 @@
+---
+# defaults file for cluster role
+
+# Poll quickly enough that short CPU turbo bursts do not outrun the cooler.
+fancontrol_interval: 3
+
+# fan2/pwm2 is the CPU cooler; it needs a meaningful baseline before package
+# temperature rises, because the CPU can boost much faster than a case fan can respond.
+fancontrol_mintemp_cpu: 35
+fancontrol_maxtemp_cpu: 60
+fancontrol_minstart_cpu: 100
+fancontrol_minstop_cpu: 90
+fancontrol_minpwm_cpu: 90
+fancontrol_maxpwm_cpu: 255
+
+# fan1/pwm1 is the large, slow chassis fan. Retain its full-speed profile so it
+# continues to provide the airflow the existing cooling arrangement depends on.
+fancontrol_mintemp_chassis: 0
+fancontrol_maxtemp_chassis: 1
+fancontrol_minstart_chassis: 100
+fancontrol_minstop_chassis: 40
+fancontrol_minpwm_chassis: 40
+fancontrol_maxpwm_chassis: 255

@@ -1,0 +1,8 @@
+---
+- name: Ensure cluster administrator exists
+  ansible.builtin.user:
+    name: gdario
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    create_home: true

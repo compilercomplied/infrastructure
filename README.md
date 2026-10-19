@@ -1,8 +1,8 @@
 # Infrastructure
 
 This project contains the infrastructure-as-code (IaC) for a k3s cluster
-containing different workflows. All infrastructure code is written in Pulumi;
-state is hosted on Pulumi.
+containing different workflows. Kubernetes resources are managed with Pulumi;
+state is hosted on Pulumi. Bare-metal provisioning lives in [ansible/](./ansible/README.md).
 
 - **[architecture.md](./docs/architecture.md)** — the high-level map: cluster
   topology, namespaces, security & storage patterns, and the shared-database

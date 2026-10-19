@@ -1,0 +1,37 @@
+---
+pxe_server_dir: "{{ lookup('env', 'HOME') }}/pxe-server"
+pxe_tftp_dir: "{{ pxe_server_dir }}/tftp"
+pxe_http_dir: "{{ pxe_server_dir }}/http"
+
+# IP address of the PXE/HTTP server (your laptop). Dynamically resolves, but can be overridden.
+pxe_server_ip: "{{ ansible_facts['default_ipv4']['address'] | default('192.168.50.122') }}"
+
+debian_netboot_url: >-
+  {{ 'https://d-i.debian.org/daily-images/amd64/daily/netboot/netboot.tar.gz' if debian_release | default('testing') == 'testing' else
+     'https://deb.debian.org/debian/dists/' ~ debian_release ~ '/main/installer-amd64/current/images/netboot/netboot.tar.gz' }}
+
+# Subnet of your local network. Automatically resolved from active network interface facts.
+# Falls back to '192.168.50.0' (your home network) to prevent crashes if facts are missing (e.g., in check mode).
+local_subnet: "{{ ansible_facts['default_ipv4']['network'] | default('192.168.50.0') }}"
+
+# SSH key to inject into the preseeded node
+ssh_public_key_path: "{{ lookup('env', 'HOME') }}/.ssh/id_ed25519.pub"
+
+# Resolve dnsmasq config path dynamically based on OS and CPU architecture
+dnsmasq_config_path: >-
+  {{ '/opt/homebrew/etc/dnsmasq.conf' if (ansible_os_family == 'Darwin' and ansible_architecture == 'arm64') else
+     '/usr/local/etc/dnsmasq.conf' if (ansible_os_family == 'Darwin') else
+     '/etc/dnsmasq.conf' }}
+
+# Resolve dnsmasq plist path dynamically on macOS
+dnsmasq_plist_src: >-
+  {{ '/opt/homebrew/opt/dnsmasq/homebrew.mxcl.dnsmasq.plist' if (ansible_os_family == 'Darwin' and ansible_architecture == 'arm64') else
+     '/usr/local/opt/dnsmasq/homebrew.mxcl.dnsmasq.plist' if (ansible_os_family == 'Darwin') else
+     '' }}
+
+# Whether to force recreation/redownload of netboot installer files
+force_netboot_download: false
+
+
+debian_release: testing
+target_user: gdario

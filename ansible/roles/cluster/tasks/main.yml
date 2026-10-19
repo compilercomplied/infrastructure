@@ -1,0 +1,57 @@
+---
+- name: Install open-iscsi for Longhorn storage support
+  ansible.builtin.apt:
+    name: open-iscsi
+    state: present
+    update_cache: yes
+
+- name: Ensure iscsid service is started and enabled
+  ansible.builtin.service:
+    name: iscsid
+    state: started
+    enabled: yes
+
+- name: Ensure k3s config directory exists
+  ansible.builtin.file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: '0755'
+
+- name: Configure k3s via config.yaml
+  ansible.builtin.copy:
+    dest: /etc/rancher/k3s/config.yaml
+    content: |
+      tls-san:
+        - cluster-cloud.personal.systems
+        - cluster.gdario.dev
+      cluster-cidr: "10.42.0.0/16,fd00:42::/56"
+      service-cidr: "10.43.0.0/16,fd00:43::/112"
+      node-ip: "192.168.50.200,fd00::200"
+    mode: '0644'
+  notify: Restart k3s
+
+- name: Check if k3s is installed
+  ansible.builtin.stat:
+    path: /usr/local/bin/k3s
+  register: k3s_binary
+
+- name: Download k3s installer
+  ansible.builtin.get_url:
+    url: https://get.k3s.io
+    dest: /tmp/k3s_install.sh
+    mode: '0755'
+  when: not k3s_binary.stat.exists
+
+- name: Install k3s
+  ansible.builtin.shell: /tmp/k3s_install.sh
+  when: not k3s_binary.stat.exists
+
+- name: Ensure k3s service is started and enabled
+  ansible.builtin.service:
+    name: k3s
+    state: started
+    enabled: yes
+
+- name: Configure passive cooling fancontrol
+  ansible.builtin.import_tasks: fancontrol.yml
+

@@ -12,15 +12,36 @@ pulumi preview --stack local "$@"
 dir = "iac"
 
 [tasks.project-setup]
-description = "Initialize local Pulumi state and stack"
+description = "Install project dependencies and initialize the local Pulumi stack"
 run = """
 if [ -z "$PULUMI_CONFIG_PASSPHRASE" ]; then
   echo "Error: PULUMI_CONFIG_PASSPHRASE is not set. The environment needs configuration provided by a human."
   exit 1
 fi
 
+ansible-galaxy collection install -r ../ansible/requirements.yml
 pulumi install
 pulumi login
 pulumi stack select local
 """
 dir = "iac"
+
+[tasks."ansible:check"]
+description = "Check provisioning playbook syntax without changing hosts"
+dir = "ansible"
+run = ["ansible-playbook playbooks/provision_cluster.yml --syntax-check", "ansible-playbook playbooks/provision_pxe.yml --syntax-check"]
+
+[tasks."ansible:cluster"]
+description = "Provision cluster hosts, k3s, storage prerequisites, and fan control"
+dir = "ansible"
+run = "ansible-playbook playbooks/provision_cluster.yml --ask-become-pass"
+
+[tasks."ansible:pxe-start"]
+description = "Start controller DHCP proxy, TFTP, and HTTP services for cluster installation"
+dir = "ansible"
+run = "ansible-playbook playbooks/provision_pxe.yml --ask-become-pass"
+
+[tasks."ansible:pxe-stop"]
+description = "Stop the cluster PXE and HTTP services on the controller"
+dir = "ansible"
+run = "ansible-playbook playbooks/provision_pxe.yml -e pxe_state=stopped --ask-become-pass"

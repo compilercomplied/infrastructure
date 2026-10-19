@@ -1,0 +1,26 @@
+---
+- name: Configure Debian package sources
+  ansible.builtin.import_tasks: apt.yml
+
+- name: Install cluster host utilities
+  ansible.builtin.apt:
+    name:
+      - ripgrep
+      - git
+      - curl
+      - build-essential
+      - unzip
+      - vim
+      - ssh
+      - gnupg
+    state: present
+
+- name: Configure inotify limits for Kubernetes workloads
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: true
+  loop:
+    - { key: fs.inotify.max_user_watches, value: '524288' }
+    - { key: fs.inotify.max_user_instances, value: '8192' }

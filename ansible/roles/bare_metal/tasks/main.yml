@@ -1,0 +1,151 @@
+---
+# ==============================================================================
+# Tasks for bare_metal (PXE Boot & Preseed Server Setup)
+# ==============================================================================
+
+- name: Manage PXE Server Setup (State = {{ pxe_state | default('started') }})
+  block:
+    # --- Cleanup / Stop Flow ---
+    - name: Stop dnsmasq service (macOS)
+      become: true
+      ansible.builtin.command:
+        cmd: "launchctl bootout system /Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist"
+      failed_when: false
+      when: 
+        - ansible_os_family == 'Darwin'
+        - pxe_state | default('started') == 'stopped'
+
+    - name: Stop dnsmasq service (Debian)
+      become: true
+      ansible.builtin.service:
+        name: dnsmasq
+        state: stopped
+      when: 
+        - ansible_os_family == 'Debian'
+        - pxe_state | default('started') == 'stopped'
+
+    - name: Stop HTTP server container
+      ansible.builtin.command:
+        cmd: "docker rm -f pxe-http"
+      failed_when: false
+      when: pxe_state | default('started') == 'stopped'
+
+    # --- Setup / Start Flow ---
+    - name: Start PXE Provisioning Setup
+      when: pxe_state | default('started') == 'started'
+      block:
+        - name: Ensure PXE directories exist
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: directory
+            mode: '0755'
+          loop:
+            - "{{ pxe_server_dir }}"
+            - "{{ pxe_tftp_dir }}"
+            - "{{ pxe_http_dir }}"
+
+        - name: Clean up old netboot files to force update
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "{{ pxe_server_dir }}/netboot.tar.gz"
+            - "{{ pxe_tftp_dir }}/pxelinux.0"
+            - "{{ pxe_tftp_dir }}/debian-installer"
+          when: force_netboot_download | default(false) | bool
+
+        - name: Download Debian netboot archive
+          ansible.builtin.get_url:
+            url: "{{ debian_netboot_url }}"
+            dest: "{{ pxe_server_dir }}/netboot.tar.gz"
+            mode: '0644'
+          register: download_netboot
+
+        - name: Check if pxelinux.0 exists
+          ansible.builtin.stat:
+            path: "{{ pxe_tftp_dir }}/pxelinux.0"
+          register: pxelinux_check
+
+        - name: Extract Debian netboot files
+          ansible.builtin.command:
+            cmd: "tar -xf {{ pxe_server_dir }}/netboot.tar.gz -C {{ pxe_tftp_dir }}"
+          when: download_netboot.changed or not pxelinux_check.stat.exists
+
+        - name: Deploy dnsmasq configuration to system path
+          become: true
+          ansible.builtin.template:
+            src: dnsmasq.conf.j2
+            dest: "{{ dnsmasq_config_path }}"
+            mode: '0644'
+
+        - name: Deploy preseed configuration
+          ansible.builtin.template:
+            src: preseed.cfg.j2
+            dest: "{{ pxe_http_dir }}/preseed.cfg"
+            mode: '0644'
+
+        - name: Deploy GRUB configuration (UEFI)
+          ansible.builtin.template:
+            src: grub.cfg.j2
+            dest: "{{ pxe_tftp_dir }}/debian-installer/amd64/grub/grub.cfg"
+            mode: '0644'
+
+        - name: Deploy PXELINUX configuration (BIOS)
+          ansible.builtin.template:
+            src: pxe.default.j2
+            dest: "{{ pxe_tftp_dir }}/pxelinux.cfg/default"
+            mode: '0644'
+
+        - name: Copy dnsmasq plist to LaunchDaemons (macOS)
+          become: true
+          ansible.builtin.copy:
+            src: "{{ dnsmasq_plist_src }}"
+            dest: "/Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist"
+            remote_src: yes
+            mode: '0644'
+          when: ansible_os_family == 'Darwin'
+
+        - name: Bootstrap dnsmasq service via launchctl (macOS)
+          become: true
+          ansible.builtin.command:
+            cmd: "launchctl bootstrap system /Library/LaunchDaemons/homebrew.mxcl.dnsmasq.plist"
+          failed_when: false
+          when: ansible_os_family == 'Darwin'
+
+        - name: Start/Kickstart dnsmasq service (macOS)
+          become: true
+          ansible.builtin.command:
+            cmd: "launchctl kickstart -k system/homebrew.mxcl.dnsmasq"
+          when: ansible_os_family == 'Darwin'
+
+        - name: Start dnsmasq service (Debian)
+          become: true
+          ansible.builtin.service:
+            name: dnsmasq
+            state: restarted
+            enabled: true
+          when: ansible_os_family == 'Debian'
+
+        - name: Stop existing HTTP server container (ensure no conflicts)
+          ansible.builtin.command:
+            cmd: "docker rm -f pxe-http"
+          failed_when: false
+
+        - name: Start HTTP server container for preseed
+          ansible.builtin.command:
+            cmd: "docker run -d --name pxe-http -p 8080:80 -v {{ pxe_http_dir }}:/usr/share/nginx/html:ro --restart always nginx:alpine"
+
+        - name: Display connection information
+          ansible.builtin.debug:
+            msg: |
+              ======================================================================
+              PXE BOOT SERVER IS ACTIVE!
+              ======================================================================
+              1. Connect your server to the local network.
+              2. Boot it into UEFI PXE (Network Boot).
+              3. It will retrieve the installer from your laptop and download
+                 preseed.cfg from http://<LAPTOP_IP>:8080/preseed.cfg
+              
+              To stop the PXE server when finished, run:
+              mise run ansible:pxe-stop
+              ======================================================================

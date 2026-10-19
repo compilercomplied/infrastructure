@@ -1,0 +1,7 @@
+---
+- name: Manage the cluster PXE installer on the controller
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  roles:
+    - bare_metal

@@ -1,0 +1,32 @@
+# ==============================================================================
+# Managed by Ansible - dnsmasq PXE Server Configuration
+# ==============================================================================
+
+# Disable DNS Server (we only want DHCP/TFTP)
+port=0
+
+# Prevent dnsmasq from dropping privileges to 'nobody', so it can read files in your home directory
+user=root
+
+# Log DHCP and TFTP queries for troubleshooting
+log-dhcp
+log-facility={{ pxe_server_dir }}/dnsmasq.log
+
+# Auto-boot the first option immediately without waiting for a keypress
+pxe-prompt="Booting...", 0
+
+# Enable TFTP Server and point to the netboot files
+enable-tftp
+tftp-root={{ pxe_tftp_dir }}
+
+# DHCP Configuration
+# Tells dnsmasq to act as a DHCP proxy on your local subnet.
+# This means your router still handles IP addresses, while dnsmasq only sends PXE options.
+dhcp-range={{ local_subnet }},proxy
+
+# Point clients to the correct bootloader depending on CPU architecture
+# BIOS bootloader
+pxe-service=x86PC, "Boot BIOS PXE", pxelinux.0
+# UEFI 64-bit bootloaders
+pxe-service=X86-64_EFI, "Boot UEFI PXE", debian-installer/amd64/bootnetx64.efi
+pxe-service=BC_EFI, "Boot UEFI PXE", debian-installer/amd64/bootnetx64.efi
