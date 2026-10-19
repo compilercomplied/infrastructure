@@ -1,17 +1,14 @@
 import { forgejoIdentity } from "./identity";
-import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { Labels } from "../../selfhosted/labels";
-import { postgresClientImage } from "../../../platform/shared-resources/shared-postgres";
 import { forgejoSettings } from "./settings";
 import { configureRepositories } from "../repositories";
 
-// The database initializer is shared with Memos and LiteLLM; Forgejo's other scripts belong to this app.
-const dbInitScriptContent = fs.readFileSync(path.join(__dirname, "../../../operations/maintenance/scripts/init-forgejo-db.sh"), "utf8");
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.sh"), "utf8");
 const pruneScriptContent = fs.readFileSync(path.join(__dirname, "scripts", "prune-history.py"), "utf8");
 
@@ -24,17 +21,6 @@ export function configureForgejo(
 
   const settings = forgejoSettings;
 
-  // 1. ConfigMaps for Database Init and Container Bootstrap Scripts
-  const dbScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-db-init-scripts`, {
-    metadata: {
-      name: `${name}-db-init-scripts`,
-      namespace,
-    },
-    data: {
-      "init-forgejo-db.sh": dbInitScriptContent,
-    },
-  }, { dependsOn: dependencies });
-
   const bootstrapConfigMap = new k8s.core.v1.ConfigMap(`${name}-bootstrap-scripts`, {
     metadata: {
       name: `${name}-bootstrap-scripts`,
@@ -45,93 +31,14 @@ export function configureForgejo(
     },
   }, { dependsOn: dependencies });
 
-  // Generate a hash of OIDC secrets and script contents to trigger database initialization Job replacement when modified.
-  const dbInitHash = pulumi.all([settings.databasePassword, settings.postgresMasterPassword, dbInitScriptContent]).apply(([dbPass, adminPass, script]) => {
-    return crypto.createHash("sha256").update(dbPass + adminPass + script).digest("hex");
+  const dbInitJob = createPostgresBootstrap({
+    name,
+    namespace,
+    databasePassword: settings.databasePassword,
+    adminPassword: settings.postgresMasterPassword,
+    scriptPaths: [path.join(__dirname, "scripts", "postgres_bootstrap.sql")],
+    dependencies,
   });
-
-  // 2. Database Initialization Job (Zero ClickOps database and user setup)
-  const dbInitJob = new k8s.batch.v1.Job(`init-${name}-db`, {
-    metadata: {
-      namespace,
-      annotations: {
-        "db-init-hash": dbInitHash,
-      },
-    },
-    spec: {
-      template: {
-        metadata: {
-          annotations: {
-            "db-init-hash": dbInitHash,
-          },
-          labels: {
-            [Labels.Network.AllowPostgres]: "true",
-          },
-        },
-        spec: {
-          restartPolicy: "Never",
-          containers: [{
-            name: "db-init",
-            image: postgresClientImage,
-            command: ["/bin/sh", "/scripts/init-forgejo-db.sh"],
-            env: [
-              { name: "DB_HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
-              { name: "DB_NAME", value: name },
-              { name: "DB_USER", value: name },
-              {
-                name: "DB_PASSWORD",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: `${name}-secrets-dbinit`,
-                    key: "DB_PASSWORD",
-                  },
-                },
-              },
-              {
-                name: "ADMIN_PASSWORD",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: `${name}-secrets-dbinit`,
-                    key: "ADMIN_PASSWORD",
-                  },
-                },
-              },
-            ],
-            volumeMounts: [{
-              name: "scripts",
-              mountPath: "/scripts",
-            }],
-          }],
-          volumes: [{
-            name: "scripts",
-            configMap: {
-              name: dbScriptsConfigMap.metadata.name,
-              defaultMode: 0o755,
-            },
-          }],
-        },
-      },
-    },
-  }, {
-    dependsOn: [dbScriptsConfigMap, ...dependencies],
-    replaceOnChanges: ["metadata.annotations"],
-    deleteBeforeReplace: true,
-  });
-
-  // Create a separate secret for the DB init job to keep passwords isolated during initialization.
-  const dbInitSecrets = new k8s.core.v1.Secret(`${name}-secrets-dbinit`, {
-    metadata: {
-      name: `${name}-secrets-dbinit`,
-      namespace,
-    },
-    stringData: {
-      "DB_PASSWORD": settings.databasePassword,
-      "ADMIN_PASSWORD": settings.postgresMasterPassword,
-    },
-  }, { dependsOn: dependencies });
-
-  // Add DB secrets dependency to the initialization job
-  const jobWithSecrets = dbInitJob; // Implicitly depends on secret due to env mappings, but we declare it to ensure ordering
   
   // 3. Deployment and Ingress configuration using the selfhosted-app library
   const app = new SelfhostedApp(name, {
@@ -188,7 +95,7 @@ export function configureForgejo(
       initialDelaySeconds: 15,
       periodSeconds: 10,
     },
-    dependencies: [...dependencies, bootstrapConfigMap, dbInitSecrets, jobWithSecrets],
+    dependencies: [...dependencies, bootstrapConfigMap, dbInitJob],
   });
 
   // 4. Git SSH Service Exposure

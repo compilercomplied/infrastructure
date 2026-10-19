@@ -1,13 +1,11 @@
 import { litellmIdentity } from "./litellm-identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import * as fs from "fs";
 import * as path from "path";
-import * as crypto from "crypto";
+import { createPostgresBootstrap } from "../../library/postgres-bootstrap";
 import { SelfhostedApp } from "../../library/selfhosted-component";
 import { configureNamespaceSecurity } from "../../workloads/selfhosted/security";
 import { Labels } from "../../workloads/selfhosted/labels";
-import { postgresClientImage } from "../shared-resources/shared-postgres";
 import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../library/oidc-app";
 
 export interface DeployLitellmArgs {
@@ -37,103 +35,13 @@ export function deployLitellm(args: DeployLitellmArgs) {
   const deepseekApiKey = config.requireSecret("deepseekApiKey");
   const kimiApiKey = config.requireSecret("kimiApiKey");
 
-  // Read the generic database initialization script. Reusing this script avoids
-  // duplicating script files in the codebase.
-  const dbInitScriptContent = fs.readFileSync(path.join(__dirname, "../../operations/maintenance/scripts/init-forgejo-db.sh"), "utf8");
-
-  const dbScriptsConfigMap = new k8s.core.v1.ConfigMap("litellm-db-init-scripts", {
-    metadata: {
-      name: "litellm-db-init-scripts",
-      namespace: namespaceName,
-    },
-    data: {
-      "init-forgejo-db.sh": dbInitScriptContent,
-    },
-  }, { dependsOn: [namespace] });
-
-  const dbInitSecrets = new k8s.core.v1.Secret("litellm-secrets-dbinit", {
-    metadata: {
-      name: "litellm-secrets-dbinit",
-      namespace: namespaceName,
-    },
-    stringData: {
-      "DB_PASSWORD": litellmDbPassword,
-      "ADMIN_PASSWORD": postgresPassword,
-    },
-  }, { dependsOn: [namespace] });
-
-  // Generate a hash of secrets and script content to trigger Job replacement when configuration changes.
-  const dbInitHash = pulumi.all([litellmDbPassword, postgresPassword, dbInitScriptContent]).apply(([dbPass, adminPass, script]) => {
-    return crypto.createHash("sha256").update(dbPass + adminPass + script).digest("hex");
-  });
-
-  // A database initialization Job is defined to programmatically create the LiteLLM
-  // database and user inside the shared postgres cluster, ensuring Zero ClickOps.
-  const dbInitJob = new k8s.batch.v1.Job("init-litellm-db", {
-    metadata: {
-      namespace: namespaceName,
-      annotations: {
-        "db-init-hash": dbInitHash,
-      },
-    },
-    spec: {
-      template: {
-        metadata: {
-          annotations: {
-            "db-init-hash": dbInitHash,
-          },
-          labels: {
-            [Labels.Network.AllowPostgres]: "true",
-          },
-        },
-        spec: {
-          restartPolicy: "Never",
-          containers: [{
-            name: "db-init",
-            image: postgresClientImage,
-            command: ["/bin/sh", "/scripts/init-forgejo-db.sh"],
-            env: [
-              { name: "DB_HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
-              { name: "DB_NAME", value: "litellm" },
-              { name: "DB_USER", value: "litellm" },
-              {
-                name: "DB_PASSWORD",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: dbInitSecrets.metadata.name,
-                    key: "DB_PASSWORD",
-                  },
-                },
-              },
-              {
-                name: "ADMIN_PASSWORD",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: dbInitSecrets.metadata.name,
-                    key: "ADMIN_PASSWORD",
-                  },
-                },
-              },
-            ],
-            volumeMounts: [{
-              name: "scripts",
-              mountPath: "/scripts",
-            }],
-          }],
-          volumes: [{
-            name: "scripts",
-            configMap: {
-              name: dbScriptsConfigMap.metadata.name,
-              defaultMode: 0o755,
-            },
-          }],
-        },
-      },
-    },
-  }, {
-    dependsOn: [dbScriptsConfigMap, dbInitSecrets],
-    replaceOnChanges: ["metadata.annotations"],
-    deleteBeforeReplace: true,
+  const dbInitJob = createPostgresBootstrap({
+    name: "litellm",
+    namespace: namespaceName,
+    databasePassword: litellmDbPassword,
+    adminPassword: postgresPassword,
+    scriptPaths: [path.join(__dirname, "litellm", "scripts", "postgres_bootstrap.sql")],
+    dependencies: [namespace],
   });
 
   // LiteLLM requires a config.yaml to boot. We keep it minimal and route

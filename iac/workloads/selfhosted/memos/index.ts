@@ -1,20 +1,13 @@
 import { memosIdentity } from "./identity";
 import * as crypto from "crypto";
-import * as fs from "fs";
 import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
-import { postgresClientImage } from "../../../platform/shared-resources/shared-postgres";
 import { Labels } from "../labels";
 import { memosSettings } from "./settings";
 import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
-
-// The shared PostgreSQL instance only runs its init scripts on a fresh data
-// directory, so an existing cluster needs an idempotent Job to create this
-// database and role. Reusing the generic script keeps every app's bootstrap
-// identical.
-const dbInitScriptContent = fs.readFileSync(path.join(__dirname, "../../../operations/maintenance/scripts/init-forgejo-db.sh"), "utf8");
 
 export function configureMemos(
   namespace: pulumi.Input<string>,
@@ -96,96 +89,13 @@ export function configureMemos(
   const deploymentConfigChecksum = pulumi.all(Object.values(deploymentConfigFiles)).apply(contents =>
     crypto.createHash("sha256").update(contents.join("\n")).digest("hex"));
 
-  const dbScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-db-init-scripts`, {
-    metadata: {
-      name: `${name}-db-init-scripts`,
-      namespace,
-    },
-    data: {
-      "init-forgejo-db.sh": dbInitScriptContent,
-    },
-  }, { dependsOn: dependencies });
-
-  const dbInitSecrets = new k8s.core.v1.Secret(`${name}-secrets-dbinit`, {
-    metadata: {
-      name: `${name}-secrets-dbinit`,
-      namespace,
-    },
-    stringData: {
-      "DB_PASSWORD": memosSettings.databasePassword,
-      "ADMIN_PASSWORD": config.requireSecret("postgresPassword"),
-    },
-  }, { dependsOn: dependencies });
-
-  const dbInitHash = pulumi.all([memosSettings.databasePassword, config.requireSecret("postgresPassword"), dbInitScriptContent]).apply(([dbPassword, adminPassword, script]) => {
-    return crypto.createHash("sha256").update(dbPassword + adminPassword + script).digest("hex");
-  });
-
-  const dbInitJob = new k8s.batch.v1.Job(`init-${name}-db`, {
-    metadata: {
-      namespace,
-      annotations: {
-        "db-init-hash": dbInitHash,
-      },
-    },
-    spec: {
-      template: {
-        metadata: {
-          annotations: {
-            "db-init-hash": dbInitHash,
-          },
-          labels: {
-            [Labels.Network.AllowPostgres]: "true",
-          },
-        },
-        spec: {
-          restartPolicy: "Never",
-          containers: [{
-            name: "db-init",
-            image: postgresClientImage,
-            command: ["/bin/sh", "/scripts/init-forgejo-db.sh"],
-            env: [
-              { name: "DB_HOST", value: "shared-postgres.shared-resources.svc.cluster.local" },
-              { name: "DB_NAME", value: name },
-              { name: "DB_USER", value: name },
-              {
-                name: "DB_PASSWORD",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: dbInitSecrets.metadata.name,
-                    key: "DB_PASSWORD",
-                  },
-                },
-              },
-              {
-                name: "ADMIN_PASSWORD",
-                valueFrom: {
-                  secretKeyRef: {
-                    name: dbInitSecrets.metadata.name,
-                    key: "ADMIN_PASSWORD",
-                  },
-                },
-              },
-            ],
-            volumeMounts: [{
-              name: "scripts",
-              mountPath: "/scripts",
-            }],
-          }],
-          volumes: [{
-            name: "scripts",
-            configMap: {
-              name: dbScriptsConfigMap.metadata.name,
-              defaultMode: 0o755,
-            },
-          }],
-        },
-      },
-    },
-  }, {
-    dependsOn: [dbScriptsConfigMap, dbInitSecrets, ...dependencies],
-    replaceOnChanges: ["metadata.annotations"],
-    deleteBeforeReplace: true,
+  const dbInitJob = createPostgresBootstrap({
+    name,
+    namespace,
+    databasePassword: memosSettings.databasePassword,
+    adminPassword: config.requireSecret("postgresPassword"),
+    scriptPaths: [path.join(__dirname, "scripts", "postgres_bootstrap.sql")],
+    dependencies,
   });
 
   const app = new SelfhostedApp(name, {
@@ -248,7 +158,7 @@ export function configureMemos(
       requests: { cpu: "25m", memory: "128Mi" },
       limits: { cpu: "500m", memory: "512Mi" },
     },
-    dependencies: [...dependencies, deploymentConfigSecret, dbInitSecrets, dbInitJob],
+    dependencies: [...dependencies, deploymentConfigSecret, dbInitJob],
   });
 
   return {
