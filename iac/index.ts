@@ -33,7 +33,7 @@ const directDnsRecords = [
   ...gamePlatform.directDnsRecords(),
 ];
 if (directDnsRecords.length > 0) {
-  const publicIpv4Endpoint = directDnsConfig.get("directDnsPublicIpv4Endpoint") ?? "https://api.ipify.org";
+  const publicIpv4Endpoint = directDnsConfig.get("directDnsPublicIpv4Endpoint");
   const intervalSeconds = directDnsConfig.getNumber("directDnsIntervalSeconds") ?? 300;
   new DirectDnsReconciler("direct-dns-reconciler", {
     namespace: selfhosted.namespace,

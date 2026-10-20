@@ -52,11 +52,16 @@ require_cloudflare_success() {
   fi
 }
 
-ipv4="$(curl --fail --silent --show-error --max-time 10 "$PUBLIC_IPV4_ENDPOINT" | tr -d '\\r\\n')"
-case "$ipv4" in
-  [0-9]*.[0-9]*.[0-9]*.[0-9]*) ;;
-  *) echo "direct-dns: public IPv4 endpoint returned an invalid address" >&2; exit 1 ;;
-esac
+public_ipv4_response="$(curl --ipv4 --fail --silent --show-error --max-time 10 "$PUBLIC_IPV4_ENDPOINT")"
+ipv4="$(printf '%s' "$public_ipv4_response" | sed -n 's/^ip=//p' | tr -d '\\r\\n')"
+# Plain-address responses preserve compatibility with configured discovery endpoints.
+if [ -z "$ipv4" ]; then
+  ipv4="$(printf '%s' "$public_ipv4_response" | tr -d '\\r\\n')"
+fi
+if ! jq -en --arg ipv4 "$ipv4" '$ipv4 | split(".") | length == 4 and all(.[]; test("^[0-9]{1,3}$") and (tonumber <= 255))' >/dev/null; then
+  echo "direct-dns: public IPv4 endpoint returned an invalid address" >&2
+  exit 1
+fi
 
 while IFS='|' read -r owner hostname || [ -n "$owner" ]; do
   [ -n "$owner" ] || continue
@@ -116,7 +121,8 @@ export class DirectDnsReconciler extends pulumi.ComponentResource {
     super("custom:gameserver:DirectDnsReconciler", name, {}, opts);
 
     validateZoneId(args.zoneId);
-    const publicIpv4Endpoint = args.publicIpv4Endpoint ?? "https://api.ipify.org";
+    // DNS updates already depend on Cloudflare, so address discovery needs no separate provider.
+    const publicIpv4Endpoint = args.publicIpv4Endpoint ?? "https://www.cloudflare.com/cdn-cgi/trace";
     validateIpv4Endpoint(publicIpv4Endpoint);
     if (!Number.isInteger(args.intervalSeconds ?? 300) || (args.intervalSeconds ?? 300) < 60) {
       throw new Error("Direct DNS reconciliation interval must be an integer of at least 60 seconds.");
