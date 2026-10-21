@@ -1,5 +1,7 @@
 # Agent Instructions
 
+For PR reviews, also read [docs/agentic-review.md](docs/agentic-review.md).
+
 ## Development loop
  - Prefer mise commands. Manage the lifecycle of the project through mise when
 	 possible.

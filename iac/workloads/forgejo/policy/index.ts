@@ -17,6 +17,7 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
     name: pulumi.Output<string>;
     owners: pulumi.Output<string>;
     contributors: forgejo.Team;
+    reviewers: forgejo.Team;
   }>();
 
   function organizationTeams(organization: string) {
@@ -53,7 +54,24 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
       protect: true,
       ignoreChanges: ["description"],
     });
-    const result = { name, owners: owners.name, contributors };
+    const reviewers = new forgejo.Team(`forgejo-${organization}-reviewers`, {
+      organization: name,
+      name: "Reviewers",
+      permission: "read",
+      includesAllRepositories: true,
+      canCreateOrgRepo: false,
+      unitsMap: {
+        "repo.actions": "read",
+        "repo.code": "read",
+        "repo.issues": "write",
+        "repo.pulls": "write",
+      },
+    }, { provider, protect: true });
+    new forgejo.TeamMember(`forgejo-${organization}-reviewing-bot`, {
+      teamId: reviewers.teamId,
+      user: "reviewing-bot",
+    }, { provider });
+    const result = { name, owners: owners.name, contributors, reviewers };
     organizations.set(organization, result);
     return result;
   }
@@ -115,7 +133,7 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
       mergeWhitelistUsernames: [],
       requiredApprovals: 1,
       enableApprovalsWhitelist: true,
-      approvalsWhitelistTeams: [teams.owners],
+      approvalsWhitelistTeams: [teams.owners, teams.reviewers.name],
       approvalsWhitelistUsernames: [],
       dismissStaleApprovals: true,
       enableStatusCheck: true,
