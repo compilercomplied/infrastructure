@@ -53,7 +53,6 @@ ingress-helper calls, but at a glance:
 | `notifications.gdario.dev` | ntfy notifications | `selfhosted` |
 | `notes.gdario.dev` | Memos (notes) | `selfhosted` |
 | `grafana.gdario.dev` | Grafana | `monitoring` |
-| `litellm.gdario.dev` | LiteLLM (LLM gateway) | `infrastructure` |
 | `hermes.gdario.dev` / `hermes-api.gdario.dev` | Hermes Agent | `agent-sidekicks` |
 
 ---
@@ -69,7 +68,7 @@ namespace carries its own default-deny network policy (see Security).
 | `monitoring` | Observability | Prometheus + Loki (storage), Alloy (collection), Grafana (visualization), PVC + DeepSeek-budget exporters |
 | `shared-resources` | Shared stateful foundations | The shared PostgreSQL and shared MariaDB clusters and their access policies |
 | `selfhosted` | User-facing apps | Tandoor, Linkwarden, Grimmory, Outline, Syncthing, ntfy, the `cloudflared` tunnel agent |
-| `infrastructure` | Core platform | Authentik (SSO) + its Redis, LiteLLM proxy |
+| `infrastructure` | Core platform | Authentik (SSO) + its Redis |
 | `forgejo` | Code forge | Forgejo (git) + Forgejo Actions runner |
 | `agent-sidekicks` | AI agent tooling | The MCP servers (Tandoor, Outline, Grafana, Kubernetes) and Hermes Agent |
 
@@ -114,8 +113,8 @@ Cross-namespace access uses explicit workload and port grants:
 - PostgreSQL accepts capability-labeled app, initialization, and backup pods from
   `selfhosted`, `infrastructure`, `forgejo`, and `shared-resources` on TCP 5432.
 - MariaDB accepts capability-labeled pods from `selfhosted` on TCP 3306.
-- Hermes reaches LiteLLM in `infrastructure` and Forgejo in `forgejo`; MCP servers
-  reach their corresponding apps through workload-specific policies.
+- Hermes reaches Forgejo in `forgejo`; MCP servers reach their corresponding apps
+  through workload-specific policies.
 - Outline alone reaches its Redis; Outline and its setup Job reach MinIO.
 - Cloudflared routes through Traefik, which has explicit grants to app HTTP ports.
 
@@ -190,7 +189,7 @@ disk, and admin), apps **share one engine per flavor** and keep their data
 
 - **Shared PostgreSQL** (`shared-resources`) hosts one logical database + a
   dedicated user per app — currently Tandoor, Authentik, Linkwarden, Forgejo,
-  LiteLLM, and Outline. It is a single-replica StatefulSet with its own PVC;
+  and Outline. It is a single-replica StatefulSet with its own PVC;
   databases and users are declared in the module, and each app connects with its
   own credentials against its own schema, so there is no cross-app access.
 - **Shared MariaDB** (`shared-resources`) does the same for the one
@@ -216,7 +215,6 @@ The cluster hosts an AI-agent fleet, and treats it as security-critical:
   cron, and tool integration. It has a shell with the Docker CLI, Android SDK,
   and emulator tools. A dedicated DinD sidecar provides its Docker daemon;
   the main container receives a KVM allocation for accelerated Android emulation.
-  It talks to the LLM backend through the LiteLLM gateway in `infrastructure`.
   Its dashboard is fronted by Authentik OIDC; its
   OpenAI-compatible API endpoint uses its own bearer key. The component is
   `custom:selfhosted:HermesAgent`, declared in `iac/library/hermes-agent.ts`

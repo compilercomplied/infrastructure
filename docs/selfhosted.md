@@ -34,7 +34,7 @@ database server:
 
 - **Shared PostgreSQL** (`iac/platform/shared-resources/shared-postgres.ts`) hosts one
   logical database + dedicated user for each app (Tandoor, Authentik, Linkwarden,
-  Forgejo, LiteLLM, Outline, Memos).
+  Forgejo, Outline, Memos).
 - **Shared MariaDB** (`iac/platform/shared-resources/shared-mariadb.ts`) does the same
   for the MySQL-flavored app (Grimmory).
 

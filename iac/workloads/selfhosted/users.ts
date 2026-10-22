@@ -37,9 +37,5 @@ export function getGroupDefinitions(usernames: string[]): GroupDefinition[] {
       name: "grafana-admins",
       members: ["gdario"],
     },
-    {
-      name: "litellm-admins",
-      members: ["gdario"],
-    },
   ];
 }

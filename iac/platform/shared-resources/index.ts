@@ -16,7 +16,6 @@ export function configureSharedResources() {
   const authentikDbPassword = config.requireSecret("authentikDbPassword");
   const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
   const forgejoDbPassword = config.requireSecret("forgejoDbPassword");
-  const litellmDbPassword = config.requireSecret("litellmDbPassword");
   const outlineDbPassword = config.requireSecret("outlineDbPassword");
   const grimmoryDbPassword = config.requireSecret("grimmoryDbPassword");
   const memosDbPassword = config.requireSecret("memosDbPassword");
@@ -27,7 +26,6 @@ export function configureSharedResources() {
     { name: "authentik", password: authentikDbPassword },
     { name: "linkwarden", password: linkwardenDbPassword },
     { name: "forgejo", password: forgejoDbPassword },
-    { name: "litellm", password: litellmDbPassword },
     { name: "outline", password: outlineDbPassword },
     { name: "memos", password: memosDbPassword },
     { name: "excalidash", password: excalidashDbPassword },

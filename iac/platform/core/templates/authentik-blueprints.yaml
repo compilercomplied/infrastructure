@@ -37,12 +37,6 @@ entries:
       users:
         - !Find [authentik_core.user, [username, gdario]]
 
-  - model: authentik_core.group
-    identifiers:
-      name: litellm-admins
-    attrs:
-      users:
-        - !Find [authentik_core.user, [username, gdario]]
 
   - model: authentik_core.group
     identifiers:

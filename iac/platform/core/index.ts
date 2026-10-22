@@ -1,22 +1,20 @@
 import * as k8s from "@pulumi/kubernetes";
-import * as pulumi from "@pulumi/pulumi";
 import { configureAuthentik } from "./authentik";
-import { deployLitellm } from "./litellm";
+import { configureNamespaceSecurity } from "../../workloads/selfhosted/security";
 
 export function configureInfrastructure() {
-  // A dedicated namespace is created to isolate core infrastructure components
-  // (like LiteLLM proxy) from general self-hosted services and user agents.
   const namespace = new k8s.core.v1.Namespace("infrastructure", {
     metadata: { name: "infrastructure" }
   });
 
   const namespaceName = namespace.metadata.name;
 
-  const config = new pulumi.Config("selfhosted");
-
-  const litellm = deployLitellm({
-    namespace,
-    config,
+  // Keep this baseline owned by the namespace rather than a workload so retiring an
+  // application cannot silently remove infrastructure's zero-trust protections.
+  const security = configureNamespaceSecurity({
+    namespace: namespaceName,
+    dependencies: [namespace],
+    namePrefix: "infrastructure-",
   });
 
   // DaemonSet to bump inotify limits on all nodes to fix fsnotify watcher errors
@@ -68,7 +66,7 @@ export function configureInfrastructure() {
 
   return {
     namespace: namespaceName,
-    ...litellm,
+    security,
     androidKvmNodeLabel,
     sysctlTuner,
     authentik,

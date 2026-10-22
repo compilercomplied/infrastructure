@@ -82,12 +82,6 @@ config:
     secure: v1:k4YXpLr7ubmD21CE:ggvOlgaC3bM20avZzTV//knQAAXotMqSNbub1uQTQMMJPASB0cKCo7wb/USM5l7qEclQS0xx2fx7WnVv/hVwfA==
   selfhosted:forgejo-secret:
     secure: v1:Je98u7WflKYZcHQq:DvRz73inxk8VutYmn3foa/bUnLsNrLuULrTCorXQ2kJE0U91hBkImS8wcLezptNgr/wlk+EFmXH8STDhRxNw8/6/3cAfX/OIkkSpGLOXD4o=
-  selfhosted:litellmDbPassword:
-    secure: v1:RoojImbgd/hgqV7J:GHC+soPNvkd+cL785p6adyoe/XE4Loq1oiJCzuZrXxNMBRGOAioGfw==
-  selfhosted:litellmSecret:
-    secure: v1:dEuoKp9oavkUo9o/:IlLonGFNmPYa8b5qePbtM88teFEuD/xdgjCOuEs4P2yYMhVrIc3oF+AeZ1TkrarPF3fY7RK8YIEWbh3ZdutpIw==
-  selfhosted:litellmMasterKey:
-    secure: v1:P0tYiOMOAkm+mKKb:qiIxEti/7FOBqt0x33Myp4fp6QHMLFTtAW4z0xIfws8xF89pgPdpQv3Vzfl9GOgSx7iISP7CV3zFyKtGtGz9ZEH5Ag==
   selfhosted:outlineDbPassword:
     secure: v1:zGVlEpacljhYJzpK:tYJRhdgoE8mA8oeYmzkxX4OvjlDOgTgqmz0pZj6OwOUqZCKt1HvBGh0=
   selfhosted:outlineSecretKey:
@@ -100,10 +94,6 @@ config:
     secure: v1:7ieJrdboSwnwQy59:agtauwiIB/+i83iVWAukfnwQ3gr9eZCe+H8kyScxkamJkEb5FGAKiq736BsyQdQg
   selfhosted:outlineMcpToken:
     secure: v1:dnXZpCFjBwVNpgCO:hu7PLAMGjRwHeRSEiZjzTidyQKnAsKZyV5+9yevKNUIoIrvgiZ+t1AbGYvm6U8DujLRain2sRkOAb+N3SA==
-  selfhosted:kimiApiKey:
-    secure: v1:oUAHdJFX7/RQg8dM:tXDuUiKZ5PA3UeSjVAjseRq4VeVUV1TkUWllJ9QjRPf5DHPhtLtztLHTyE3fzx0d/U+HrDljezrUQezz0cskD3sVrQ==
-  selfhosted:hermesLitellmApiKey:
-    secure: v1:VmE7hU/BjaWyYFwt:jEesTfx4EfVwaJeUSCNJqkXC202EDVYE8o1fQozb5ySU3eNPnL+0O+g=
   agents:pulumiAccessToken:
     secure: v1:kCSR0+2MAC7TIf9o:c3nyEihIyvVr0jI0eKuNdthXt5ZkJ2UEtlAp2+SZQ9/SjCo63cjcpr+olLONopBjHWwmI7G5p0LEuuw0
   selfhosted:ntfyAdminPasswordHash:
