@@ -1,7 +1,7 @@
 # Forgejo
 
-Owners push to protected branches and merge. Contributors submit PRs; Owners and
-Reviewers can satisfy the required approval. The `reviewing-bot` account joins
+Only Owners push directly to protected branches. Owners and Contributors can
+merge PRs after CI passes and an Owner or Reviewer approves. The `reviewing-bot` account joins
 Reviewers across all organization repositories. CI, stale-approval dismissal,
 requested-review blocking, and squash merging remain required.
 

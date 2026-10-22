@@ -129,7 +129,7 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
       pushWhitelistUsernames: [],
       pushWhitelistDeployKeys: false,
       enableMergeWhitelist: true,
-      mergeWhitelistTeams: [teams.owners],
+      mergeWhitelistTeams: [teams.owners, teams.contributors.name],
       mergeWhitelistUsernames: [],
       requiredApprovals: 1,
       enableApprovalsWhitelist: true,
