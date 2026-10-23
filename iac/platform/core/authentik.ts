@@ -15,7 +15,7 @@ export function configureAuthentik(
   dependencies: pulumi.Resource[] = []
 ) {
   const name = "authentik";
-  const image = "ghcr.io/goauthentik/server:2026.5.2";
+  const image = "ghcr.io/goauthentik/server:2026.5.7";
 
   const mediaPvc = createPVC({
     name: `${name}-media-pvc`,
