@@ -125,3 +125,11 @@ config:
     secure: v1:VznkzH7DsiuXQVfc:gbYbonMZw3NHC17/i1PPn9q4S+WIBqjQIyHLxZDUHIpNGSuLFJwzc1O4DPfFUKnfeNalKKenMqlTlfOt9MxgjNXQNxuDJn0l8l2T/M+vpt4=
   forgejo:apiToken:
     secure: v1:88Vaalyg4O3H/nW/:lgLJbhjfzUTFp2SV8stWE4dGwTd1YL8RV7s0ICIsPjk91YB6UkCgBoE62Ti3L2kho3uU1YQYw0Q=
+  selfhosted:penpotDbPassword:
+    secure: v1:6H+7wOKlR0Ukwm7X:VE0+j4Yy27q9yYuqmIGzRaWobo+tsoufgJzQIvbBJUT2Kf2xSxvWAY94x+2a+90YmuEg50OIBanRseGsIyEQ+Q==
+  selfhosted:penpotRedisPassword:
+    secure: v1:ydzXtu7yPWi61Mz9:I+XlpgFCw8i2IGWDy7/jm+pMQWYLyHlVAataIZ3gRzbd3RJ19x9GOVnBSeomzLI98hHBtgs1H2b+1aS4eSgInQ==
+  selfhosted:penpotApiSecretKey:
+    secure: v1:c+XNslCUx7qworJV:mVysPpPemII7Tky5Jv9UFvz3aG0oQUsLSG4jDhlKDeNX7hyhf21+MF1Rht8DpDs0L3ebj74X2+JFAR51NTenIRjtIbMYxFwMoRTGbyYdlac=
+  selfhosted:penpotOidcClientSecret:
+    secure: v1:ortQfN3ZnWB4rxdu:/VBPO5K3U4UjGY3pnQcDY+2nTsJeMzZCGNlegTi04OffStzpk+fkBsyF09Dp2sc+uZblo9ZTNO0mlTIyzJl69zG7BorAZXCzKmLPScgisHg=
