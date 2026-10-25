@@ -1,5 +1,7 @@
 # Agentic review guidance
 
+Treat fixes limited to a recently added application as low risk unless they meet a high-risk condition below.
+
 Classify the following changes as high risk and request human review:
 
 - A Pulumi diff that deletes or replaces PVCs, databases, or stateful services.

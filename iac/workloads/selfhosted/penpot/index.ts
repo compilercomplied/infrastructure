@@ -76,7 +76,7 @@ export function configurePenpot(namespace: pulumi.Input<string>, dependencies: p
       fullnameOverride: name,
       config: {
         publicUri: penpotIdentity.url,
-        flags: "enable-login-with-oidc disable-login-with-password disable-registration",
+        flags: "enable-login-with-oidc enable-oidc-registration disable-login-with-password disable-registration",
         existingSecret: settings.metadata.name,
         secretKeys: { apiSecretKey: "apiSecretKey" },
         postgresql: {
@@ -93,6 +93,7 @@ export function configurePenpot(namespace: pulumi.Input<string>, dependencies: p
       backend: {
         image: { repository: "penpotapp/backend", tag: "2.18.4", pullPolicy: "IfNotPresent" },
         podLabels: { [Labels.Network.AllowPostgres]: "true", [Labels.Network.AllowAuthentik]: "true" },
+        extraEnvs: [{ name: "PENPOT_SSRF_ALLOWED_HOSTS", value: "auth.gdario.dev" }],
         resources: { requests: { cpu: "100m", memory: "512Mi" }, limits: { cpu: "1", memory: "1Gi" } },
       },
       frontend: {
