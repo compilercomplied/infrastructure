@@ -85,7 +85,13 @@ export function configurePenpot(namespace: pulumi.Input<string>, dependencies: p
         },
         redis: { existingSecret: settings.metadata.name, secretKeys: { redisUriKey: "redisUri" } },
         providers: {
-          oidc: { enabled: true, baseURI: oidcIssuer(penpotIdentity), scopes: penpotIdentity.scopes.join(" ") },
+          oidc: {
+            enabled: true,
+            baseURI: oidcIssuer(penpotIdentity),
+            scopes: penpotIdentity.scopes.join(" "),
+            // The chart's sample roles require claims Authentik does not issue for this app.
+            roles: "",
+          },
           existingSecret: settings.metadata.name,
           secretKeys: { oidcClientIDKey: "oidcClientId", oidcClientSecretKey: "oidcClientSecret" },
         },
