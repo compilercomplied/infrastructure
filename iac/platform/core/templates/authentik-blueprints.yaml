@@ -74,6 +74,17 @@ entries:
       expression: |
         return {"email": request.user.email, "email_verified": True}
 
+  # Blueprint entries are not pruned automatically when a workload is retired.
+  - model: authentik_core.application
+    state: absent
+    identifiers:
+      slug: penpot
+
+  - model: authentik_providers_oauth2.oauth2provider
+    state: absent
+    identifiers:
+      name: Penpot SSO
+
   # OIDC_APP_REGISTRATIONS
   # ---------------------------------------------------------------------------
   # Syncthing SSO (Forward Proxy)

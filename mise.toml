@@ -45,3 +45,7 @@ run = "ansible-playbook playbooks/provision_pxe.yml --ask-become-pass"
 description = "Stop the cluster PXE and HTTP services on the controller"
 dir = "ansible"
 run = "ansible-playbook playbooks/provision_pxe.yml -e pxe_state=stopped --ask-become-pass"
+
+[tasks."doop:check"]
+description = "Verify published Doop image, screenshot rendering and signup restrictions"
+run = "scripts/check-doop.sh"
