@@ -199,7 +199,15 @@ container:
               // an unprivileged runner otherwise, so it is the single exception to the no-privilege rule.
               name: "dind",
               image: dindImage,
-              args: ["dockerd", "--host=unix:///var/run/docker.sock"],
+              // k3s VXLAN leaves 1450 bytes for pod traffic. Docker's 1500-byte job
+              // bridges otherwise black-hole larger TLS packets (GitHub release downloads).
+              // Forgejo creates per-job bridges, so the default bridge flag alone is insufficient.
+              args: [
+                "dockerd",
+                "--host=unix:///var/run/docker.sock",
+                "--mtu=1450",
+                "--default-network-opt=bridge=com.docker.network.driver.mtu=1450",
+              ],
               securityContext: { privileged: true },
               env: [{ name: "DOCKER_TLS_CERTDIR", value: "" }],
               resources: {
