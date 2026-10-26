@@ -18,6 +18,7 @@ The current self-hosted applications, one module per app (all under
 | Syncthing | `syncthing.gdario.dev` | own PVC (forward-auth middleware) |
 | ntfy (notifications) | `notifications.gdario.dev` | own PVC (cache and auth database) |
 | Memos (notes) | `notes.gdario.dev` | shared PostgreSQL + own PVC (attachments) |
+| Doop (AI design canvas) | `design.gdario.dev` | shared PostgreSQL + own PVC (assets) |
 
 Each app is declared through the reusable **`SelfhostedApp` component**
 (`iac/library/selfhosted-component.ts`), which takes one compact config and
@@ -109,3 +110,5 @@ before editing one:
 - **PVCs are namespace-scoped.** An app's storage and its backup job must share
   the app's namespace, because a Pod cannot mount another namespace's PVC. The
   `SelfhostedApp` component handles this automatically for volumes it manages.
+
+See [Doop](./doop.md) for OIDC, administrator bootstrap, MCP keys and image builds.

@@ -26,8 +26,8 @@ const schema = yaml.DEFAULT_SCHEMA.extend([
   tag("!Find", "sequence"),
 ]);
 const blueprint = yaml.load(rendered, { schema });
-const providers = blueprint.entries.filter(entry => entry.model === "authentik_providers_oauth2.oauth2provider");
-const applications = blueprint.entries.filter(entry => entry.model === "authentik_core.application");
+const providers = blueprint.entries.filter(entry => entry.model === "authentik_providers_oauth2.oauth2provider" && entry.state !== "absent");
+const applications = blueprint.entries.filter(entry => entry.model === "authentik_core.application" && entry.state !== "absent");
 const customEmailMapping = blueprint.entries.find(entry => entry.id === "windshift-email-scope");
 if (oidcApps.some(app => app.verifiedLocalEmail) && !customEmailMapping) {
   throw new Error("Missing verified email scope mapping");
