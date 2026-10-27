@@ -14,6 +14,7 @@ export function configurePrometheus(
   const kubePrometheusStack = new k8s.helm.v3.Chart("kube-prometheus-stack", {
     namespace: namespace,
     chart: "kube-prometheus-stack",
+    // renovate: datasource=helm depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
     version: "81.2.1",
     fetchOpts: {
       repo: "https://prometheus-community.github.io/helm-charts",

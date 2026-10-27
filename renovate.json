@@ -1,0 +1,35 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "prConcurrentLimit": 3,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/iac/(?:platform|workloads)/.+\\.ts$/"],
+      "matchStrings": ["// renovate: datasource=helm depName=(?<depName>[^\\s]+) registryUrl=(?<registryUrl>[^\\s]+)\\s+version: \\\"(?<currentValue>[^\\\"]+)\\\""],
+      "datasourceTemplate": "helm",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/iac/(?:library|platform|workloads|operations)/.+\\.ts$/"],
+      "matchStrings": ["(?:const\\s+)?[A-Za-z][A-Za-z0-9]*[Ii]mage\\s*[:=]\\s*\\\"(?<depName>[^\\\"@]+?)(?::(?<currentValue>[^\\\"@]+))?(?:@(?<currentDigest>sha256:[a-f0-9]+))?\\\"", "image:\\s*\\\"(?<depName>[^\\\"@]+?)(?::(?<currentValue>[^\\\"@]+))?(?:@(?<currentDigest>sha256:[a-f0-9]+))?\\\""],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/iac/workloads/selfhosted/doop/(?:image|proxy-image)\\.txt$/"],
+      "matchStrings": ["^(?<depName>[^@:\\s]+(?:/[^@:\\s]+)*)(?::(?<currentValue>[^@\\s]+))?(?:@(?<currentDigest>sha256:[a-f0-9]+))?$"],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["docker"],
+      "pinDigests": true
+    }
+  ]
+}

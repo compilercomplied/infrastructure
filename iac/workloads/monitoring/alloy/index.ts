@@ -172,6 +172,7 @@ loki.write "local" {
   const alloy = new k8s.helm.v3.Chart("alloy", {
     namespace: namespace,
     chart: "alloy",
+    // renovate: datasource=helm depName=alloy registryUrl=https://grafana.github.io/helm-charts
     version: "0.10.1",
     fetchOpts: {
       repo: "https://grafana.github.io/helm-charts",
