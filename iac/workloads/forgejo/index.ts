@@ -30,7 +30,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
     selfhosted.requireSecret("forgejo-secret"),
     [forgejoApp.deployment, namespace, ...dependencies],
   );
-  const renovateAccess = provisionRenovateAccess(provider, users.renovate, [forgejoApp.deployment, namespace, ...dependencies]);
+  const renovateAccess = provisionRenovateAccess(provider, users.renovate, config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
   const forgejoAndroidRunner = configureForgejoAndroidRunner(namespaceName, forgejoApp.androidRunnerSecret, [forgejoApp.deployment, namespace]);
   const renovate = configureRenovate(namespaceName, renovateAccess.token.token, [forgejoApp.deployment, namespace, renovateAccess.token]);
