@@ -1,5 +1,5 @@
 export const renovateRuntimeConfig = {
-  platform: "forgejo",
+  platform: "gitea",
   endpoint: "https://git.gdario.dev/api/v1/",
   repositories: ["home/homelab-iac"],
   onboarding: false,

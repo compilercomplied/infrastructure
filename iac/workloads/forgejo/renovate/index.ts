@@ -48,7 +48,11 @@ export function configureRenovate(
               containers: [{
                 name,
                 image: renovateImage,
+                // Child shells must not restore containerbase's image UID over the enforced non-root UID.
+                command: ["/bin/bash", "-c"],
+                args: ["export USER_ID=1000 BASH_ENV=/dev/null ENV=/dev/null HOME=/tmp; exec /usr/local/sbin/renovate-entrypoint.sh renovate"],
                 env: [
+                  { name: "LOG_LEVEL", value: "debug" },
                   { name: "RENOVATE_CONFIG_FILE", value: "/config/config.json" },
                   { name: "RENOVATE_TOKEN", valueFrom: { secretKeyRef: { name: secret.metadata.name, key: "RENOVATE_TOKEN" } } },
                   { name: "RENOVATE_BASE_DIR", value: "/tmp/renovate" },
