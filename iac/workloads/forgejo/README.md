@@ -13,5 +13,6 @@ Repositories use `master` as their default and only managed protected branch.
 Existing repositories and teams are already adopted into Pulumi state; normal
 configuration does not carry import IDs.
 
-The manually configured organization webhook is recorded in
-[manual-resources.md](./manual-resources.md).
+The organization review webhook is adopted and reconciled by
+[review-webhook.ts](./review-webhook.ts). Its lifecycle and secret source are
+documented in [manual-resources.md](./manual-resources.md).

@@ -9,6 +9,7 @@ import { forgejoIdentity } from "./app/identity";
 import { configureForgejoRunner } from "./runner";
 import { configureForgejoAndroidRunner } from "./android-runner";
 import { configureRenovate } from "./renovate";
+import { configureReviewWebhook } from "./review-webhook";
 import { reconcileManagedForgejoMachineUsers } from "./users";
 
 export function configureForgejo(dependencies: pulumi.Resource[] = []) {
@@ -33,6 +34,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
   const renovateAccess = provisionRenovateAccess(provider, users.renovate, config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
   const forgejoAndroidRunner = configureForgejoAndroidRunner(namespaceName, forgejoApp.androidRunnerSecret, [forgejoApp.deployment, namespace]);
+  const reviewWebhook = configureReviewWebhook(config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const renovate = configureRenovate(namespaceName, renovateAccess.token.token, [forgejoApp.deployment, namespace, renovateAccess.token]);
 
   const security = configureNamespaceSecurity({
@@ -49,6 +51,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
     forgejoAndroidRunner,
     users,
     renovateAccess,
+    reviewWebhook,
     renovate,
   };
 }
