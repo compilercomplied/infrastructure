@@ -6,7 +6,7 @@ export function configureRepositories(dependencies: pulumi.Resource[] = []) {
 
   return [
     createRepo({ name: "homelab-iac" }),
-    createRepo({ name: "mood-tracker" }),
+    createRepo({ name: "mood-tracker", isPublic: false }),
     createRepo({ name: "game-launcher", isPublic: false }),
     createRepo({ name: "repo-template" }),
     createRepo({ name: "tandoor-mcp" }),
