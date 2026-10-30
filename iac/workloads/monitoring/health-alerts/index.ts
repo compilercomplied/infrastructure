@@ -16,6 +16,42 @@ export function configureHealthAlerts(
       groups: [{
         name: "selfhosted-health",
         rules: [{
+          alert: "HostMaintenanceFailed",
+          expr: "host_maintenance_update_success == 0 and host_maintenance_last_attempt_timestamp_seconds > 0",
+          for: "2h",
+          labels: { severity: "warning" },
+          annotations: { summary: "Host package maintenance failed or did not finish" },
+        }, {
+          alert: "HostMaintenanceStale",
+          expr: "time() - host_maintenance_last_success_timestamp_seconds > 129600 and host_maintenance_last_success_timestamp_seconds > 0",
+          for: "30m",
+          labels: { severity: "warning" },
+          annotations: { summary: "Host updates have not succeeded in over 36 hours" },
+        }, {
+          alert: "HostMaintenanceNeverSucceeded",
+          expr: "host_maintenance_last_success_timestamp_seconds == 0",
+          for: "36h",
+          labels: { severity: "warning" },
+          annotations: { summary: "Host updates have never succeeded" },
+        }, {
+          alert: "HostMaintenanceMetricsMissing",
+          expr: "absent(host_maintenance_last_attempt_timestamp_seconds)",
+          for: "36h",
+          labels: { severity: "warning" },
+          annotations: { summary: "Host maintenance metrics are missing" },
+        }, {
+          alert: "HostMaintenanceRebootDeferred",
+          expr: "host_maintenance_reboot_deferred == 1",
+          for: "10m",
+          labels: { severity: "warning" },
+          annotations: { summary: "Host maintenance was deferred; inspect the systemd journal" },
+        }, {
+          alert: "HostMaintenanceRecoveryFailed",
+          expr: "host_maintenance_boot_verification_failed == 1",
+          for: "5m",
+          labels: { severity: "critical" },
+          annotations: { summary: "Kernel or workload recovery failed; further automatic updates are blocked" },
+        }, {
           alert: "SelfhostedHealthProbeFailed",
           expr: 'probe_success{job=~"health-.+"} == 0',
           for: "5m",

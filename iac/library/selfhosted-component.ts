@@ -75,6 +75,8 @@ type SelfhostedAppCommonArgs = {
   command?: string[];
   args?: string[];
   strategy?: AppDeploymentStrategy;
+  terminationGracePeriodSeconds?: number;
+  lifecycle?: k8s.types.input.core.v1.Lifecycle;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
   ipFamilyPolicy?: string;
@@ -249,6 +251,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             },
           },
           spec: {
+            terminationGracePeriodSeconds: args.terminationGracePeriodSeconds ?? 60,
             serviceAccountName: args.serviceAccountName,
             automountServiceAccountToken: args.automountServiceAccountToken,
             nodeSelector: args.nodeSelector,
@@ -256,6 +259,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             containers: [{
               name,
               image: args.image,
+              lifecycle: args.lifecycle,
               imagePullPolicy: args.imagePullPolicy,
               ports: endpoints.map(endpoint => ({
                 containerPort: endpoint.containerPort,

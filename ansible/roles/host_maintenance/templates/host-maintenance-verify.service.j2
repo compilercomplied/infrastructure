@@ -1,0 +1,12 @@
+[Unit]
+Description=Verify kernel and Kubernetes recovery after maintenance
+Wants=k3s.service
+After=k3s.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/host-maintenance verify
+TimeoutStartSec={{ (host_maintenance_verify_timeout_seconds | int) + 120 }}
+
+[Install]
+WantedBy=multi-user.target

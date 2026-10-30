@@ -1,0 +1,148 @@
+---
+- name: Validate maintenance shutdown budgets
+  ansible.builtin.assert:
+    that:
+      - host_maintenance_shutdown_seconds | int >= 300
+      - host_maintenance_critical_shutdown_seconds | int > 0
+      - (host_maintenance_shutdown_seconds | int) - (host_maintenance_critical_shutdown_seconds | int) >= 180
+      - host_maintenance_busy_timeout_seconds | int >= 0
+      - host_maintenance_verify_timeout_seconds | int > 0
+
+- name: Check k3s supports kubelet configuration drop-ins
+  ansible.builtin.command: /usr/local/bin/k3s --version
+  register: maintenance_k3s_version
+  changed_when: false
+  check_mode: false
+
+- name: Require k3s v1.32 or later for graceful shutdown configuration
+  ansible.builtin.assert:
+    that:
+      - (maintenance_k3s_version.stdout | regex_search('v[0-9]+\.[0-9]+\.[0-9]+') | regex_replace('^v', '')) is version('1.32.0', '>=')
+    fail_msg: Upgrade k3s through IaC before enabling host maintenance.
+
+- name: Keep automatic reboots under the maintenance policy
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/99-host-maintenance
+    mode: '0644'
+    content: |
+      APT::Periodic::Unattended-Upgrade "0";
+      Unattended-Upgrade::Automatic-Reboot "false";
+
+- name: Make the newest kernel the persistent GRUB default
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_DEFAULT='
+    line: 'GRUB_DEFAULT=0'
+  notify: Update maintenance grub
+
+- name: Avoid persisting a manually selected recovery kernel as the default
+  ansible.builtin.lineinfile:
+    path: /etc/default/grub
+    regexp: '^GRUB_SAVEDEFAULT='
+    line: 'GRUB_SAVEDEFAULT=false'
+  notify: Update maintenance grub
+
+- name: Install maintenance prerequisites
+  ansible.builtin.apt:
+    name: [python3, ansible-core, linux-image-amd64]
+    state: present
+
+- name: Prepare maintenance directories
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: directory
+    mode: '{{ item.mode }}'
+  loop:
+    - { path: /etc/host-maintenance, mode: '0755' }
+    - { path: /var/lib/host-maintenance, mode: '0700' }
+    - { path: '{{ host_maintenance_metrics_directory }}', mode: '0755' }
+    - { path: /var/lib/rancher/k3s/agent/etc/kubelet.conf.d, mode: '0755' }
+    - { path: /etc/systemd/logind.conf.d, mode: '0755' }
+    - { path: /etc/systemd/system/k3s.service.d, mode: '0755' }
+
+- name: Allow applications time to save state before host shutdown
+  ansible.builtin.copy:
+    dest: /var/lib/rancher/k3s/agent/etc/kubelet.conf.d/20-host-maintenance.conf
+    mode: '0644'
+    content: |
+      apiVersion: kubelet.config.k8s.io/v1beta1
+      kind: KubeletConfiguration
+      shutdownGracePeriod: {{ host_maintenance_shutdown_seconds }}s
+      shutdownGracePeriodCriticalPods: {{ host_maintenance_critical_shutdown_seconds }}s
+  notify: Restart maintenance k3s
+
+- name: Allow logind to honor the kubelet shutdown inhibitor
+  ansible.builtin.copy:
+    dest: /etc/systemd/logind.conf.d/99-host-maintenance.conf
+    mode: '0644'
+    content: |
+      [Login]
+      InhibitDelayMaxSec={{ (host_maintenance_shutdown_seconds | int) + 60 }}
+  notify: Restart maintenance logind
+
+- name: Prevent unattended-upgrades from shortening the shutdown budget
+  # This host's logind rejects a /dev/null mask and falls back to its five-second default.
+  ansible.builtin.copy:
+    dest: /etc/systemd/logind.conf.d/unattended-upgrades-logind-maxdelay.conf
+    follow: false
+    mode: '0644'
+    content: |
+      [Login]
+      InhibitDelayMaxSec={{ (host_maintenance_shutdown_seconds | int) + 60 }}
+  notify: Restart maintenance logind
+
+- name: Allow k3s enough time to finish stopping
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/k3s.service.d/20-host-maintenance.conf
+    mode: '0644'
+    content: |
+      [Service]
+      TimeoutStopSec={{ (host_maintenance_shutdown_seconds | int) + 120 }}
+  notify: Reload maintenance systemd
+
+- name: Install host maintenance executable
+  ansible.builtin.copy:
+    src: host-maintenance.py
+    dest: /usr/local/sbin/host-maintenance
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Install durable host provisioning launcher
+  ansible.builtin.copy:
+    src: host-provision
+    dest: /usr/local/sbin/host-provision
+    owner: root
+    group: root
+    mode: '0750'
+
+- name: Configure host maintenance
+  ansible.builtin.template:
+    src: config.json.j2
+    dest: /etc/host-maintenance/config.json
+    mode: '0644'
+
+- name: Install maintenance units
+  ansible.builtin.template:
+    src: '{{ item }}.j2'
+    dest: '/etc/systemd/system/{{ item }}'
+    mode: '0644'
+  loop:
+    - host-maintenance.service
+    - host-maintenance.timer
+    - host-maintenance-verify.service
+  notify: Reload maintenance systemd
+
+- name: Configure maintenance timer
+  ansible.builtin.systemd_service:
+    name: host-maintenance.timer
+    daemon_reload: true
+    enabled: '{{ host_maintenance_enabled }}'
+    state: "{{ 'started' if host_maintenance_enabled else 'stopped' }}"
+
+- name: Enable boot recovery verification
+  ansible.builtin.systemd_service:
+    name: host-maintenance-verify.service
+    enabled: true
+    daemon_reload: true
+    state: started

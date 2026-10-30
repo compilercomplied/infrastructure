@@ -48,6 +48,7 @@ export function configureForgejoAndroidRunner(
 
 runner:
   file: /data/.runner
+  shutdown_timeout: 150s
   capacity: 1
   envs:
     DOCKER_HOST: DOCKER_HOST_REPLACE_ME
@@ -162,6 +163,7 @@ container:
           // Lock down host exposure: no hostNetwork/hostPID/hostIPC and no docker.sock hostPath.
           // The device plugin injects /dev/kvm only after scheduler allocation to the DinD sidecar.
           nodeSelector: { [androidRunnerNodeLabel]: "true" },
+          terminationGracePeriodSeconds: 180,
           containers: [
             {
               name: "runner",
@@ -203,6 +205,8 @@ container:
               // dind is the only privileged container here; /dev/kvm cannot be reached from inside
               // an unprivileged runner otherwise, so it is the single exception to the no-privilege rule.
               name: "dind",
+              // Jobs need Docker until the runner's 150-second shutdown wait ends.
+              lifecycle: { preStop: { exec: { command: ["sh", "-c", "sleep 160"] } } },
               image: dindImage,
               // k3s VXLAN leaves 1450 bytes for pod traffic. Docker's 1500-byte job
               // bridges otherwise black-hole larger TLS packets (GitHub release downloads).

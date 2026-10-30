@@ -26,7 +26,11 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
 
     // Looking up the native Owners team also rejects personal namespaces without
     // making this helper responsible for the organization's lifecycle.
-    const owners = forgejo.getTeamOutput({ organization, name: "Owners" }, { provider });
+    // Provider dependencies alone do not delay invokes during Forgejo's Recreate rollout.
+    const owners = forgejo.getTeamOutput({ organization, name: "Owners" }, {
+      provider,
+      dependsOn: dependencies,
+    });
     const name = owners.apply(team => {
       if (team.permission !== "owner" || !team.includesAllRepositories) {
         throw new Error(`${organization} must have its native Owners team with access to all repositories`);

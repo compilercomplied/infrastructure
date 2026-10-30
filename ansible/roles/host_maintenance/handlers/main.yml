@@ -1,0 +1,19 @@
+---
+- name: Reload maintenance systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Restart maintenance logind
+  ansible.builtin.systemd_service:
+    name: systemd-logind
+    state: restarted
+  notify: Restart maintenance k3s
+
+- name: Update maintenance grub
+  ansible.builtin.command: update-grub
+
+- name: Restart maintenance k3s
+  ansible.builtin.systemd_service:
+    name: k3s
+    state: restarted
+    daemon_reload: true

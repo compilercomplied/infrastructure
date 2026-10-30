@@ -69,6 +69,7 @@ export interface GameServerArgs {
   podSecurityContext?: k8s.types.input.core.v1.PodSecurityContext;
   containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
 
+  terminationGracePeriodSeconds?: number;
   readinessProbe?: k8s.types.input.core.v1.Probe;
   livenessProbe?: k8s.types.input.core.v1.Probe;
 }
@@ -178,6 +179,7 @@ export class GameServer extends pulumi.ComponentResource {
         template: {
           metadata: { labels: { app: name, service: args.service, ...(args.labels ?? {}) } },
           spec: {
+            terminationGracePeriodSeconds: args.terminationGracePeriodSeconds ?? 180,
             securityContext: args.podSecurityContext,
             nodeSelector: args.nodeSelector,
             affinity: args.affinity,

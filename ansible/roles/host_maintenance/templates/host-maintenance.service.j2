@@ -1,0 +1,10 @@
+[Unit]
+Description=Update Debian and activate new kernels
+Wants=network-online.target
+After=network-online.target k3s.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/host-maintenance update
+TimeoutStartSec=3h
+UMask=0022

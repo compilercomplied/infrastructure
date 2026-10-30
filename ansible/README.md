@@ -46,3 +46,11 @@ password and SSH-key injection, including the local secrets-key lookup. Review
 `roles/bare_metal/templates/preseed.cfg.j2` before starting installation.
 Starting PXE changes controller services; it is a separate explicit task so
 ordinary cluster provisioning does not start an installer on the LAN.
+
+## Automatic host maintenance
+
+Provisioning also installs the daily update timer and graceful shutdown settings.
+See [host maintenance](../docs/host-maintenance.md) for the schedule, safeguards,
+CI bootstrap requirements, monitoring, and recovery. `mise run ansible:test` runs
+maintenance safety tests without contacting the server; `mise run ansible:plan`
+previews provisioning with Ansible check/diff mode.

@@ -49,3 +49,12 @@ run = "ansible-playbook playbooks/provision_pxe.yml -e pxe_state=stopped --ask-b
 [tasks."doop:check"]
 description = "Verify published Doop image, screenshot rendering and signup restrictions"
 run = "scripts/check-doop.sh"
+
+[tasks."ansible:test"]
+description = "Test maintenance safety decisions without contacting the host"
+run = ["python3 -B -m unittest discover -s ansible/tests -v", "ansible-playbook -i localhost, ansible/tests/render_maintenance.yml"]
+
+[tasks."ansible:plan"]
+description = "Preview cluster provisioning with Ansible check and diff mode"
+dir = "ansible"
+run = "ansible-playbook playbooks/provision_cluster.yml --check --diff --ask-become-pass"

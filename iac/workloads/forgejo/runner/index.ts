@@ -38,6 +38,7 @@ export function configureForgejoRunner(
 
 runner:
   file: /data/.runner
+  shutdown_timeout: 150s
   capacity: 2
   envs:
     DOCKER_HOST: DOCKER_HOST_REPLACE_ME
@@ -93,6 +94,7 @@ container:
         spec: {
           hostNetwork: true,
           dnsPolicy: "ClusterFirstWithHostNet",
+          terminationGracePeriodSeconds: 180,
           containers: [
             {
               name: "runner",
@@ -145,6 +147,8 @@ container:
             },
             {
               name: "dind",
+              // Jobs need Docker until the runner's 150-second shutdown wait ends.
+              lifecycle: { preStop: { exec: { command: ["sh", "-c", "sleep 160"] } } },
               image: dindImage,
               args: ["dockerd", "--host=unix:///var/run/docker.sock"],
               securityContext: {

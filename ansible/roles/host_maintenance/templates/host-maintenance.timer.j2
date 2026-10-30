@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Debian testing maintenance window
+
+[Timer]
+OnCalendar={{ host_maintenance_schedule }}
+# Catch-up runs could reboot the server during daytime use.
+Persistent=false
+AccuracySec=1min
+
+[Install]
+WantedBy=timers.target

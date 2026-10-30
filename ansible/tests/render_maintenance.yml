@@ -1,0 +1,45 @@
+---
+- name: Render maintenance configuration without contacting the cluster
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars_files:
+    - ../roles/host_maintenance/defaults/main.yml
+  tasks:
+    - name: Create temporary render directory
+      ansible.builtin.tempfile:
+        state: directory
+        prefix: host-maintenance-test-
+      register: maintenance_render
+
+    - name: Validate rendered artifacts
+      block:
+        - name: Render configuration and units
+          ansible.builtin.template:
+            src: '../roles/host_maintenance/templates/{{ item }}.j2'
+            dest: '{{ maintenance_render.path }}/{{ item }}'
+            mode: '0600'
+          loop:
+            - config.json
+            - host-maintenance.service
+            - host-maintenance.timer
+            - host-maintenance-verify.service
+
+        - name: Parse rendered configuration
+          ansible.builtin.set_fact:
+            maintenance_config: "{{ lookup('file', maintenance_render.path ~ '/config.json') | from_json }}"
+
+        - name: Assert shared shutdown contract
+          ansible.builtin.assert:
+            that:
+              - maintenance_config.shutdown_seconds == 300
+              - maintenance_config.critical_shutdown_seconds == 30
+              - maintenance_config.reboot == true
+              - maintenance_config.metrics_directory == '/var/lib/node_exporter/textfile_collector'
+              - "'Persistent=false' in lookup('file', maintenance_render.path ~ '/host-maintenance.timer')"
+              - "'Europe/Madrid' in lookup('file', maintenance_render.path ~ '/host-maintenance.timer')"
+      always:
+        - name: Remove temporary render directory
+          ansible.builtin.file:
+            path: '{{ maintenance_render.path }}'
+            state: absent

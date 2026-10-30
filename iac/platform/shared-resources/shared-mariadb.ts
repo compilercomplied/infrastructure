@@ -67,6 +67,7 @@ export function configureSharedMariaDb(
           labels: { app: name },
         },
         spec: {
+          terminationGracePeriodSeconds: 120,
           containers: [{
             name: "mariadb",
             image: sharedMariaDbImage,

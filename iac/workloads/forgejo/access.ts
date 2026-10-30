@@ -20,7 +20,11 @@ export function provisionRenovateAccess(
   adminToken: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = [],
 ) {
-  const repository = forgejo.getRepositoryOutput({ owner: "home", name: "homelab-iac" }, { provider });
+  // The API is unavailable until Forgejo's Recreate rollout has finished.
+  const repository = forgejo.getRepositoryOutput({ owner: "home", name: "homelab-iac" }, {
+    provider,
+    dependsOn: dependencies,
+  });
   const collaborator = new forgejo.Collaborator("forgejo-renovate-homelab-iac", {
     repositoryId: repository.id,
     user: renovate.login,

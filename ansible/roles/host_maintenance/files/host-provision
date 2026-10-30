@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+
+source_directory="${1:?An extracted, root-owned source directory is required}"
+[[ "$source_directory" =~ ^/var/tmp/host-provision\.[A-Za-z0-9]+$ ]]
+[[ "$(stat -c %u "$source_directory")" == 0 ]]
+exec 9>/run/host-maintenance.lock
+flock -w 10800 9
+trap 'rm -rf -- "$source_directory"' EXIT
+cd "$source_directory/ansible"
+/usr/bin/ansible-galaxy collection install -r requirements.yml
+/usr/bin/ansible-playbook --connection=local -i hosts.ini playbooks/provision_cluster.yml

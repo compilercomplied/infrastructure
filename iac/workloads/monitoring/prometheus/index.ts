@@ -11,6 +11,7 @@ export function configurePrometheus(
   namespace: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = []
 ) {
+  const alertWebhookUrl = new pulumi.Config("monitoring").getSecret("alertWebhookUrl");
   const kubePrometheusStack = new k8s.helm.v3.Chart("kube-prometheus-stack", {
     namespace: namespace,
     chart: "kube-prometheus-stack",
@@ -35,13 +36,15 @@ export function configurePrometheus(
         config: {
           global: { resolve_timeout: "5m" },
           route: {
-            receiver: "discard",
+            receiver: alertWebhookUrl ? "webhook" : "discard",
             group_by: ["alertname", "job", "instance"],
             group_wait: "30s",
             group_interval: "5m",
             repeat_interval: "4h",
           },
-          receivers: [{ name: "discard" }],
+          receivers: alertWebhookUrl
+            ? [{ name: "webhook", webhook_configs: [{ url: alertWebhookUrl, send_resolved: true }] }]
+            : [{ name: "discard" }],
         },
       },
 
@@ -75,6 +78,13 @@ export function configurePrometheus(
       // We keep them here because they are the "standard" feed for Prometheus
       "prometheus-node-exporter": {
         enabled: true,
+        extraArgs: ["--collector.textfile.directory=/host-maintenance"],
+        extraHostVolumeMounts: [{
+          name: "host-maintenance",
+          hostPath: "/var/lib/node_exporter/textfile_collector",
+          mountPath: "/host-maintenance",
+          readOnly: true,
+        }],
         serviceAccount: {
           create: true,
         },

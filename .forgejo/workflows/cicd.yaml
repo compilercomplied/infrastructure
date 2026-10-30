@@ -9,7 +9,28 @@ on:
       - master
 
 jobs:
+  ansible-validation:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Install Ansible
+        run: python3 -m pip install --user ansible-core
+      - name: Install Ansible collections
+        run: ansible-galaxy collection install -r ansible/requirements.yml
+      - name: Validate Ansible playbooks
+        working-directory: ansible
+        run: |
+          ansible-playbook playbooks/provision_cluster.yml --syntax-check
+          ansible-playbook playbooks/provision_pxe.yml --syntax-check
+      - name: Test maintenance safety decisions
+        run: |
+          python3 -B -m unittest discover -s ansible/tests -v
+          ansible-playbook -i localhost, ansible/tests/render_maintenance.yml
   cicd:
+    needs: ansible-validation
     runs-on: ubuntu-latest
     permissions:
       contents: read

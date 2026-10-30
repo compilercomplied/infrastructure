@@ -1,0 +1,9 @@
+---
+host_maintenance_enabled: true
+host_maintenance_schedule: '*-*-* 06:00:00 Europe/Madrid'
+host_maintenance_reboot: true
+host_maintenance_busy_timeout_seconds: 3600
+host_maintenance_verify_timeout_seconds: 900
+host_maintenance_shutdown_seconds: 300
+host_maintenance_critical_shutdown_seconds: 30
+host_maintenance_metrics_directory: /var/lib/node_exporter/textfile_collector

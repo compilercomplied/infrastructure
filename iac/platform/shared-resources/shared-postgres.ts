@@ -77,6 +77,7 @@ export function configureSharedPostgres(
           labels: { app: name },
         },
         spec: {
+          terminationGracePeriodSeconds: 120,
           containers: [{
             name: "shared-postgres",
             image: "postgres:16-alpine",

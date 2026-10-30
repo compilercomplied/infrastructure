@@ -1,0 +1,8 @@
+{{ {
+  'reboot': host_maintenance_reboot | bool,
+  'busy_timeout_seconds': host_maintenance_busy_timeout_seconds | int,
+  'verify_timeout_seconds': host_maintenance_verify_timeout_seconds | int,
+  'shutdown_seconds': host_maintenance_shutdown_seconds | int,
+  'critical_shutdown_seconds': host_maintenance_critical_shutdown_seconds | int,
+  'metrics_directory': host_maintenance_metrics_directory
+} | to_nice_json }}
