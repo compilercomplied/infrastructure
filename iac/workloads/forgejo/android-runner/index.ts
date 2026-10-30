@@ -28,7 +28,7 @@ export function configureForgejoAndroidRunner(
   // service and to co-locate, so it deliberately does NOT create a namespace of its own.
   const config = new pulumi.Config("selfhosted");
   const runnerImage =
-    config.get("androidRunnerImage") ?? "code.forgejo.org/forgejo/runner:3.3.0";
+    config.get("androidRunnerImage") ?? "code.forgejo.org/forgejo/runner:11.1.1";
   const dindImage = config.get("androidDindImage") ?? "docker:dind";
 
   // Docker job containers are constrained independently so a single emulator cannot consume all
@@ -54,9 +54,13 @@ runner:
   labels:
     - "android-kvm:docker://catthehacker/ubuntu:act-latest"
 
+cache:
+  enabled: true
+  dir: /cache
+
 container:
-  docker_host: DOCKER_HOST_REPLACE_ME
-  options: "--device=/dev/kvm --cpus=3 --memory=2g --memory-swap=2g"
+  docker_host: "-"
+  options: "--device=/dev/kvm --cpus=3 --memory=6g --memory-swap=6g --sysctl net.ipv6.conf.all.disable_ipv6=1"
 `,
     },
   }, { dependsOn: dependencies });
@@ -192,6 +196,7 @@ container:
                 { name: "config", mountPath: "/config" },
                 { name: "bootstrap-scripts", mountPath: "/scripts" },
                 { name: "dind-socket", mountPath: "/var/run" },
+                { name: "cache", mountPath: "/cache" },
               ],
             },
             {
@@ -229,6 +234,7 @@ container:
             },
             { name: "docker-storage", emptyDir: {} },
             { name: "dind-socket", emptyDir: {} },
+            { name: "cache", emptyDir: { sizeLimit: "10Gi" } },
           ],
         },
       },
