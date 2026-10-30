@@ -15,6 +15,7 @@ export function configureCertManager() {
     const certManagerChart = new k8s.helm.v3.Chart("cert-manager", {
         namespace: namespace.metadata.name,
         chart: "cert-manager",
+        // renovate: datasource=helm depName=cert-manager registryUrl=https://charts.jetstack.io
         version: "v1.14.4",
         fetchOpts: {
             repo: "https://charts.jetstack.io",

@@ -12,6 +12,7 @@ export function configureLoki(
   const loki = new k8s.helm.v3.Chart("loki", {
     namespace: namespace,
     chart: "loki",
+    // renovate: datasource=helm depName=loki registryUrl=https://grafana.github.io/helm-charts
     version: "6.21.0", // Latest stable 6.x chart for Loki 3.x
     fetchOpts: {
       repo: "https://grafana.github.io/helm-charts",
