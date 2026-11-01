@@ -40,8 +40,9 @@ export function configureForgejoAndroidRunner(
     },
   }, { dependsOn: dependencies });
 
+  // Auto-naming lets Pulumi create new config before rolling the Deployment.
   const runnerConfigMap = new k8s.core.v1.ConfigMap(`${name}-config`, {
-    metadata: { name: `${name}-config`, namespace },
+    metadata: { namespace },
     data: {
       "config.yaml": `log:
   level: info
@@ -147,7 +148,7 @@ container:
   }, { dependsOn: dependencies });
 
   const deployment = new k8s.apps.v1.Deployment(name, {
-    metadata: { name, namespace },
+    metadata: { name, namespace, annotations: { "pulumi.com/patchForce": "true" } },
     spec: {
       // The only KVM-capable node is shared with control-plane workloads. The runner stays bounded
       // by the Pod and Docker job limits so its one emulator cannot claim unbounded host capacity.

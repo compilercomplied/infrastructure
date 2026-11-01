@@ -27,9 +27,9 @@ export function configureForgejoRunner(
     },
   }, { dependsOn: dependencies });
 
+  // Auto-naming lets Pulumi create new config before rolling the Deployment.
   const runnerConfigMap = new k8s.core.v1.ConfigMap(`${name}-config`, {
     metadata: {
-      name: `${name}-config`,
       namespace,
     },
     data: {
@@ -81,6 +81,7 @@ container:
     metadata: {
       name,
       namespace,
+      annotations: { "pulumi.com/patchForce": "true" },
     },
     spec: {
       replicas: 1,

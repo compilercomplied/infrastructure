@@ -11,13 +11,18 @@ on:
 jobs:
   ansible-validation:
     runs-on: ubuntu-latest
+    env:
+      ANSIBLE_CONFIG: ${{ github.workspace }}/ansible/ansible.cfg
     permissions:
       contents: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Install Ansible
-        run: python3 -m pip install --user ansible-core
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ansible-venv"
+          "$RUNNER_TEMP/ansible-venv/bin/python" -m pip install ansible-core
+          echo "$RUNNER_TEMP/ansible-venv/bin" >> "$GITHUB_PATH"
       - name: Install Ansible collections
         run: ansible-galaxy collection install -r ansible/requirements.yml
       - name: Validate Ansible playbooks
