@@ -2,7 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { renovateRuntimeConfig } from "./config";
 
-const renovateImage = "ghcr.io/renovatebot/renovate:41.0.0@sha256:f6043a9a4f281bfb37b2d3961133f1db9fc4c31fffbb88e55d380a62edb5523a";
+const renovateImage = "ghcr.io/renovatebot/renovate:41.0.0";
 
 export function configureRenovate(
   namespace: pulumi.Input<string>,

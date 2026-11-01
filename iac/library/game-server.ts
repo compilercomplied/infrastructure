@@ -163,7 +163,7 @@ export class GameServer extends pulumi.ComponentResource {
 
     const storageInitContainers: k8s.types.input.core.v1.Container[] = args.storage.some(storage => storage.mounts.some(mount => mount.subPath)) ? [{
       name: "init-storage",
-      image: "docker.io/library/busybox@sha256:b7f3d86d6e84fc17718c48bcde1450807faa2d56704205c697b4bd5df7b9e29f",
+      image: "docker.io/library/busybox:1.36.1",
       command: ["sh", "-c", args.storage.flatMap(storage => storage.mounts.map(mount => mount.subPath)).filter((subPath): subPath is string => Boolean(subPath)).map(subPath => `mkdir -p /data/${subPath}`).join(" && ")],
       volumeMounts: args.storage.filter(storage => storage.mounts.some(mount => mount.subPath)).map(storage => ({ name: storage.name, mountPath: "/data" })),
       resources: { requests: { cpu: "1m", memory: "4Mi" }, limits: { cpu: "10m", memory: "16Mi" } },

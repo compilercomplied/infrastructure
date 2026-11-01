@@ -1,8 +1,8 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
-const collectorImage = "debian@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6ba12f9e858";
-const webImage = "busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e";
+const collectorImage = "debian:bookworm-20261005";
+const webImage = "docker.io/library/busybox:1.36.1";
 
 const collectorScript = String.raw`#!/bin/sh
 set -eu

@@ -27,9 +27,13 @@
   ],
   "packageRules": [
     {
-      "matchManagers": ["custom.regex"],
       "matchDatasources": ["docker"],
-      "pinDigests": true
+      "pinDigests": false
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchUpdateTypes": ["digest", "pinDigest"],
+      "enabled": false
     }
   ]
 }

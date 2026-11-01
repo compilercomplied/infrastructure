@@ -8,6 +8,15 @@ For PR reviews, also read [docs/agentic-review.md](docs/agentic-review.md).
  - Never `pulumi up`. Only preview. PR CI acts as a source of truth (unless
 	 pairing with a human).
 
+## Container image versions
+- Prefer verified, explicit release tags. Avoid digest-only (`image@sha256:...`)
+  and tag-plus-digest (`image:version@sha256:...`) references; release versions
+  are sufficient and digest changes should not create update churn.
+- Verify tags against the upstream registry before changing image references.
+  Migrate existing digest pins only when exact release provenance is verified;
+  report unresolved exceptions rather than guessing tags or upgrading unrelated apps.
+- Keep Renovate digest pinning and digest updates disabled.
+
 ## Architectural Guardrails
 * **Priority 1: Zero ClickOps**: Maintain the infrastructure completely automated. Never perform manual steps or "ClickOps". While temporary hacks to restart or patch components for the sake of rollbacks are acceptable, you must **always ask for explicit permission**.
 * **Zero-Trust Default-Deny Model**: Enforce a zero-trust default-deny model for incoming traffic (`default-deny-ingress`) across namespaces. Incoming traffic must be blocked by default, and workloads must explicitly define NetworkPolicies to permit required ingress connections.

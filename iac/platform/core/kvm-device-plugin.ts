@@ -13,7 +13,7 @@ export function configureKvmDevicePlugin() {
           nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
           containers: [{
             name: "generic-device-plugin",
-            image: "docker.io/squat/generic-device-plugin:0.2.0@sha256:bf312a67334be792d3a3d3042c99225aec469957dc1737911970aebbf82d1545",
+            image: "docker.io/squat/generic-device-plugin:0.2.0",
             args: ["--device", '{"name":"kvm","groups":[{"count":2,"paths":[{"path":"/dev/kvm"}]}]}'],
             securityContext: { allowPrivilegeEscalation: false },
             resources: { requests: { cpu: "10m", memory: "16Mi" }, limits: { cpu: "100m", memory: "64Mi" } },

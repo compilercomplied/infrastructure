@@ -6,8 +6,8 @@ import { Labels } from "../labels";
 import { excalidashSettings } from "./settings";
 import { excalidashIdentity } from "./identity";
 
-const backendImage = "zimengxiong/excalidash-backend@sha256:29937c62fbed5f4d417398c21c7ab261965231427bd5ae3c64f8d365fe2c02a3";
-const frontendImage = "zimengxiong/excalidash-frontend@sha256:333a3f24bd599f69ebb3494e0393b6882f2f031fc0f05d02b0ede53ce7a743e0";
+const backendImage = "zimengxiong/excalidash-backend:0.6.5";
+const frontendImage = "zimengxiong/excalidash-frontend:0.6.5";
 
 
 export function configureExcaliDash(namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
