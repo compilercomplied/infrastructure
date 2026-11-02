@@ -6,7 +6,7 @@ import { Labels } from "../labels";
 import { excalidashSettings } from "./settings";
 import { excalidashIdentity } from "./identity";
 
-const backendImage = "zimengxiong/excalidash-backend:0.6.5";
+const backendImage = "zimengxiong/excalidash-backend:0.6.7";
 const frontendImage = "zimengxiong/excalidash-frontend:0.6.5";
 
 
