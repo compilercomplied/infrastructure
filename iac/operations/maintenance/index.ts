@@ -25,7 +25,7 @@ export function configureMaintenance() {
               restartPolicy: "OnFailure",
               containers: [{
                 name: "image-gc",
-                image: "alpine:3.19",
+                image: "alpine:3.24",
                 command: [
                   "nsenter", "-t", "1", "-m", "-u", "-i", "-n", "--",
                   "k3s", "crictl", "rmi", "--prune",
