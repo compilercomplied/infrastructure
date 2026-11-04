@@ -13,7 +13,7 @@ export function configureForgejoRunner(
   dependencies: pulumi.Resource[] = []
 ) {
   const name = "forgejo-runner";
-  const runnerImage = "code.forgejo.org/forgejo/runner:3.3.0";
+  const runnerImage = "code.forgejo.org/forgejo/runner:3.5.1";
   const dindImage = "docker:dind";
 
   // 1. ConfigMaps for Bootstrap script and configuration file
