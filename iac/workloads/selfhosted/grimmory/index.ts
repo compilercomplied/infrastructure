@@ -9,7 +9,7 @@ import { Labels } from "../labels";
 import { GrimmorySettings } from "./settings";
 import { oidcIssuer } from "../../../library/oidc-app";
 
-export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.2.0";
+export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.5.0";
 export const grimmoryMariaDbImage = "mariadb:11.4";
 
 export function configureGrimmory(
