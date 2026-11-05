@@ -56,7 +56,7 @@ export function configureMinecraft(platform: GamePlatform) {
     // one renderer leaves CPU capacity for the latency-sensitive Minecraft server.
     initContainers: [{
       name: "configure-bluemap",
-      image: "docker.io/library/busybox:1.36.1",
+      image: "docker.io/library/busybox:1.38.0",
       command: ["sh", "-c", "set -eu\nrm -f -- /data/mods/squaremap-fabric-mc26.3-1.4.0.jar\nmkdir -p /data/config/bluemap\nprintf '%s\\n' 'accept-download: true' 'render-thread-count: 1' > /data/config/bluemap/core.conf\nchown -R 1000:1000 /data/config/bluemap"],
       volumeMounts: [{ name: "world", mountPath: "/data" }],
       resources: { requests: { cpu: "1m", memory: "4Mi" }, limits: { cpu: "10m", memory: "16Mi" } },
