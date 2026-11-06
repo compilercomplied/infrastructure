@@ -174,7 +174,7 @@ export class DirectDnsReconciler extends pulumi.ComponentResource {
                 restartPolicy: "OnFailure",
                 containers: [{
                   name,
-                  image: "alpine:3.24.3",
+                  image: "alpine:3.24.4",
                   command: ["/bin/sh", "-ec"],
                   args: ["apk add --no-cache curl jq >/dev/null && exec /bin/sh -ec \"$DIRECT_DNS_SCRIPT\""],
                   env: [
