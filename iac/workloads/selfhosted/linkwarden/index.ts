@@ -14,7 +14,7 @@ export function configureLinkwarden(
   // handled declaratively by the component.
   const app = new SelfhostedApp("linkwarden", {
     namespace,
-    image: "ghcr.io/linkwarden/linkwarden:v2.14.1",
+    image: "ghcr.io/linkwarden/linkwarden:v2.16.3",
     endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "linkwarden", host: linkwardenIdentity.host }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
