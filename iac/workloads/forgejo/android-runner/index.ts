@@ -33,6 +33,7 @@ export function configureForgejoAndroidRunner(
 
   // Docker job containers are constrained independently so a single emulator cannot consume all
   // CPU or memory retained by DinD on a shared worker.
+  const jobContainerOptions = "--device=/dev/kvm --cpus=4 --memory=8g --memory-swap=8g --sysctl net.ipv6.conf.all.disable_ipv6=1";
   const bootstrapConfigMap = new k8s.core.v1.ConfigMap(`${name}-bootstrap-scripts`, {
     metadata: { name: `${name}-bootstrap-scripts`, namespace },
     data: {
@@ -62,7 +63,7 @@ cache:
 
 container:
   docker_host: "-"
-  options: "--device=/dev/kvm --cpus=3 --memory=6g --memory-swap=6g --sysctl net.ipv6.conf.all.disable_ipv6=1"
+  options: "${jobContainerOptions}"
 `,
     },
   }, { dependsOn: dependencies });
@@ -157,7 +158,11 @@ container:
       strategy: { type: "RollingUpdate", rollingUpdate: { maxSurge: 0, maxUnavailable: 1 } },
       selector: { matchLabels: { app: name } },
       template: {
-        metadata: { labels: { app: name } },
+        metadata: {
+          labels: { app: name },
+          // Bootstrap copies the runner config at startup, so a limit change needs a new Pod.
+          annotations: { "homelab.gdario.dev/job-container-options": jobContainerOptions },
+        },
         spec: {
           serviceAccountName: serviceAccount.metadata.name,
           automountServiceAccountToken: false,
