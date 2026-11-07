@@ -7,6 +7,12 @@ export interface RateLimitConfig {
   period?: string;
 }
 
+export const tailnetEntryPoint = "tailnet";
+
+export function getDualAccessHosts(): string[] {
+  return new pulumi.Config("privateAccess").getObject<string[]>("dualHosts") ?? [];
+}
+
 export interface LetsEncryptIngressArgs {
   name: string;
   namespace: pulumi.Input<string>;
@@ -39,7 +45,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncr
     host,
     serviceName,
     servicePort = 80,
-    entryPoints = ["websecure"],
+    entryPoints = getDualAccessHosts().includes(host) ? ["websecure", tailnetEntryPoint] : ["websecure"],
     rateLimit = {},
     middlewares = [],
     dependencies = [],

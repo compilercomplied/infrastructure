@@ -144,3 +144,17 @@ config:
     secure: v1:X8SqQ8nUXaHwUiQ8:vniBdTclLUn2SURb/Wwv9yNFnL6b62ZglRwFE3oc8Vg/qoFo23j4d7X/+ZDt4qfLtSIr/aq6xYSZNium9zlcdTyLCROb/9WR7N2E4SvQv1w=
   privateAccess:publishDns: "true"
   privateAccess:grafanaPrivate: "true"
+  privateAccess:dualHosts:
+    - design.gdario.dev
+    - draw.gdario.dev
+    - git.gdario.dev
+    - grimmory.gdario.dev
+    - hermes-api.gdario.dev
+    - hermes.gdario.dev
+    - linkwarden.gdario.dev
+    - notes.gdario.dev
+    - notifications.gdario.dev
+    - outline.gdario.dev
+    - projects.gdario.dev
+    - recipes.gdario.dev
+    - syncthing.gdario.dev

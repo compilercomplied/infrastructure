@@ -1,13 +1,13 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as tailscale from "@pulumi/tailscale";
+import { getDualAccessHosts, tailnetEntryPoint } from "../library/ingress";
 import { authentikBaseUrl } from "../library/oidc-app";
 import { grafanaIdentity } from "../workloads/monitoring/grafana/identity";
 import { configurePrivateDns } from "./private-dns";
 import { configureTailscale } from "./tailscale";
 
 const connectorName = "homelab-pilot";
-const entryPoint = "tailnet";
 const pilotApps = [
   { name: "grafana", namespace: "monitoring", host: grafanaIdentity.host, service: "grafana" },
   { name: "authentik", namespace: "infrastructure", host: new URL(authentikBaseUrl).hostname, service: "authentik-server" },
@@ -18,6 +18,18 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
   const config = new pulumi.Config("privateAccess");
   const enabled = config.getBoolean("enabled");
   const publishDns = config.getBoolean("publishDns");
+  const dualHosts = getDualAccessHosts();
+  const publishDualDns = config.getBoolean("publishDualDns");
+  if (dualHosts.length && !enabled) {
+    throw new Error("privateAccess:dualHosts requires the private-access pilot");
+  }
+  if (new Set(dualHosts).size !== dualHosts.length || pilotHosts.some(host => dualHosts.includes(host))) {
+    throw new Error("privateAccess:dualHosts must contain unique hosts outside the original pilot");
+  }
+  if (publishDualDns && !publishDns) {
+    throw new Error("privateAccess:publishDualDns requires published pilot DNS");
+  }
+  const dnsHosts = publishDualDns ? [...pilotHosts, ...dualHosts] : pilotHosts;
   const grafanaPrivate = config.getBoolean("grafanaPrivate");
   if (grafanaPrivate && (!enabled || !publishDns)) {
     throw new Error("privateAccess:grafanaPrivate requires the pilot and published split DNS");
@@ -31,7 +43,7 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
     if (grafanaPrivate && app.name === "grafana") continue;
     configurePrivateIngress(app, https);
   }
-  const dns = configurePrivateDns(operator.namespace, operator.defaultDeny, connectorName, https.spec.clusterIP, pilotHosts);
+  const dns = configurePrivateDns(operator.namespace, operator.defaultDeny, connectorName, https.spec.clusterIP, dnsHosts);
   const routes = [pulumi.interpolate`${https.spec.clusterIP}/32`, pulumi.interpolate`${dns.spec.clusterIP}/32`];
   const connectorDefinition = operator.chart.getResource(
     "apiextensions.k8s.io/v1/CustomResourceDefinition", "connectors.tailscale.com"
@@ -73,7 +85,7 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
           scopes: ["dns"],
         } : { apiKey: config.requireSecret("dnsApiKey") }),
       });
-      for (const domain of pilotHosts) {
+      for (const domain of dnsHosts) {
         new tailscale.DnsSplitNameservers(domain, {
           domain,
           nameservers: [dns.spec.clusterIP],
@@ -81,7 +93,7 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
       }
     }
   }
-  return grafanaPrivate ? [entryPoint] as const : undefined;
+  return grafanaPrivate ? [tailnetEntryPoint] as const : undefined;
 }
 
 function configurePrivateIngress({ name, namespace, host, service }: typeof pilotApps[number], https: k8s.core.v1.Service) {
@@ -91,7 +103,7 @@ function configurePrivateIngress({ name, namespace, host, service }: typeof pilo
       name: ingressName,
       namespace,
       annotations: {
-        "traefik.ingress.kubernetes.io/router.entrypoints": entryPoint,
+        "traefik.ingress.kubernetes.io/router.entrypoints": tailnetEntryPoint,
         "traefik.ingress.kubernetes.io/router.tls": "true",
         "traefik.ingress.kubernetes.io/router.middlewares": `${namespace}-${name}-rate-limit@kubernetescrd`,
       },
@@ -123,7 +135,7 @@ function configurePrivateHttps() {
     spec: {
       // Keep the pilot listener separate from the ports used by Cloudflare and the LAN.
       valuesContent: JSON.stringify({
-        ports: { [entryPoint]: { port: 9443, expose: { default: false } } },
+        ports: { [tailnetEntryPoint]: { port: 9443, expose: { default: false } } },
       }),
     },
   });
@@ -135,7 +147,7 @@ function configurePrivateHttps() {
         "app.kubernetes.io/name": "traefik",
         "app.kubernetes.io/instance": "traefik-kube-system",
       },
-      ports: [{ name: "https", port: 443, targetPort: entryPoint }],
+      ports: [{ name: "https", port: 443, targetPort: tailnetEntryPoint }],
     },
   }, { dependsOn: [chartConfig] });
 }
