@@ -11,7 +11,7 @@ export function configureTandoorRecipes(
 
   const app = new SelfhostedApp("tandoor-recipes", {
     namespace,
-    image: "ghcr.io/tandoorrecipes/recipes:2.6.9",
+    image: "ghcr.io/tandoorrecipes/recipes:2.7.2",
     endpoints: [{
       name: "http",
       servicePort: 80,
