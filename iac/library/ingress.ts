@@ -13,6 +13,7 @@ export interface LetsEncryptIngressArgs {
   host: string;
   serviceName: pulumi.Input<string>;
   servicePort?: number;
+  entryPoints?: readonly [string, ...string[]];
   rateLimit?: RateLimitConfig | false;
   middlewares?: pulumi.Input<string>[];
   dependencies?: pulumi.Resource[];
@@ -38,6 +39,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncr
     host,
     serviceName,
     servicePort = 80,
+    entryPoints = ["websecure"],
     rateLimit = {},
     middlewares = [],
     dependencies = [],
@@ -91,7 +93,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncr
       namespace,
       annotations: {
         ...(host.endsWith(".home.arpa") ? {} : { "cert-manager.io/cluster-issuer": "letsencrypt-prod" }),
-        "traefik.ingress.kubernetes.io/router.entrypoints": "websecure",
+        "traefik.ingress.kubernetes.io/router.entrypoints": entryPoints.join(","),
         "traefik.ingress.kubernetes.io/router.tls": "true",
         ...extraAnnotations,
       },
