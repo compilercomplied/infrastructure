@@ -11,6 +11,8 @@ export function configurePrivateDns(
   const name = "private-access-dns";
   const labels = { app: name };
   const dnsPort = 1053;
+  // The running resolver reloads its Corefile, so changing records should preserve its pods.
+  const configProvider = new k8s.Provider(`${name}-config`, { enableConfigMapMutable: true });
   const config = new k8s.core.v1.ConfigMap(name, {
     metadata: { name, namespace },
     data: {
@@ -25,7 +27,7 @@ export function configurePrivateDns(
 }
 `,
     },
-  });
+  }, { provider: configProvider });
   const ingress = new k8s.networking.v1.NetworkPolicy(`${name}-allow-connector`, {
     metadata: { name: `${name}-allow-connector`, namespace },
     spec: {

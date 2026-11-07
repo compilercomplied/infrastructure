@@ -43,7 +43,8 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
     if (grafanaPrivate && app.name === "grafana") continue;
     configurePrivateIngress(app, https);
   }
-  const dns = configurePrivateDns(operator.namespace, operator.defaultDeny, connectorName, https.spec.clusterIP, dnsHosts);
+  // Load records during preparation so clients can use them as soon as split DNS is published.
+  const dns = configurePrivateDns(operator.namespace, operator.defaultDeny, connectorName, https.spec.clusterIP, [...pilotHosts, ...dualHosts]);
   const routes = [pulumi.interpolate`${https.spec.clusterIP}/32`, pulumi.interpolate`${dns.spec.clusterIP}/32`];
   const connectorDefinition = operator.chart.getResource(
     "apiextensions.k8s.io/v1/CustomResourceDefinition", "connectors.tailscale.com"
