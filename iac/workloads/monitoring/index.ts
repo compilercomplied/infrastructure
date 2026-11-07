@@ -1,4 +1,5 @@
 import * as k8s from "@pulumi/kubernetes";
+import type { LetsEncryptIngressArgs } from "../../library/ingress";
 import { installPrometheusCRDs } from "./crds";
 import { configurePrometheus } from "./prometheus";
 import { configureGrafana } from "./grafana";
@@ -12,7 +13,7 @@ import { configureHealthAlerts } from "./health-alerts";
 /**
  * Entry point for the modular Monitoring stack.
  */
-export function configureMonitoring() {
+export function configureMonitoring(grafanaEntryPoints?: LetsEncryptIngressArgs["entryPoints"]) {
   const monitoringNamespace = new k8s.core.v1.Namespace("monitoring", {
     metadata: { name: "monitoring" }
   });
@@ -32,7 +33,7 @@ export function configureMonitoring() {
 
   // 4. Visualization Layer (Grafana)
   // Depends on storage engines to ensure service endpoints are available
-  const grafana = configureGrafana(namespaceName, [prometheus, loki]);
+  const grafana = configureGrafana(namespaceName, [prometheus, loki], grafanaEntryPoints);
 
   // 5. Expose real PVC disk usage metrics by scanning host directories
   const pvcExporter = configurePvcExporter(namespaceName, prometheusCRDs);

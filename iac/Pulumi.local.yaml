@@ -1,5 +1,13 @@
 encryptionsalt: v1:HClLMcS4IHw=:v1:XmismE5iopZCqRkA:oml9+bqTFygOOVLsQW1xrAzsTNTZmA==
 config:
+  tailscale:enabled: "true"
+  tailscale:operatorTag: "tag:kubernetes"
+  privateAccess:enabled: "true"
+  privateAccess:approveRoutes: "true"
+  privateAccess:connectorDeviceId: nkf9ajkzmk11CNTRL
+  tailscale:clientId: k3DUmg4Dak11CNTRL
+  tailscale:clientSecret:
+    secure: v1:ffrJIArvFbpI9zQN:Ln/YJ1irgfKWQ563Fnq766nR/XQ7/UYTbFZ3MJjopTc0kJCL02pUSiI7WGxQXjq1uOAS/ss4aW2bDf0VuYmHkujv7BTME7IckodmiHD2pMA=
   infrastructure:grafanaAdminPassword:
     secure: v1:QaCZfqJc6EYwAyrU:pGOOHK7FU/Ysq2NSk3gRuxhO0o0DJAn4HBiMzaaXnVtKKRytAUgNh5mhy4iofmbQL+0Z2pM2cZk=
   agents:pulumiPassphrase:
@@ -131,3 +139,8 @@ config:
     secure: v1:c+XNslCUx7qworJV:mVysPpPemII7Tky5Jv9UFvz3aG0oQUsLSG4jDhlKDeNX7hyhf21+MF1Rht8DpDs0L3ebj74X2+JFAR51NTenIRjtIbMYxFwMoRTGbyYdlac=
   selfhosted:doopOidcClientSecret:
     secure: v1:ortQfN3ZnWB4rxdu:/VBPO5K3U4UjGY3pnQcDY+2nTsJeMzZCGNlegTi04OffStzpk+fkBsyF09Dp2sc+uZblo9ZTNO0mlTIyzJl69zG7BorAZXCzKmLPScgisHg=
+  privateAccess:dnsClientId: kkTF1wtQQW11CNTRL
+  privateAccess:dnsClientSecret:
+    secure: v1:X8SqQ8nUXaHwUiQ8:vniBdTclLUn2SURb/Wwv9yNFnL6b62ZglRwFE3oc8Vg/qoFo23j4d7X/+ZDt4qfLtSIr/aq6xYSZNium9zlcdTyLCROb/9WR7N2E4SvQv1w=
+  privateAccess:publishDns: "true"
+  privateAccess:grafanaPrivate: "true"

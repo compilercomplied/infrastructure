@@ -13,6 +13,7 @@
     "dependencies": {
         "@pulumi/forgejo": "file:sdks/forgejo",
         "@pulumi/kubernetes": "^4.0.0",
-        "@pulumi/pulumi": "^3.113.0"
+        "@pulumi/pulumi": "^3.113.0",
+        "@pulumi/tailscale": "0.29.4"
     }
 }

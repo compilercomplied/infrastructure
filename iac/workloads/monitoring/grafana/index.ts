@@ -1,7 +1,7 @@
 import { grafanaIdentity } from "./identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
-import { createLetsEncryptIngress } from "../../../library/ingress";
+import { createLetsEncryptIngress, type LetsEncryptIngressArgs } from "../../../library/ingress";
 import { createBackupJob } from "../../../operations/maintenance/backup";
 import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
 
@@ -10,7 +10,8 @@ import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcCli
  */
 export function configureGrafana(
   namespace: pulumi.Input<string>,
-  dependencies: pulumi.Resource[] = []
+  dependencies: pulumi.Resource[] = [],
+  entryPoints?: LetsEncryptIngressArgs["entryPoints"]
 ) {
   const config = new pulumi.Config();
   const adminPassword = config.requireSecret("grafanaAdminPassword");
@@ -112,6 +113,7 @@ export function configureGrafana(
     host: grafanaIdentity.host,
     serviceName: "grafana",
     servicePort: 80,
+    entryPoints,
     dependencies: [grafana],
   });
 

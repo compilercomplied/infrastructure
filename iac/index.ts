@@ -1,5 +1,6 @@
 import * as pulumi from "@pulumi/pulumi";
 import { configureTailscale } from "./platform/tailscale";
+import { configurePrivateAccess } from "./platform/private-access";
 import { configureMonitoring } from "./workloads/monitoring";
 import { configureMaintenance } from "./operations/maintenance";
 import { configureSelfhosted } from "./workloads/selfhosted";
@@ -13,8 +14,8 @@ import { GamePlatform } from "./library/game-platform";
 import { configureMinecraft } from "./workloads/games/minecraft";
 import { configureKvmDevicePlugin } from "./platform/core/kvm-device-plugin";
 
-configureTailscale();
-configureMonitoring();
+const grafanaEntryPoints = configurePrivateAccess(configureTailscale());
+configureMonitoring(grafanaEntryPoints);
 
 configureCertManager();
 configureMaintenance();

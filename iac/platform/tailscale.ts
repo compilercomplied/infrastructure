@@ -1,7 +1,7 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
-export function configureTailscale(): void {
+export function configureTailscale() {
   const config = new pulumi.Config("tailscale");
   if (!config.getBoolean("enabled")) return;
 
@@ -23,17 +23,18 @@ export function configureTailscale(): void {
     metadata: { name: "operator-oauth", namespace: namespace.metadata.name },
     stringData: { client_id: clientId, client_secret: clientSecret },
   });
-  new k8s.helm.v3.Chart("tailscale-operator", {
+  const chart = new k8s.helm.v3.Chart("tailscale-operator", {
     namespace: namespace.metadata.name,
     chart: "tailscale-operator",
     // renovate: datasource=helm depName=tailscale-operator registryUrl=https://pkgs.tailscale.com/helmcharts
     version: "1.104.4",
     fetchOpts: { repo: "https://pkgs.tailscale.com/helmcharts" },
     values: {
-      operatorConfig: { defaultTags: ["tag:k8s-operator"] },
+      operatorConfig: { defaultTags: [config.get("operatorTag") ?? "tag:k8s-operator"] },
       proxyConfig: { defaultTags: "tag:kubernetes" },
       apiServerProxyConfig: { mode: "false", allowImpersonation: "false" },
       ingressClass: { enabled: false },
     },
   }, { dependsOn: [defaultDeny, oauth] });
+  return { namespace: namespace.metadata.name, defaultDeny, chart };
 }
