@@ -159,3 +159,11 @@ config:
     - projects.gdario.dev
     - recipes.gdario.dev
     - syncthing.gdario.dev
+  selfhosted:pulpDbPassword:
+    secure: v1:EqPktOAbR0XhwHDm:AwCXCwvpXysXSJdbhl+Ep0ZSkkSQ8WMfPYAer0yCaW4setogwwq/NF/wTeeNUS0OynNI+57d/OWPKaZoZYr87A==
+  selfhosted:pulpOidcClientSecret:
+    secure: v1:yUaV9VRfoccp/l7P:KzzVlFW94JREFFRCCEagYsoP+Tid43FpqBDbe+uxsS2MgfcPSCKwQt9vUwX78/5NHxnEeSBZYYNr9kuel4G6lbJZHLFiFx3K6ZvtboDRG74=
+  selfhosted:pulpSecretKey:
+    secure: v1:BDI+0OiSaWYjYEz6:rBeuuCDOh8Gyf9RYTHVYo+/eRZ5HXpLOEAR/kinUKbxOoWRhfWcXjkLltbfA9Eac0hd4fg9jBAHAoqUELSL6+wk3i517SPzvRBvH9bgjlWs=
+  selfhosted:pulpDbEncryptionKey:
+    secure: v1:juUZaF+5Pn9ajZxA:ZAHs+VPjYQnenxPrK0EotabM3TZAGzMov+VwczVOP/Mwerg/CCNSaCYkZQHuK4vrqkvavEiYLjkAa1QY

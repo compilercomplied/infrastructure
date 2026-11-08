@@ -12,6 +12,8 @@ import { outlineIdentity } from "../../workloads/selfhosted/outline/identity";
 import { excalidashIdentity } from "../../workloads/selfhosted/excalidash/identity";
 import { doopIdentity } from "../../workloads/selfhosted/doop/identity";
 
+import { pulpIdentity } from "../../workloads/selfhosted/pulp/identity";
+
 export const oidcApps: readonly OidcAppRegistration[] = [
   tandoorIdentity,
   linkwardenIdentity,
@@ -24,6 +26,7 @@ export const oidcApps: readonly OidcAppRegistration[] = [
   outlineIdentity,
   excalidashIdentity,
   doopIdentity,
+  pulpIdentity,
 ];
 
 export function oidcSecretEnvironment(config = new pulumi.Config("selfhosted")): Record<string, pulumi.Output<string>> {

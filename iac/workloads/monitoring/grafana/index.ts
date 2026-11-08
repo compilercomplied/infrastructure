@@ -1,5 +1,6 @@
 import { grafanaIdentity } from "./identity";
 import * as k8s from "@pulumi/kubernetes";
+import { cachedHelmChart } from "../../../library/cached-helm-chart";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress, type LetsEncryptIngressArgs } from "../../../library/ingress";
 import { createBackupJob } from "../../../operations/maintenance/backup";
@@ -21,12 +22,14 @@ export function configureGrafana(
 
   const grafana = new k8s.helm.v3.Chart("grafana", {
     namespace: namespace,
-    chart: "grafana",
-    // renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
-    version: "8.10.1",
-    fetchOpts: {
-      repo: "https://grafana.github.io/helm-charts",
-    },
+    ...cachedHelmChart({
+      chart: "grafana",
+      // renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
+      version: "8.10.1",
+      fetchOpts: {
+        repo: "https://grafana.github.io/helm-charts",
+      },
+    }),
     values: {
       assertNoLeakedSecrets: false,
       adminPassword: adminPassword,

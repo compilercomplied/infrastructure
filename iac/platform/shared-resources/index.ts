@@ -31,6 +31,7 @@ export function configureSharedResources() {
     { name: "memos", password: memosDbPassword },
     { name: "excalidash", password: excalidashDbPassword },
     { name: "doop", password: doopDbPassword },
+    { name: "pulp", password: config.requireSecret("pulpDbPassword") },
   ], [namespace]);
 
   const mariadb = configureSharedMariaDb(namespaceName, [

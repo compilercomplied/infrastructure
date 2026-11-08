@@ -20,6 +20,7 @@ if [ -z "$PULUMI_CONFIG_PASSPHRASE" ]; then
 fi
 
 ansible-galaxy collection install -r ../ansible/requirements.yml
+node scripts/cache-forgejo-provider.cjs
 pulumi install
 pulumi login
 pulumi stack select local

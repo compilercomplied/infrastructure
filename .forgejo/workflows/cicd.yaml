@@ -52,7 +52,18 @@ jobs:
         run: curl -fsSL https://get.pulumi.com | sh -s -- --version 3.228.0 && echo "$HOME/.pulumi/bin" >> $GITHUB_PATH
 
       - name: Generate Provider SDKs and Install Dependencies
-        run: pulumi install --non-interactive
+        run: |
+          node scripts/cache-forgejo-provider.cjs
+          attempt=1
+          until pulumi install --non-interactive; do
+            status=$?
+            if [ "$attempt" -ge 3 ]; then
+              exit "$status"
+            fi
+            printf 'Pulumi install attempt %s failed; retrying in %s seconds.\n' "$attempt" "$((attempt * 10))" >&2
+            sleep "$((attempt * 10))"
+            attempt=$((attempt + 1))
+          done
         working-directory: ./iac
 
       - name: Validate Infrastructure
@@ -67,7 +78,17 @@ jobs:
 
       - name: Run Pulumi Preview
         if: github.event_name == 'pull_request'
-        run: pulumi preview --diff --stack local
+        run: |
+          attempt=1
+          until pulumi preview --diff --stack local; do
+            status=$?
+            if [ "$attempt" -ge 3 ]; then
+              exit "$status"
+            fi
+            printf 'Pulumi preview attempt %s failed; retrying in %s seconds.\n' "$attempt" "$((attempt * 10))" >&2
+            sleep "$((attempt * 10))"
+            attempt=$((attempt + 1))
+          done
         working-directory: ./iac
         env:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
