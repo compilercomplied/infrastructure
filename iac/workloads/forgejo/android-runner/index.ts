@@ -33,7 +33,7 @@ export function configureForgejoAndroidRunner(
 
   // Docker job containers are constrained independently so a single emulator cannot consume all
   // CPU or memory retained by DinD on a shared worker.
-  const jobContainerOptions = "--device=/dev/kvm --cpus=4 --memory=8g --memory-swap=8g --sysctl net.ipv6.conf.all.disable_ipv6=1";
+  const jobContainerOptions = "--device=/dev/kvm --cpus=5 --memory=8g --memory-swap=8g --sysctl net.ipv6.conf.all.disable_ipv6=1";
   const bootstrapConfigMap = new k8s.core.v1.ConfigMap(`${name}-bootstrap-scripts`, {
     metadata: { name: `${name}-bootstrap-scripts`, namespace },
     data: {
