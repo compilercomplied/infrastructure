@@ -27,6 +27,7 @@ rewrite stop name hermes.gdario.dev traefik.kube-system.svc.cluster.local
 rewrite stop name hermes-api.gdario.dev traefik.kube-system.svc.cluster.local
 rewrite stop name git.gdario.dev traefik.kube-system.svc.cluster.local
 rewrite stop name notifications.gdario.dev traefik.kube-system.svc.cluster.local
+rewrite stop name pulp-ci.gdario.dev pulp.selfhosted.svc.cluster.local
 `,
     },
   }, { dependsOn: dependencies });

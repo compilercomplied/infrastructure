@@ -10,6 +10,7 @@ import { Labels } from "../labels";
 import { pulpIdentity } from "./identity";
 
 const image = "pulp/pulp:3.90";
+const ciCertificateName = "pulp-ci-tls";
 
 export function configurePulp(namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
   const config = new pulumi.Config("selfhosted");
@@ -28,6 +29,21 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
   const encryptionKey = new k8s.core.v1.Secret("pulp-encryption-key", {
     metadata: { name: "pulp-encryption-key", namespace },
     stringData: { "database_fields.symmetric.key": key },
+  }, { dependsOn: dependencies });
+  const ciCertificate = new k8s.apiextensions.CustomResource(ciCertificateName, {
+    apiVersion: "cert-manager.io/v1",
+    kind: "Certificate",
+    metadata: {
+      name: ciCertificateName,
+      namespace,
+      // Pulp's Recreate deployment should keep serving until the first certificate is ready.
+      annotations: { "pulumi.com/waitFor": "condition=Ready" },
+    },
+    spec: {
+      secretName: ciCertificateName,
+      dnsNames: ["pulp-ci.gdario.dev"],
+      issuerRef: { kind: "ClusterIssuer", name: "letsencrypt-prod" },
+    },
   }, { dependsOn: dependencies });
   const settings = {
     config: { PULP_SETTINGS: "/etc/pulp/runtime/settings.py" },
@@ -79,8 +95,12 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
     additionalVolumes: [
       { name: "runtime", configMap: { name: runtime.metadata.name } },
       { name: "encryption-key", secret: { secretName: encryptionKey.metadata.name } },
+      { name: "ci-tls", secret: { secretName: ciCertificateName, defaultMode: 0o440 } },
     ],
-    additionalVolumeMounts: mounts.filter(mount => mount.name !== "data"),
+    additionalVolumeMounts: [
+      ...mounts.filter(mount => mount.name !== "data"),
+      { name: "ci-tls", mountPath: "/etc/pulp/ci-tls", readOnly: true },
+    ],
     podSecurityContext: { runAsUser: 700, runAsGroup: 700, fsGroup: 700, fsGroupChangePolicy: "OnRootMismatch" },
     automountServiceAccountToken: false,
     strategy: { type: "Recreate" },
@@ -137,7 +157,7 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
     readinessProbe: { httpGet: { path: "/healthz", port: 8080 }, periodSeconds: 10 },
     livenessProbe: { httpGet: { path: "/nginx-healthz", port: 8080 }, periodSeconds: 30 },
     resources: { requests: { cpu: "25m", memory: "64Mi" }, limits: { cpu: "500m", memory: "128Mi" } },
-    dependencies: [...dependencies, dbInit, runtime, encryptionKey],
+    dependencies: [...dependencies, dbInit, runtime, encryptionKey, ciCertificate],
   });
   return { deployment: app.deployment };
 }

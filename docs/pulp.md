@@ -30,9 +30,11 @@ without a content guard can be public; browser SSO does not make it private.
 ## Android CI Maven mirrors
 
 The Android runner uses the read-only endpoint at
-`http://pulp.selfhosted.svc.cluster.local:8081/pulp/content/android-ci/`.
-The endpoint is reachable from the Android runner pod and its job containers.
-The public HTTPS listener blocks the three CI distributions.
+`https://pulp-ci.gdario.dev:8081/pulp/content/android-ci/`. Cluster DNS maps
+the name to Pulp's Service, and cert-manager issues its certificate using
+DNS-01. The Android runner pod and its job containers can reach this port
+through the existing network policies. The public HTTPS listener blocks
+the three CI distributions.
 
 Pulp fetches and stores requested files on demand. The distributions
 `google-maven`, `maven-central`, and `gradle-plugins` keep the upstreams
