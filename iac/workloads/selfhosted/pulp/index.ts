@@ -57,11 +57,20 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
   const app = new SelfhostedApp("pulp", {
     namespace, image,
     command: ["nginx", "-e", "/dev/stderr", "-c", "/etc/pulp/runtime/nginx.conf", "-g", "daemon off;"],
-    endpoints: [{
-      name: "http", servicePort: 80, containerPort: 8080,
-      ingress: { name: "pulp", host: pulpIdentity.host, rateLimit: false },
-      healthCheck: { protocol: "http", path: "/healthz" },
-    }],
+    endpoints: [
+      {
+        name: "http", servicePort: 80, containerPort: 8080,
+        ingress: { name: "pulp", host: pulpIdentity.host, rateLimit: false },
+        healthCheck: { protocol: "http", path: "/healthz" },
+      },
+      {
+        name: "android-maven", containerPort: 8081,
+        allowIngressFrom: [{
+          namespaceSelector: { "kubernetes.io/metadata.name": "forgejo" },
+          podSelector: { app: "forgejo-android-runner" },
+        }],
+      },
+    ],
     ipFamilyPolicy: "SingleStack", ipFamilies: ["IPv4"],
     labels: { [Labels.Network.AllowPostgres]: "true", [Labels.Network.AllowAuthentik]: "true" },
     settings,

@@ -27,6 +27,24 @@ to Authentik:
 Distribution content guards control access to published content. A distribution
 without a content guard can be public; browser SSO does not make it private.
 
+## Android CI Maven mirrors
+
+The Android runner uses the read-only endpoint at
+`http://pulp.selfhosted.svc.cluster.local:8081/pulp/content/android-ci/`.
+The endpoint is reachable from the Android runner pod and its job containers.
+The public HTTPS listener blocks the three CI distributions.
+
+Pulp fetches and stores requested files on demand. The distributions
+`google-maven`, `maven-central`, and `gradle-plugins` keep the upstreams
+separate. The Central remote uses the Google Cloud mirror because the runner's
+egress hit HTTP 429 at Maven Central for a required Robolectric JAR. Mood
+Tracker's first run with empty dependency caches warms the files it requests.
+
+With the pinned Maven plugin, cached files are served from Pulp storage on
+subsequent requests. To retain them across a Pulp orphan cleanup, promote the
+cached content into each distribution's repository with the
+`add_cached_content` API before running the cleanup.
+
 ## State and recovery
 
 The shared PostgreSQL database and the 30 GiB `/var/lib/pulp` volume have the

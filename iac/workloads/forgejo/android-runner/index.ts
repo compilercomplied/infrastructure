@@ -139,7 +139,18 @@ container:
           ports: [{ port: 8443, protocol: "TCP" }],
         },
         {
-          // Registries and Google/Maven artifact hosts have environment-dependent CIDRs; keep
+          to: [
+            {
+              namespaceSelector: {
+                matchLabels: { "kubernetes.io/metadata.name": "selfhosted" },
+              },
+              podSelector: { matchLabels: { app: "pulp" } },
+            },
+          ],
+          ports: [{ port: 8081, protocol: "TCP" }],
+        },
+        {
+          // Registries and Android SDK hosts have environment-dependent CIDRs; keep
           // the allowance narrow to HTTPS rather than granting arbitrary node-management egress.
           to: [{ ipBlock: { cidr: "0.0.0.0/0" } }],
           ports: [{ port: 443, protocol: "TCP" }],
