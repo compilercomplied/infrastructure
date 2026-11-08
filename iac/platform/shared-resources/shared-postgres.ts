@@ -26,6 +26,7 @@ export function configureSharedPostgres(
     namespace,
     size: "10Gi",
     dependencies,
+    protect: true,
   });
 
   const initScripts: Record<string, pulumi.Output<string>> = {};
@@ -125,7 +126,7 @@ export function configureSharedPostgres(
         },
       },
     },
-  }, { dependsOn: [pvc, initScriptSecret, postgresSecret] });
+  }, { dependsOn: [pvc, initScriptSecret, postgresSecret], protect: true });
 
   // Service to expose PostgreSQL within the cluster
   const service = new k8s.core.v1.Service(name, {

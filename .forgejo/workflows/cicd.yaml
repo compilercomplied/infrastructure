@@ -94,6 +94,17 @@ jobs:
           PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
           PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
 
+      - name: Guard critical resources before deployment
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        shell: bash
+        run: |
+          set -o pipefail
+          pulumi preview --json --non-interactive --stack local | node scripts/check-critical-preview.cjs
+        working-directory: ./iac
+        env:
+          PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+
       - name: Run Pulumi Up
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: pulumi up --stack local --yes --skip-preview

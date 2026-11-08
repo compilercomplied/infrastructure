@@ -8,6 +8,7 @@ export interface PVCArgs {
   storageClassName?: string; // defaults to "local-path"
   accessModes?: string[]; // defaults to ["ReadWriteOnce"]
   dependencies?: pulumi.Resource[];
+  protect?: boolean;
   /** Optional parent resource to establish the Pulumi resource hierarchy. */
   parent?: pulumi.Resource;
   /** Optional aliases to preserve resource URNs when migrating resources under component resources. */
@@ -23,6 +24,7 @@ export function createPVC(args: PVCArgs): k8s.core.v1.PersistentVolumeClaim {
     storageClassName = "local-path",
     accessModes = ["ReadWriteOnce"],
     dependencies = [],
+    protect,
     parent,
     aliases,
   } = args;
@@ -41,5 +43,5 @@ export function createPVC(args: PVCArgs): k8s.core.v1.PersistentVolumeClaim {
         },
       },
     },
-  }, { dependsOn: dependencies, deleteBeforeReplace: true, parent, aliases });
+  }, { dependsOn: dependencies, deleteBeforeReplace: true, protect, parent, aliases });
 }

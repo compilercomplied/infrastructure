@@ -158,7 +158,7 @@ export function configureAuthentik(
         },
       },
     },
-  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap] });
+  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap], protect: true });
 
   const serverService = new k8s.core.v1.Service(`${serverName}`, {
     metadata: {
@@ -208,7 +208,7 @@ export function configureAuthentik(
         },
       },
     },
-  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap] });
+  }, { dependsOn: [mediaPvc, templatesPvc, secrets, redisService, blueprintsConfigMap], protect: true });
 
   const exposure = createLetsEncryptIngress({
     name,
