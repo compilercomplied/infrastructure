@@ -26,6 +26,7 @@ export class ForgejoSettings implements AppSettings {
     "AUTHENTIK_DISCOVERY_URL": oidcDiscoveryUrl(forgejoIdentity),
     "AUTHENTIK_SCOPES": forgejoIdentity.scopes.join(" "),
     "FORGEJO__actions__ENABLED": "true",
+    "FORGEJO__actions__ARTIFACT_RETENTION_DAYS": "14",
     // The review receiver is internal; preserve public webhooks without allowing other private destinations.
     "FORGEJO__webhook__ALLOWED_HOST_LIST": "external,orchestrator-api.agent-dev-environment.svc.cluster.local",
     // Personal repos remain self-service; organization repos go through policy provisioning.

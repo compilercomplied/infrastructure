@@ -6,7 +6,6 @@ import { configureGrafana } from "./grafana";
 import { configureLoki } from "./loki";
 import { configureAlloy } from "./alloy";
 import { configurePvcExporter } from "./pvc-exporter";
-import { configureDeepseekExporter } from "./deepseek-exporter";
 import { configureBlackboxExporter } from "./blackbox";
 import { configureHealthAlerts } from "./health-alerts";
 
@@ -38,9 +37,6 @@ export function configureMonitoring(grafanaEntryPoints?: LetsEncryptIngressArgs[
   // 5. Expose real PVC disk usage metrics by scanning host directories
   const pvcExporter = configurePvcExporter(namespaceName, prometheusCRDs);
 
-  // 6. Monitor DeepSeek API usage and credit balance dynamically
-  const deepseekExporter = configureDeepseekExporter(namespaceName, prometheusCRDs);
-
   const blackboxExporter = configureBlackboxExporter(namespaceName, prometheusCRDs);
   const healthAlerts = configureHealthAlerts(namespaceName, prometheusCRDs);
 
@@ -52,7 +48,6 @@ export function configureMonitoring(grafanaEntryPoints?: LetsEncryptIngressArgs[
     grafana,
     prometheusCRDs,
     pvcExporter,
-    deepseekExporter,
     blackboxExporter,
     healthAlerts,
   };

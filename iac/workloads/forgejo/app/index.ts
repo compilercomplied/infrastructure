@@ -10,7 +10,6 @@ import { forgejoSettings } from "./settings";
 import { configureRepositories } from "../repositories";
 
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.sh"), "utf8");
-const pruneScriptContent = fs.readFileSync(path.join(__dirname, "scripts", "prune-history.py"), "utf8");
 
 export function configureForgejo(
   namespace: pulumi.Input<string>,
@@ -180,13 +179,6 @@ export function configureForgejo(
             {
               podSelector: {
                 matchLabels: {
-                  app: `${name}-prune`,
-                },
-              },
-            },
-            {
-              podSelector: {
-                matchLabels: {
                   app: "hermes-agent",
                 },
               },
@@ -204,91 +196,6 @@ export function configureForgejo(
     },
   }, { dependsOn: app.deployment });
 
-  // 6. Prune CronJob (Keeps last 5 actions and packages)
-  const pruneScriptsConfigMap = new k8s.core.v1.ConfigMap(`${name}-prune-scripts`, {
-    metadata: {
-      name: `${name}-prune-scripts`,
-      namespace,
-    },
-    data: {
-      "prune-forgejo-history.py": pruneScriptContent,
-    },
-  }, { dependsOn: dependencies });
-
-  const pruneCronJob = new k8s.batch.v1.CronJob(`${name}-prune`, {
-    metadata: {
-      name: `${name}-prune`,
-      namespace,
-    },
-    spec: {
-      schedule: "0 3 * * *", // Run every night at 3 AM
-      concurrencyPolicy: "Forbid",
-      jobTemplate: {
-        spec: {
-          template: {
-            metadata: {
-              labels: {
-                app: `${name}-prune`,
-              },
-            },
-            spec: {
-              restartPolicy: "OnFailure",
-              containers: [{
-                name: "pruner",
-                image: "python:3.11-alpine",
-                command: ["/usr/local/bin/python", "/scripts/prune-forgejo-history.py"],
-                env: [
-                  // Port 80 is the Kubernetes Service port, not the container port (3000).
-                  // Pod-to-pod traffic must go through the Service, so :3000 would be refused.
-                  { name: "GITEA_HOST", value: `http://${name}.forgejo.svc.cluster.local:80` },
-                  // Explicit token path so a future mountPath rename doesn't silently break auth.
-                  { name: "GITEA_TOKEN_FILE", value: "/forgejo-data/gitea/hermes-token.txt" },
-                ],
-                volumeMounts: [
-                  { name: "scripts", mountPath: "/scripts" },
-                  { name: "forgejo-data", mountPath: "/forgejo-data", readOnly: true },
-                ],
-              }],
-              volumes: [
-                {
-                  name: "scripts",
-                  configMap: {
-                    name: pruneScriptsConfigMap.metadata.name,
-                    defaultMode: 0o755,
-                  },
-                },
-                {
-                  name: "forgejo-data",
-                  persistentVolumeClaim: {
-                    claimName: "forgejo-pvc",
-                  },
-                },
-              ],
-              affinity: {
-                podAffinity: {
-                  requiredDuringSchedulingIgnoredDuringExecution: [
-                    {
-                      labelSelector: {
-                        matchExpressions: [
-                          {
-                            key: "app",
-                            operator: "In",
-                            values: [name],
-                          },
-                        ],
-                      },
-                      topologyKey: "kubernetes.io/hostname",
-                    },
-                  ],
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  }, { dependsOn: [...dependencies, app.deployment, pruneScriptsConfigMap] });
-
   const repositories = configureRepositories([app.deployment]);
 
   return {
@@ -299,8 +206,6 @@ export function configureForgejo(
 
     runnerSecret: settings.secrets["RUNNER_SECRET"],
     androidRunnerSecret: settings.secrets["ANDROID_RUNNER_SECRET"],
-    pruneCronJob,
-    pruneScriptsConfigMap,
     repositories,
   };
 }

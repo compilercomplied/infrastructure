@@ -10,6 +10,12 @@ import { ManagedVolume, createManagedVolumeBackups, planManagedVolumes } from ".
 import { createManagedEnvironment } from "./workload-environment";
 import { AppSettings } from "./app-settings";
 
+// The Pod template checksum rolls out settings changes without deleting the
+// fixed-name ConfigMap and cascading replacement to its dependents.
+const settingsConfigProvider = new k8s.Provider("selfhosted-settings-config", {
+  enableConfigMapMutable: true,
+});
+
 function environmentChecksum(values?: Record<string, pulumi.Input<string>>): pulumi.Output<string> | undefined {
   if (!values || Object.keys(values).length === 0) {
     return undefined;
@@ -121,10 +127,12 @@ export class SelfhostedApp extends pulumi.ComponentResource {
 
     const config = args.settings?.config ?? args.config;
     const secrets = args.settings?.secrets ?? args.secrets;
+    const configChecksum = args.settings ? environmentChecksum(config) : undefined;
     const { configMap, secret, envFrom } = createManagedEnvironment({
       name,
       namespace: args.namespace,
       config,
+      configMapProvider: configChecksum ? settingsConfigProvider : undefined,
       secrets,
       dependencies,
       parent: this,
@@ -132,7 +140,6 @@ export class SelfhostedApp extends pulumi.ComponentResource {
     });
     this.configMap = configMap;
     this.secret = secret;
-    const configChecksum = args.settings ? environmentChecksum(config) : undefined;
     const secretChecksum = args.settings ? environmentChecksum(secrets) : undefined;
 
     const volConfig = planManagedVolumes({
