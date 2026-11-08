@@ -173,7 +173,7 @@ loki.write "local" {
     namespace: namespace,
     chart: "alloy",
     // renovate: datasource=helm depName=alloy registryUrl=https://grafana.github.io/helm-charts
-    version: "0.10.1",
+    version: "0.12.6",
     fetchOpts: {
       repo: "https://grafana.github.io/helm-charts",
     },
