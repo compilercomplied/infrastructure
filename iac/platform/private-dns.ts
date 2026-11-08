@@ -53,7 +53,7 @@ export function configurePrivateDns(
           automountServiceAccountToken: false,
           containers: [{
             name: "coredns",
-            image: "coredns/coredns:1.14.4",
+            image: "coredns/coredns:1.15.0",
             args: ["-conf", "/etc/coredns/Corefile"],
             readinessProbe: { httpGet: { path: "/ready", port: 8181 } },
             securityContext: {
