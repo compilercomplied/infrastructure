@@ -19,8 +19,10 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
     "nginx.conf": fs.readFileSync(path.join(__dirname, "nginx.conf"), "utf8"),
     "bootstrap.py": fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.py"), "utf8"),
   };
+  const runtimeChecksum = crypto.createHash("sha256").update(JSON.stringify(files)).digest("hex");
+  // A new name lets Pulumi create the config before rolling out the Deployment.
   const runtime = new k8s.core.v1.ConfigMap("pulp-runtime", {
-    metadata: { name: "pulp-runtime", namespace }, data: files,
+    metadata: { name: `pulp-runtime-${runtimeChecksum.slice(0, 16)}`, namespace }, data: files,
   }, { dependsOn: dependencies });
   const key = config.requireSecret("pulpDbEncryptionKey");
   const encryptionKey = new k8s.core.v1.Secret("pulp-encryption-key", {
@@ -74,7 +76,6 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
     automountServiceAccountToken: false,
     strategy: { type: "Recreate" },
     podAnnotations: {
-      "homelab.gdario.dev/runtime-checksum": crypto.createHash("sha256").update(JSON.stringify(files)).digest("hex"),
       "homelab.gdario.dev/encryption-key-checksum": key.apply(value => crypto.createHash("sha256").update(value).digest("hex")),
     },
     initContainers: [{
