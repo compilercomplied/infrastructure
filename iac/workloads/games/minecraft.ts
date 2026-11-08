@@ -1,3 +1,4 @@
+import * as k8s from "@pulumi/kubernetes";
 import { GamePlatform } from "../../library/game-platform";
 
 const minecraftPort = 25565;
@@ -6,11 +7,15 @@ const minecraftPort = 25565;
 const minecraftConsoleLogFormat = "{&quot;timestamp&quot;:&quot;%d{ISO8601}&quot;,&quot;thread&quot;:&quot;%t&quot;,&quot;level&quot;:&quot;%p&quot;,&quot;logger&quot;:&quot;%c&quot;,&quot;message&quot;:&quot;%enc{%m}{JSON}&quot;,&quot;exception&quot;:&quot;%enc{%throwable{full}}{JSON}&quot;}%n";
 
 export function configureMinecraft(platform: GamePlatform) {
+  const clusterDns = k8s.core.v1.Service.get("minecraft-cluster-dns", "kube-system/kube-dns");
   const minecraft = platform.addServer("minecraft", {
     service: "minecraft",
     // Java 25 is required by Minecraft 26.3; VERSION remains explicit so a
     // normal rollout cannot silently change the server or world format.
     image: "itzg/minecraft-server@sha256:46cfd0bcbd9bbd16900a765fcdd5d6f57bc0cf3471c383ad96f87e84998d93e8",
+    // K3s advertises an unreachable IPv6 resolver. The DNS Service's primary
+    // IP answers both A and AAAA queries while the cluster addresses differ.
+    clusterDnsNameservers: [clusterDns.spec.clusterIP],
     endpoints: [{
       name: "minecraft",
       hostname: "minecraft.barpepe.party",
@@ -42,6 +47,8 @@ export function configureMinecraft(platform: GamePlatform) {
       // server-side optimizations improve tick stability without changing play.
       { name: "TYPE", value: "FABRIC" },
       { name: "VERSION", value: "26.3" },
+      // The default Fabric endpoint times out from this node during startup.
+      { name: "FABRIC_META_BASE_URL", value: "https://meta2.fabricmc.net" },
       { name: "MODRINTH_PROJECTS", value: "fabric-api\nlithium\nferrite-core\nbluemap:SX74rxzP" },
       { name: "MODRINTH_DOWNLOAD_DEPENDENCIES", value: "required" },
       { name: "MEMORY", value: "6G" },

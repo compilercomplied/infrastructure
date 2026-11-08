@@ -66,6 +66,7 @@ export interface GameServerArgs {
   dependencies?: pulumi.Resource[];
   affinity?: k8s.types.input.core.v1.Affinity;
   nodeSelector?: Record<string, pulumi.Input<string>>;
+  clusterDnsNameservers?: pulumi.Input<string>[];
   podSecurityContext?: k8s.types.input.core.v1.PodSecurityContext;
   containerSecurityContext?: k8s.types.input.core.v1.SecurityContext;
 
@@ -119,6 +120,11 @@ export class GameServer extends pulumi.ComponentResource {
     }
 
     const dependencies = args.dependencies ?? [];
+    const dnsConfig = args.clusterDnsNameservers && {
+      nameservers: args.clusterDnsNameservers,
+      searches: [pulumi.interpolate`${args.namespace}.svc.cluster.local`, "svc.cluster.local", "cluster.local"],
+      options: [{ name: "ndots", value: "5" }],
+    };
 
     const { configMap, secret, envFrom } = createManagedEnvironment({
       name,
@@ -180,6 +186,8 @@ export class GameServer extends pulumi.ComponentResource {
           metadata: { labels: { app: name, service: args.service, ...(args.labels ?? {}) } },
           spec: {
             terminationGracePeriodSeconds: args.terminationGracePeriodSeconds ?? 180,
+            dnsPolicy: dnsConfig ? "None" : undefined,
+            dnsConfig,
             securityContext: args.podSecurityContext,
             nodeSelector: args.nodeSelector,
             affinity: args.affinity,

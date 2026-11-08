@@ -60,6 +60,13 @@ export function configureMaintenance() {
           template: {
             spec: {
               restartPolicy: "OnFailure",
+              // Interrupted backup pods can leave stale locks that block pruning.
+              initContainers: [{
+                name: "clear-stale-locks",
+                image: resticImage,
+                args: ["unlock"],
+                env: resticEnvironment(),
+              }],
               containers: [{
                 name: "restic-maintenance",
                 image: resticImage,

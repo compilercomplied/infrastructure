@@ -17,7 +17,8 @@ export function configureTandoorRecipes(
       servicePort: 80,
       containerPort: 8080,
       ingress: { name: "tandoor-recipes", host: tandoorIdentity.host },
-      healthCheck: { protocol: "http", path: "/api/health" },
+      // The anonymous probe can reach the login page without API credentials.
+      healthCheck: { protocol: "http", path: "/account/login/" },
       allowIngressFrom: [{
         podSelector: { app: "tandoor-mcp" },
         namespaceSelector: { "kubernetes.io/metadata.name": "agent-sidekicks" },
