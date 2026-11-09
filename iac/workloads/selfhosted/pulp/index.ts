@@ -129,7 +129,7 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
         readinessProbe: { exec: { command: ["/bin/sh", "-ec", "kill -0 1"] }, periodSeconds: 10 },
       },
       {
-        name: "sessions", image: "redis:7.4.7",
+        name: "sessions", image: "redis:7.4.12",
         command: ["redis-server", "--bind", "127.0.0.1", "--save", "", "--appendonly", "no", "--maxmemory", "64mb", "--maxmemory-policy", "allkeys-lru"],
         readinessProbe: { exec: { command: ["redis-cli", "ping"] }, periodSeconds: 10 },
         resources: { requests: { cpu: "10m", memory: "32Mi" }, limits: { cpu: "250m", memory: "128Mi" } },
