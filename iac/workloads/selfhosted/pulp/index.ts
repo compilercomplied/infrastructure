@@ -135,7 +135,7 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
         resources: { requests: { cpu: "10m", memory: "32Mi" }, limits: { cpu: "250m", memory: "128Mi" } },
       },
       {
-        name: "oidc", image: "quay.io/oauth2-proxy/oauth2-proxy:v7.15.1",
+        name: "oidc", image: "quay.io/oauth2-proxy/oauth2-proxy:v7.15.6",
         args: [
           "--http-address=127.0.0.1:4180", "--provider=oidc",
           `--oidc-issuer-url=${oidcIssuer(pulpIdentity)}`, `--client-id=${pulpIdentity.clientId}`,
