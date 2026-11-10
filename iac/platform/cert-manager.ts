@@ -16,7 +16,7 @@ export function configureCertManager() {
         namespace: namespace.metadata.name,
         chart: "cert-manager",
         // renovate: datasource=helm depName=cert-manager registryUrl=https://charts.jetstack.io
-        version: "v1.14.4",
+        version: "v1.21.3",
         fetchOpts: {
             repo: "https://charts.jetstack.io",
         },
