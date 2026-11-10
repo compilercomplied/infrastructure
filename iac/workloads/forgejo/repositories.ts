@@ -9,7 +9,7 @@ export function configureRepositories(dependencies: pulumi.Resource[] = []) {
     createRepo({ name: "mood-tracker", isPublic: false }),
     createRepo({ name: "game-launcher", isPublic: false }),
     createRepo({ name: "repo-template" }),
-    createRepo({ name: "forgejo-workflow-templates", isPublic: true }),
+    createRepo({ name: "forgejo-workflow-templates", isPublic: true, requiredStatusChecks: [] }),
     createRepo({ name: "tandoor-mcp" }),
     createRepo({ name: "agent-dev-environment" }),
   ];

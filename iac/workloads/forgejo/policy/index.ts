@@ -6,6 +6,7 @@ export interface CreateRepoArgs {
   name: string;
   organization?: string;
   isPublic?: boolean;
+  requiredStatusChecks?: string[];
 }
 
 export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
@@ -80,7 +81,12 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
     return result;
   }
 
-  return function createRepo({ name, organization = "home", isPublic = true }: CreateRepoArgs) {
+  return function createRepo({
+    name,
+    organization = "home",
+    isPublic = true,
+    requiredStatusChecks = ["cicd / cicd (pull_request)"],
+  }: CreateRepoArgs) {
     const teams = organizationTeams(organization);
     const identity = `${organization}/${name}`;
     const repo = new forgejo.Repository(`forgejo-${identity}`, {
@@ -140,8 +146,8 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
       approvalsWhitelistTeams: [teams.owners, teams.reviewers.name],
       approvalsWhitelistUsernames: [],
       dismissStaleApprovals: true,
-      enableStatusCheck: true,
-      statusCheckContexts: ["cicd / cicd (pull_request)"],
+      enableStatusCheck: requiredStatusChecks.length > 0,
+      statusCheckContexts: requiredStatusChecks,
       blockOnRejectedReviews: true,
       blockOnOfficialReviewRequests: true,
       blockOnOutdatedBranch: true,
