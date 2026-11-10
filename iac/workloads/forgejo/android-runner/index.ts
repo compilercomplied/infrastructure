@@ -27,8 +27,9 @@ export function configureForgejoAndroidRunner(
   // Same shared forgejo namespace as the app: the runner needs to reach the Forgejo cluster
   // service and to co-locate, so it deliberately does NOT create a namespace of its own.
   const config = new pulumi.Config("selfhosted");
+  // Forgejo 16 expands reusable workflows with metadata the 11.x runner rejects.
   const runnerImage =
-    config.get("androidRunnerImage") ?? "code.forgejo.org/forgejo/runner:11.1.1";
+    config.get("androidRunnerImage") ?? "code.forgejo.org/forgejo/runner:12.13.2";
   const dindImage = config.get("androidDindImage") ?? "docker:dind";
 
   // Docker job containers are constrained independently so a single emulator cannot consume all
