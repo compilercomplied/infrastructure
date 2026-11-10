@@ -33,7 +33,14 @@ export function configureGrafana(
     values: {
       assertNoLeakedSecrets: false,
       adminPassword: adminPassword,
-      persistence: { enabled: true, size: "10Gi", storageClassName: "local-path" },
+      persistence: {
+        enabled: true,
+        size: "10Gi",
+        storageClassName: "local-path",
+        // Pulumi 4.24.1 waits for Pending on WaitForFirstConsumer claims, even when already Bound.
+        // Grafana's Deployment still waits for the pod to become ready with the volume mounted.
+        annotations: { "pulumi.com/skipAwait": "true" },
+      },
 
       plugins: [
         "grafana-lokiexplore-app"
