@@ -17,7 +17,8 @@ import { configureCodexDesktop } from "./workloads/selfhosted/codex-desktop";
 
 const tailscale = configureTailscale();
 const certManager = configureCertManager();
-const codexDesktop = configureCodexDesktop(tailscale, certManager.letsEncryptProd);
+const kvmDevicePlugin = configureKvmDevicePlugin();
+const codexDesktop = configureCodexDesktop(tailscale, certManager.letsEncryptProd, kvmDevicePlugin);
 const grafanaEntryPoints = configurePrivateAccess(tailscale, codexDesktop ? [codexDesktop.dnsRecord] : []);
 configureMonitoring(grafanaEntryPoints);
 
@@ -52,5 +53,4 @@ if (directDnsRecords.length > 0) {
   });
 }
 
-const kvmDevicePlugin = configureKvmDevicePlugin();
 configureAgentSidekicks(selfhosted, kvmDevicePlugin);

@@ -15,7 +15,7 @@ const desktopHealthCommand = [
   "pgrep -u abc -x xfwm4 >/dev/null",
 ].join(" && ");
 
-export function configureCodexDesktop(operator: ReturnType<typeof configureTailscale>, issuer: k8s.apiextensions.CustomResource) {
+export function configureCodexDesktop(operator: ReturnType<typeof configureTailscale>, issuer: k8s.apiextensions.CustomResource, kvmDevicePlugin: k8s.apps.v1.DaemonSet) {
   const name = "codex-desktop";
   const config = new pulumi.Config("codexDesktop");
   if (!config.getBoolean("enabled")) return;
@@ -52,6 +52,9 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
     // A single desktop must own the browser profile, keyring and worktrees on local-path storage.
     strategy: { type: "Recreate" },
     automountServiceAccountToken: false,
+    // Device allocation grants QEMU access without exposing other host devices.
+    nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
+    podSecurityContext: { supplementalGroups: [990] },
     // containerd's AppArmor mount denial breaks the nested bubblewrap sandboxes used by Glycin and Codex.
     containerSecurityContext: { privileged: false, appArmorProfile: { type: "Unconfined" } },
     endpoints: [{ name: "https", containerPort: 3001 }],
@@ -91,10 +94,10 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
       initialDelaySeconds: 600, periodSeconds: 30, failureThreshold: 5,
     },
     resources: {
-      requests: { cpu: "500m", memory: "1Gi", "ephemeral-storage": "4Gi" },
-      limits: { cpu: "5", memory: "12Gi", "ephemeral-storage": "12Gi" },
+      requests: { cpu: "500m", memory: "1Gi", "ephemeral-storage": "4Gi", "devic.es/kvm": "1" },
+      limits: { cpu: "5", memory: "12Gi", "ephemeral-storage": "12Gi", "devic.es/kvm": "1" },
     },
-    dependencies: [security.defaultDeny, scripts, certificate],
+    dependencies: [security.defaultDeny, scripts, certificate, kvmDevicePlugin],
   });
 
   // A Tailscale-class Service cannot be claimed by k3s ServiceLB or the public ingress controller.

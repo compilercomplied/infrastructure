@@ -35,7 +35,12 @@ the nested bubblewrap mounts used by desktop image decoding and Codex. Without
 them XFCE crashes even while Codex's sign-in window remains visible. The container
 remains non-privileged; preserve that boundary when changing its configuration.
 The desktop user can sudo inside it; treat access as control of the coding
-environment. Preserve the pod's isolation from host mounts and credentials.
+environment. The KVM device plugin allocates only `/dev/kvm` for Android emulator
+acceleration; this intentionally shares the host's virtualization interface with
+the coding environment. It does not require a privileged desktop container or
+host credentials. KVM allocations are shareable, so simultaneous emulator jobs
+still compete for the node's CPU and memory. Preserve isolation from other host
+devices, mounts and credentials.
 LAN source filtering relies on retaining source addresses, so changing
 `externalTrafficPolicy` can invalidate the private-access boundary.
 
