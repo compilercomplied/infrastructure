@@ -13,11 +13,14 @@ import { DirectDnsReconciler } from "./library/direct-dns-reconciler";
 import { GamePlatform } from "./library/game-platform";
 import { configureMinecraft } from "./workloads/games/minecraft";
 import { configureKvmDevicePlugin } from "./platform/core/kvm-device-plugin";
+import { configureCodexDesktop } from "./workloads/selfhosted/codex-desktop";
 
-const grafanaEntryPoints = configurePrivateAccess(configureTailscale());
+const tailscale = configureTailscale();
+const certManager = configureCertManager();
+const codexDesktop = configureCodexDesktop(tailscale, certManager.letsEncryptProd);
+const grafanaEntryPoints = configurePrivateAccess(tailscale, codexDesktop ? [codexDesktop.dnsRecord] : []);
 configureMonitoring(grafanaEntryPoints);
 
-configureCertManager();
 configureMaintenance();
 
 const sharedResources = configureSharedResources();

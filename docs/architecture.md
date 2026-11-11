@@ -1,256 +1,54 @@
-# Cluster Architecture
+# Architecture decisions
 
-```text
-iac/							# iac definition for the cluster.
-├── library/			# candidates to be extracted to a library
-├── operations/		# cross-cutting code
-├── platform/			# cluster-wide foundations and shared stateful services
-├── workloads/		# app code grouped by namespace or closely related domains
-└── index.ts
-```
----
+## One node, shared failure domains
 
-## Cluster topology & ingress
+The homelab accepts maintenance downtime and node failure in exchange for lower
+hardware and operational overhead. A pod restart can recover a process; node-local
+storage cannot make a workload available on a different machine. Replicated
+application pods alone would not remove this limit.
 
-The cluster is a single-node k3s behind a **Cloudflare Tunnel**. There is no
-public IP and no inbound ports: a `cloudflared` agent inside the cluster keeps
-an outbound-only connection to Cloudflare's edge, and public hostnames are
-served through it.
+Shared database engines avoid paying each application's baseline memory cost.
+Separate databases and credentials limit application access, but engine failure
+and maintenance still affect multiple applications. Use this tradeoff deliberately
+when adding a workload with stronger availability or isolation needs.
 
-Traffic flows `Internet → Cloudflare Tunnel → Traefik (kube-system) → pod`.
-Traefik is the ingress controller. TLS is automated:
+## Private access is a routing boundary
 
-- **Public hostnames** (`*.gdario.dev`) get Let's Encrypt certificates via
-  `cert-manager` (`letsencrypt-prod` cluster issuer).
-- **Internal-only hostnames** (`.home.arpa`) skip the public issuer because they
-  are only reachable over the VPN.
+Cloudflare Tunnel avoids router port forwarding for public web access. Private
+access uses a separate Traefik listener because hiding DNS or requiring SSO does
+not make a public listener private. Split DNS preserves the application's URL,
+TLS identity, cookies, and OIDC callbacks across access paths. Keep routing and
+name resolution consistent when changing exposure.
 
-CoreDNS is customized to rewrite the cluster's internal hostnames straight to
-the Traefik service, so any pod can reach any workload by hostname without
-leaving the cluster and coming back through the tunnel. The rewrite map lives in
-`iac/platform/core/coredns.ts`.
+Default-deny ingress makes each required connection an explicit decision rather
+than trusting namespace membership. Shared infrastructure is especially sensitive:
+an application's need to reach one database does not justify access to its peers.
+The [ingress helper](../iac/library/ingress.ts) and
+[private-access configuration](../iac/platform/private-access.ts) own the mechanics.
 
-Every public Service is exposed through the shared ingress helper in
-`iac/library/ingress.ts`. The helper builds the Ingress, wires the Let's
-Encrypt + Traefik annotations, optionally attaches a rate-limit middleware, and
-— because of the default-deny network policy (see Security) — also creates the
-`*-allow-traefik` NetworkPolicy that lets the controller actually reach the
-back-end pods. Using this helper is how a workload becomes reachable from the
-outside; it is baked into the `SelfhostedApp` component.
+## Agent access is privileged access
 
-The authoritative list of public hostnames is the CoreDNS rewrite block plus the
-ingress-helper calls, but at a glance:
+A coding agent can run untrusted project commands. Keep its execution environment
+separate from host administration. DinD avoids sharing the node's Docker daemon;
+it is not a complete security boundary when its container is privileged. Host
+journal collection is separated from HTTP serving so an agent can inspect a
+snapshot without receiving a host shell. KVM availability in a main container
+does not establish that nested DinD containers can use it.
 
-| Host | Workload | Namespace |
-|------|----------|-----------|
-| `auth.gdario.dev` | Authentik (SSO) | `infrastructure` |
-| `git.gdario.dev` | Forgejo + CI runner | `forgejo` |
-| `recipes.gdario.dev` | Tandoor (recipes / meal plan) | `selfhosted` |
-| `linkwarden.gdario.dev` | Linkwarden (bookmarks) | `selfhosted` |
-| `grimmory.gdario.dev` | Grimmory (comics / books) | `selfhosted` |
-| `outline.gdario.dev` | Outline (wiki) | `selfhosted` |
-| `syncthing.gdario.dev` | Syncthing | `selfhosted` |
-| `notifications.gdario.dev` | ntfy notifications | `selfhosted` |
-| `notes.gdario.dev` | Memos (notes) | `selfhosted` |
-| `grafana.gdario.dev` | Grafana | `monitoring` |
-| `hermes.gdario.dev` / `hermes-api.gdario.dev` | Hermes Agent | `agent-sidekicks` |
+## Backups preserve state, not availability
 
----
+Database dumps must succeed before a snapshot can count as a successful backup.
+Retention is serialized separately from backup creation to avoid concurrent
+pruning, and snapshot groups exclude changing pod identities so old groups can
+expire. These choices protect restore candidates; they do not prove restoration
+works. See [recovery limitations](recovery.md) before treating backup success as a
+recovery guarantee. Workloads can explicitly opt out of backups.
 
-## Namespaces and their purpose
+## Deployment must survive its own changes
 
-The cluster is partitioned by **workload purpose**. Each
-namespace carries its own default-deny network policy (see Security).
-
-| Namespace | Purpose | What lives there |
-|-----------|---------|------------------|
-| `kube-system` | Cluster plumbing | Traefik ingress, CoreDNS rewrite, `cert-manager` solver, sysctl-tuner, image-gc cron |
-| `monitoring` | Observability | Prometheus + Loki (storage), Alloy (collection), Grafana (visualization), PVC + DeepSeek-budget exporters |
-| `shared-resources` | Shared stateful foundations | The shared PostgreSQL and shared MariaDB clusters and their access policies |
-| `selfhosted` | User-facing apps | Tandoor, Linkwarden, Grimmory, Outline, Syncthing, ntfy, the `cloudflared` tunnel agent |
-| `infrastructure` | Core platform | Authentik (SSO) + its Redis |
-| `forgejo` | Code forge | Forgejo (git) + Forgejo Actions runner |
-| `agent-sidekicks` | AI agent tooling | The MCP servers (Tandoor, Outline, Grafana, Kubernetes) and Hermes Agent |
-
-The namespace entry points live under `iac/workloads/`, and the agent-sidekicks
-namespace is declared in `iac/workloads/agents/index.ts`.
-
----
-
-## Security model
-
-The cluster is **zero-trust and default-deny** for network ingress: inside a
-namespace, a pod accepts no inbound traffic unless a `NetworkPolicy` explicitly
-opens a path. There is no implicit "anything in the same namespace may connect."
-
-The baseline policy is applied per namespace by
-`configureNamespaceSecurity(...)` in `iac/workloads/selfhosted/security.ts`. Per namespace
-it creates:
-
-- a **default-deny** ingress policy (matches every pod, denies all inbound),
-- an **allow-monitoring-scrape** policy so Prometheus/Alloy in `monitoring` can
-  scrape metric endpoints,
-- an **allow-cert-manager-solver** policy so ACME HTTP-01 challenge pods are
-  reachable while a certificate is in flight.
-
-On top of the baseline, specific pods declare **label-based** grants. A shared
-label set (`Labels.Network` in `iac/workloads/selfhosted/labels.ts`) flags pods authorized
-to reach shared infrastructure, and the shared service's own NetworkPolicy only
-admits pods carrying the matching label:
-
-- `network/allow-postgres` — may connect to the shared PostgreSQL.
-- `network/allow-mariadb` — may connect to the shared MariaDB.
-- `network/allow-authentik` — may reach the Authentik server for OIDC.
-
-So network access is opt-in, per pod, enforced at the resource it wants to
-reach — the default-deny posture stays intact while exactly the needed links are
-opened. Some cross-namespace rules also constrain the source namespace. Authentik
-accepts labeled pods from any namespace, so adding an OIDC workload does not
-require editing its NetworkPolicy.
-
-Cross-namespace access uses explicit workload and port grants:
-
-- PostgreSQL accepts capability-labeled app, initialization, and backup pods from
-  `selfhosted`, `infrastructure`, `forgejo`, and `shared-resources` on TCP 5432.
-- MariaDB accepts capability-labeled pods from `selfhosted` on TCP 3306.
-- Hermes reaches Forgejo in `forgejo`; MCP servers reach their corresponding apps
-  through workload-specific policies.
-- Outline alone reaches its Redis; Outline and its setup Job reach MinIO.
-- Cloudflared routes through Traefik, which has explicit grants to app HTTP ports.
-
-There are no migration bridge policies granting unrestricted namespace-to-namespace
-access.
-
-Authentication to the apps is centralized in **Authentik** (`auth.gdario.dev`)
-as the OIDC provider, with **Google OAuth** as the identity source. Self-service
-signup is off — an administrator provisions users in Authentik up front, and
-those users authenticate with their existing Google accounts. Each integrating
-app has a co-located `identity.ts` registration collected by `iac/platform/core/oidc-apps.ts`; Authentik's OIDC blueprint entries
-are generated from those registrations. See [Adding an OIDC application](./authentik-oidc.md).
-
-Two services intentionally bypass OIDC and authenticate with a bearer token
-instead of an SSO login: Forgejo (which has its own user/SSH model) and the
-Hermes Agent API endpoint `hermes-api.gdario.dev`, which is meant for
-OpenAI-compatible client apps using an API key.
-
----
-
-## Storage
-
-State lives in the cluster on **PersistentVolumeClaims** backed by the k3s
-`local-path` provisioner. Two patterns are used:
-
-1. **Shared stateful services** for databases (see the next section), run as
-   single-replica `StatefulSet`s with a stable PVC.
-2. **Per-workload PVCs** for anything with its own file state (Grafana's
-   SQLite/config volume, Authentik's media and templates, an app's media
-   directory, the Hermes Agent data volume).
-
-Because PVCs are namespace-scoped, a workload's storage and its pods always
-share a namespace — and a backup job that mounts an app's PVC must therefore run
-in the same namespace as that app (see below).
-
-### Backup & recovery
-
-All state is backed up with **restic to Cloudflare R2**. The helper
-`createBackupJob` in `iac/operations/maintenance/backup.ts` turns a *source* — a logical
-database or a PVC — into a `CronJob` running a restic backup. Each database and
-important PVC declares its own backup job in the module that owns it:
-
-- **Databases** are dumped by an init container with the app's DB client image.
-  Restic only starts after that dump succeeds, so a failed or partial dump cannot
-  be recorded as a successful backup.
-- **PVCs** are read from a read-only mount (never written back into).
-- Backup jobs use a digest-pinned Restic image, stable source identity, bounded
-  retries, and deterministic scheduling across the 03:00-03:44 window in the
-  `Europe/Madrid` timezone. A completed Job therefore means that its snapshot
-  was committed to R2.
-
-Retention is deliberately separate from backup creation. The singleton
-`restic-maintenance` CronJob runs at 05:00 and applies the 7 daily, 4 weekly, and
-12 monthly policy with `tags,paths` grouping. Excluding Kubernetes-generated Pod
-hostnames from grouping prevents each daily Pod from becoming a permanent
-retention group, while running one maintenance job prevents concurrent prune
-locks. Prometheus alerts if a backup has never succeeded or its last successful
-snapshot is older than 36 hours.
-
-For a **fresh cluster**, `scripts/restore-cluster.sh` is the single entry point
-that hydrates PVCs and databases from the R2 restic repository. It is destructive
-by design — run it once against a clean cluster.
-
----
-
-## The shared-database pattern
-
-This is the architecture's answer to "many small apps, one small server." Rather
-than each app provisioning its own database engine (and its own share of memory,
-disk, and admin), apps **share one engine per flavor** and keep their data
-**logically isolated**:
-
-- **Shared PostgreSQL** (`shared-resources`) hosts one logical database + a
-  dedicated user per app — currently Tandoor, Authentik, Linkwarden, Forgejo,
-  and Outline. It is a single-replica StatefulSet with its own PVC;
-  databases and users are declared in the module, and each app connects with its
-  own credentials against its own schema, so there is no cross-app access.
-- **Shared MariaDB** (`shared-resources`) does the same for the one
-  MySQL-flavored app (Grimmory), sized for the small load.
-
-This is why the cluster runs comfortably on modest resources — most apps are
-simple, low-traffic services that would each otherwise waste a whole database
-engine. The accepted trade-off is that several apps share one engine's
-availability, but backups are centralized and regularly exercised.
-
-The shared services live in `iac/platform/shared-resources/shared-postgres.ts` and
-`iac/platform/shared-resources/shared-mariadb.ts`. An app opts in by adding its database +
-user to the relevant module and pointing at the shared in-cluster host
-(`shared-postgres.shared-resources.svc.cluster.local`).
-
----
-
-## Agent workloads
-
-The cluster hosts an AI-agent fleet, and treats it as security-critical:
-
-- **Hermes Agent** (`agent-sidekicks`) is the assistant that drives messaging,
-  cron, and tool integration. It has a shell with the Docker CLI, Android SDK,
-  and emulator tools. A dedicated DinD sidecar provides its Docker daemon;
-  the main container receives a KVM allocation for accelerated Android emulation.
-  Its dashboard is fronted by Authentik OIDC; its
-  OpenAI-compatible API endpoint uses its own bearer key. The component is
-  `custom:selfhosted:HermesAgent`, declared in `iac/library/hermes-agent.ts`
-  and deployed from `iac/workloads/agents/hermes-agent/index.ts`.
-- **MCP servers** (`agent-sidekicks`) expose read/write tooling to agents for
-  Tandoor, Outline, Grafana, and Kubernetes.
-
-Agent namespace and security definitions live in
-`iac/workloads/agents/index.ts`.
-
----
-
-## Development & deployment flow
-
-This is how the cluster actually changes, end to end:
-
-1. **Toolchain:** `mise` provides pulumi + node, and the lifecycle tasks
-   (`project-setup`, `preview-deployment`) in `mise.toml`.
-2. **Edit:** change `iac/` (usually a single app's module or a shared helper).
-   The heavy lifting for a new app is the `SelfhostedApp` component in
-   `iac/library/selfhosted-component.ts` — a reusable wrapper that renders the
-   Deployment, Service, volumes, ingress, and its database/PVC backups from one
-   compact config, so a new workload is declared rather than hand-wired.
-3. **Validate:** `tsc --noEmit` for type-safety; then the repo's **CI preview**
-   (a Pulumi dry-run on the pull request) proves the diff is safe — it must
-   report no unexpected deletions/replacements and converge to zero changes.
-   Never `pulumi up` by hand.
-4. **Merge:** the pull request is opened in Forgejo; a merge is the deployment
-   channel. `master` of `homelab-iac` → applied cluster.
-
-Two things follow from this: the **git repository is the deployment manifest**,
-and a new app is on the box once its PR merges and the CI-applied stack catches
-up.
-
----
-
-The repo also records the few things that still need a human hand
-(`docs/manual-configuration.md`) and one-off recovery recipes that aren't part
-of the Pulumi graph (`docs/manual-hacks.md`).
+The CI runner is hosted by the infrastructure it deploys. Replacing that runner
+can interrupt the update itself. Host provisioning therefore runs independently
+of k3s after CI queues it; a successful queueing job is not proof of successful
+provisioning. Preserve resource identity and inspect destructive previews before
+merging. [Host maintenance](host-maintenance.md) explains the remaining restart
+and recovery limits.

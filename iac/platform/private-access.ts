@@ -4,7 +4,7 @@ import * as tailscale from "@pulumi/tailscale";
 import { getDualAccessHosts, tailnetEntryPoint } from "../library/ingress";
 import { authentikBaseUrl } from "../library/oidc-app";
 import { grafanaIdentity } from "../workloads/monitoring/grafana/identity";
-import { configurePrivateDns } from "./private-dns";
+import { configurePrivateDns, PrivateDnsRecord } from "./private-dns";
 import { configureTailscale } from "./tailscale";
 
 const connectorName = "homelab-pilot";
@@ -14,10 +14,13 @@ const pilotApps = [
 ];
 const pilotHosts = pilotApps.map(app => app.host);
 
-export function configurePrivateAccess(operator: ReturnType<typeof configureTailscale>) {
+export function configurePrivateAccess(operator: ReturnType<typeof configureTailscale>, additionalRecords: PrivateDnsRecord[] = []) {
   const config = new pulumi.Config("privateAccess");
   const enabled = config.getBoolean("enabled");
   const publishDns = config.getBoolean("publishDns");
+  if (additionalRecords.length && (!enabled || !publishDns)) {
+    throw new Error("Private desktop hostnames require privateAccess:enabled and privateAccess:publishDns");
+  }
   const dualHosts = getDualAccessHosts();
   const publishDualDns = config.getBoolean("publishDualDns");
   if (dualHosts.length && !enabled) {
@@ -29,7 +32,7 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
   if (publishDualDns && !publishDns) {
     throw new Error("privateAccess:publishDualDns requires published pilot DNS");
   }
-  const dnsHosts = publishDualDns ? [...pilotHosts, ...dualHosts] : pilotHosts;
+  const dnsHosts = [...(publishDualDns ? [...pilotHosts, ...dualHosts] : pilotHosts), ...additionalRecords.map(record => record.host)];
   const grafanaPrivate = config.getBoolean("grafanaPrivate");
   if (grafanaPrivate && (!enabled || !publishDns)) {
     throw new Error("privateAccess:grafanaPrivate requires the pilot and published split DNS");
@@ -44,7 +47,7 @@ export function configurePrivateAccess(operator: ReturnType<typeof configureTail
     configurePrivateIngress(app, https);
   }
   // Load records during preparation so clients can use them as soon as split DNS is published.
-  const dns = configurePrivateDns(operator.namespace, operator.defaultDeny, connectorName, https.spec.clusterIP, [...pilotHosts, ...dualHosts]);
+  const dns = configurePrivateDns(operator.namespace, operator.defaultDeny, connectorName, https.spec.clusterIP, [...pilotHosts, ...dualHosts], additionalRecords);
   const routes = [pulumi.interpolate`${https.spec.clusterIP}/32`, pulumi.interpolate`${dns.spec.clusterIP}/32`];
   const connectorDefinition = operator.chart.getResource(
     "apiextensions.k8s.io/v1/CustomResourceDefinition", "connectors.tailscale.com"

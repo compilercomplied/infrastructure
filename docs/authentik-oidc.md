@@ -1,13 +1,25 @@
-# Adding an OIDC application
+# OIDC identity contracts
 
-Define each app's OIDC registration in a `identity.ts` file beside its workload, using [`defineOidcApp`](../iac/library/oidc-app.ts). Set its name, public host, callback path, and Pulumi secret key. The public URL, client ID, Authentik environment key, and standard scopes are derived. Add overrides only when the app needs different values. Export the registration and add it to the import list in [`iac/platform/core/oidc-apps.ts`](../iac/platform/core/oidc-apps.ts), which collects registrations for Authentik.
+Keep identity registration in one place because callback, client, issuer, and
+secret mismatches can break login even when both services are healthy. The
+[registration helper](../iac/library/oidc-app.ts) and
+[registry](../iac/platform/core/oidc-apps.ts) supply the common contract;
+application adapters handle differences in provisioning and configuration format.
 
-The app still needs a small adapter for its own configuration format. Import its local identity and use `oidcIssuer`, the shared endpoint URLs, and `oidcClientSecret` from `iac/library/oidc-app.ts` instead of copying values. Use the identity's `host` for ingress and `url` for public app settings. The existing adapters show the formats: environment variables for Outline, JSON for Memos, a bootstrap API request for Windshift, and a shell script for Forgejo. Keep application-specific account provisioning and permissions in that adapter or its bootstrap job.
+An identity-provider registration does not create application accounts, grant
+administrator privileges, or issue application API tokens. Those need explicit
+application-side provisioning. Email matching links identities; it is not by
+itself an enrollment restriction. The [blueprint](../iac/platform/core/templates/authentik-blueprints.yaml)
+declares users and the Google enrollment flow, so do not rely on the retired
+manual-user and enrollment-override instructions.
 
-The Authentik blueprint template in [`iac/platform/core/templates/authentik-blueprints.yaml`](../iac/platform/core/templates/authentik-blueprints.yaml) holds users, groups, Google OAuth, Syncthing's proxy provider, and Windshift's verified-email mapping. [`iac/platform/core/oidc-blueprint.ts`](../iac/platform/core/oidc-blueprint.ts) inserts OIDC providers and applications from the registration. Windshift references its fixed mapping; Outline keeps its existing provider name.
+Preserve Authentik slugs and blueprint identifiers unless deliberately migrating
+an identity: slugs participate in issuer URLs, and identifiers select existing
+resources. Changing a client secret or ID must reconcile existing app-side
+providers too; updating only Authentik can strand users. Use strict callback URLs
+that agree with the externally visible app URL.
 
-Store each client secret with `pulumi config set --secret selfhosted:<secretKey> ... --cwd iac --stack local`. The generated blueprint refers to Authentik environment variables, so its ConfigMap contains no client secret values. `mise run preview-deployment` runs TypeScript and blueprint validation before the Pulumi preview. Authentik's server and worker pod templates carry a checksum of the blueprint and related secrets so changes restart those processes for reconciliation.
-
-An Authentik registration does not itself create a user or API token inside an application. Add a separate, idempotent provisioning path where that is needed.
-
-Changing a client ID or secret must also update an existing app-side OIDC provider. Forgejo's bootstrap script and Windshift's bootstrap job reconcile their existing providers. Callback changes require coordination with the app's externally visible URL. Keep the Authentik `slug` and blueprint provider identifiers stable unless intentionally migrating the provider, because the slug is part of the OIDC issuer URL and blueprint identifiers select existing resources.
+Blueprint entries are not automatically removed when a declaration disappears.
+Retiring an integration needs an explicit removal decision so old login paths do
+not survive a workload refactor. Store secrets through encrypted Pulumi config;
+the blueprint refers to environment values rather than embedding credentials.

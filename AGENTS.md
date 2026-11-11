@@ -25,3 +25,10 @@ For PR reviews, also read [docs/agentic-review.md](docs/agentic-review.md).
 * **Never state WHAT the code is doing**: The code itself should be readable enough to explain what it does (e.g. creating a deployment, declaring a variable). Avoid redundant comments like `// Create Secret for Django security`.
 * **Always explain WHY**: Comments should provide additional context, explain why a particular decision was made, and outline the constraints that were faced.
 * **Add Context**: For example, instead of writing `// Redis Deployment`, explain *why* Redis is needed: `// Redis is a hard dependency for authentik. It is used as an internal task queue.`
+
+## Documentation
+
+- Code is the source of truth for resources, settings, endpoints, and deployment mechanics.
+- Document the reasons for decisions, tradeoffs, external constraints, and recovery knowledge that code alone cannot explain.
+- Link to implementation instead of duplicating inventories, defaults, or resource-by-resource descriptions.
+- Remove obsolete migration notes and one-off rollout records; Git and PR history preserve them.

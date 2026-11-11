@@ -1,114 +1,25 @@
-# Self-hosted Workloads
+# Application access constraints
 
-This page explains *how* self-hosted services are declared and exposed on the
-cluster. For the high-level architecture (namespaces, security, storage, the
-shared-database model), see [architecture.md](./architecture.md).
+Use the [workloads](../iac/workloads/selfhosted/) for application configuration.
+The exceptions below matter when provisioning accounts or diagnosing sign-in.
 
-## Services
+## Memos owner recovery
 
-The current self-hosted applications, one module per app (all under
-`iac/workloads/selfhosted/`):
+Memos retains password access for the first-run owner as a recovery path when
+SSO is unavailable. Protect that account's credentials. Regular users are created
+through SSO; disabling all registration would also prevent their first sign-in.
+Identity uses the Authentik subject so a username change does not create a new
+account. Deployment-managed settings must be changed in code because Memos treats
+mounted configuration as authoritative.
 
-| Workload | Public host | Data engine |
-|----------|-------------|-------------|
-| Tandoor (recipes / meal plan) | `recipes.gdario.dev` | shared PostgreSQL |
-| Linkwarden (bookmarks) | `linkwarden.gdario.dev` | shared PostgreSQL |
-| Grimmory (comics / books) | `grimmory.gdario.dev` | shared MariaDB |
-| Outline (wiki) | `outline.gdario.dev` | Redis + MinIO (own) |
-| Syncthing | `syncthing.gdario.dev` | own PVC (forward-auth middleware) |
-| ntfy (notifications) | `notifications.gdario.dev` | own PVC (cache and auth database) |
-| Memos (notes) | `notes.gdario.dev` | shared PostgreSQL + own PVC (attachments) |
-| Doop (AI design canvas) | `design.gdario.dev` | shared PostgreSQL + own PVC (assets) |
+## ntfy publisher credentials
 
-Each app is declared through the reusable **`SelfhostedApp` component**
-(`iac/library/selfhosted-component.ts`), which takes one compact config and
-renders the Deployment, Service, volumes, ingress, and its database/PVC backups.
-The per-app modules are therefore short and declarative rather than a pile of
-raw resources. Apps that need multiple internal services (e.g. Outline, with
-web + Redis + MinIO) are expressed as multiple `SelfhostedApp` components in the
-same module.
+Publisher tokens should be separate from the administrator account and restricted
+to their topics; distributing the bootstrap administrator credential would grant
+control beyond publishing. Token and ACL state must be preserved with the ntfy
+auth database. The iOS wakeup relay is a delivery dependency, not the source of
+notification content: clients fetch messages from the homelab.
 
-### Shared databases
-
-Several apps share a single engine per flavor instead of running their own
-database server:
-
-- **Shared PostgreSQL** (`iac/platform/shared-resources/shared-postgres.ts`) hosts one
-  logical database + dedicated user for each app (Tandoor, Authentik, Linkwarden,
-  Forgejo, Outline, Memos).
-- **Shared MariaDB** (`iac/platform/shared-resources/shared-mariadb.ts`) does the same
-  for the MySQL-flavored app (Grimmory).
-
-Adding an app to a shared engine means registering a database + user in the
-relevant module and pointing the app at the shared in-cluster host. The
-isolation model, why it exists, and how to add a database are covered in
-[architecture.md → Shared-database pattern](./architecture.md#the-shared-database-pattern).
-
-## Exposing a service
-
-Public exposure follows one path end-to-end: `SelfhostedApp` with a public
-`host` (e.g. `my-app.gdario.dev`) drives the shared ingress helper
-(`iac/library/ingress.ts`), which wires the Traefik Ingress, the Let's Encrypt
-annotations, an optional rate-limit middleware, and the `*-allow-traefik`
-NetworkPolicy that lets the ingress reach the pods.
-
-Two external preconditions apply to any new public hostname:
-
-1. A matching **DNS record in Cloudflare** pointing the host at the tunnel.
-2. A **route entry in `iac/workloads/selfhosted/cloudflared/index.ts`** so `cloudflared` answers
-   that host.
-
-Internal-only workloads (including the supporting services that back a
-multi-service app) declare `exposeType: "private"` and give no host, so they are
-reachable only inside the cluster.
-
-### ntfy credentials
-
-ntfy's user database is persisted with the workload. The encrypted Pulumi
-configuration bootstraps only the `gdario` administrator account; create all
-other users, ACLs, and publisher tokens in ntfy's web UI. Before the first
-preview, define this secret configuration value:
-
-```text
-selfhosted:ntfyAdminPasswordHash=<bcrypt-admin-password-hash>
-```
-
-Sign in as `gdario` at `https://notifications.gdario.dev/app`, then create a
-token-only publisher user and restrict it to its notification topic. Keep that
-token in the work laptop's secret store. The ntfy iOS app uses `ntfy.sh` only
-to wake the app; it retrieves messages from `notifications.gdario.dev`.
-
-### Memos sign-in
-
-Memos reads SSO, its sign-in policy, and its access mode from JSON files mounted
-at `/etc/secrets` (`iac/workloads/selfhosted/memos/index.ts`), because it has no
-environment variable for them. Keeping those files in IaC also makes the
-instance API reject edits to them. Two consequences are worth knowing before the
-first sign-in:
-
-- The first visitor creates the **owner account** on the setup page with a
-  username and password. This is the one password sign-in Memos keeps available,
-  and the documented recovery path if Authentik is unreachable.
-- Every other account is created on first SSO sign-in through the `Authentik`
-  provider, which matches users on the Authentik `sub` claim so an account
-  survives a username rename.
-
-The access mode is pinned to private, so anonymous visitors get the sign-in page
-instead of an Explore feed. Change it in the same deployment file if public
-sharing is ever wanted; the API will not change it.
-
-## Notes the code encodes
-
-A few non-obvious constraints are baked into the app configs and worth knowing
-before editing one:
-
-- **Service/env-name collisions.** Kubernetes injects `SERVICE_NAME_*` env vars
-  into every pod in a namespace. A Service whose name collides with an
-  application variable (e.g. `TANDOOR_PORT`) clobbers the app's own setting. The
-  app modules name Services deliberately to avoid this and may still pin the
-  port explicitly. See the `tandoor-recipes` module for the pattern.
-- **PVCs are namespace-scoped.** An app's storage and its backup job must share
-  the app's namespace, because a Pod cannot mount another namespace's PVC. The
-  `SelfhostedApp` component handles this automatically for volumes it manages.
-
-See [Doop](./doop.md) for OIDC, administrator bootstrap, MCP keys and image builds.
+For application-specific trust boundaries, see [Doop](doop.md), [Pulp](pulp.md),
+and [Codex desktop](codex-desktop.md). [OIDC identity contracts](authentik-oidc.md)
+cover changes that must agree across the identity provider and application.

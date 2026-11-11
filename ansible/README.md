@@ -1,56 +1,24 @@
-# Cluster host provisioning
+# Host provisioning boundaries
 
-Ansible manages the Debian cluster at `192.168.50.200`, connecting as `gdario`
-with sudo. The playbook checks the target address and Debian distribution before
-running any roles.
+The installer controller and the cluster node are different machines. Controller
+support for macOS does not imply that the cluster playbook supports macOS.
+[The inventory](hosts.ini) and [playbooks](playbooks/) define supported targets;
+[mise](../mise.toml) exposes validation, preview, and apply tasks.
 
-Run from the repository root with Ansible installed:
+PXE startup is separate from ordinary provisioning because it enables an
+unattended OS installer on the LAN. **The preseed erases the first disk.** Review
+its [disk, bootstrap credentials, and SSH-key inputs](roles/bare_metal/templates/preseed.cfg.j2)
+before an authorized reinstall. The controller needs Docker and dnsmasq, and its
+HTTP address must be reachable from the node. Router DHCP still owns the node's
+address reservation; proxy DHCP does not replace it.
 
-```sh
-mise run project-setup
-mise run ansible:check
-mise run ansible:cluster
-```
+Initial cluster provisioning can restart k3s and logind. Use a maintenance window:
+the CI runner and applications share this node. After bootstrap, host-local
+provisioning can outlive the runner that queues it. See
+[maintenance and recovery](../docs/host-maintenance.md) for how to distinguish
+queueing from completion.
 
-The single playbook manages the administrator account, Debian package sources
-and host utilities, inotify limits, dual-stack k3s, open-iscsi for Longhorn,
-sensor modules, and fancontrol. Debian settings are in
-`playbooks/group_vars/cluster.yml`; fan settings are in
-`roles/cluster/defaults/main.yml`.
-
-Fan control discovers coretemp and nct6776 hwmon devices at runtime.
-`pwm1` is the chassis fan (full speed at normal temperatures); `pwm2` is the CPU
-cooler (35–60°C curve, minimum PWM 90, three-second polling).
-
-`ansible:check` validates syntax without contacting the host. `ansible:cluster`
-applies configuration. The PXE playbook runs on the controller to install the cluster OS:
-
-```sh
-mise run ansible:pxe-start
-mise run ansible:pxe-stop
-```
-
-It serves Debian netboot files through dnsmasq (proxy DHCP and TFTP) and
-`preseed.cfg` through a Docker nginx HTTP server on port 8080. BIOS and UEFI
-boot templates are included. Docker and dnsmasq must be installed on the
-controller; macOS and Debian service handling is retained because the
-controller is separate from the Debian cluster.
-
-PXE defaults live in `roles/bare_metal/defaults/main.yml`. The controller address
-`pxe_server_ip` must be reachable from the cluster. The router still assigns
-the node address through DHCP; retain its reservation for `192.168.50.200`.
-After OS installation, run `mise run ansible:cluster`.
-
-The unattended preseed erases the first disk and retains the original bootstrap
-password and SSH-key injection, including the local secrets-key lookup. Review
-`roles/bare_metal/templates/preseed.cfg.j2` before starting installation.
-Starting PXE changes controller services; it is a separate explicit task so
-ordinary cluster provisioning does not start an installer on the LAN.
-
-## Automatic host maintenance
-
-Provisioning also installs the daily update timer and graceful shutdown settings.
-See [host maintenance](../docs/host-maintenance.md) for the schedule, safeguards,
-CI bootstrap requirements, monitoring, and recovery. `mise run ansible:test` runs
-maintenance safety tests without contacting the server; `mise run ansible:plan`
-previews provisioning with Ansible check/diff mode.
+Syntax checks and local maintenance tests do not contact the node. Ansible check
+mode does contact it and can require sudo; it does not prove that a real
+installation or reboot will recover. Keep hardware-specific fan configuration
+with the [cluster role](roles/cluster/) rather than copying its values here.

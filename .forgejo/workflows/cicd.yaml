@@ -24,7 +24,7 @@ jobs:
           "$RUNNER_TEMP/ansible-venv/bin/python" -m pip install ansible-core
           echo "$RUNNER_TEMP/ansible-venv/bin" >> "$GITHUB_PATH"
       - name: Install Ansible collections
-        run: ansible-galaxy collection install -r ansible/requirements.yml
+        run: ansible-galaxy collection install --no-cache -r ansible/requirements.yml
       - name: Validate Ansible playbooks
         working-directory: ansible
         run: |

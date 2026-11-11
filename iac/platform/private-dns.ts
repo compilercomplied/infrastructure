@@ -1,12 +1,18 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 
+export interface PrivateDnsRecord {
+  host: string;
+  address: pulumi.Input<string>;
+}
+
 export function configurePrivateDns(
   namespace: pulumi.Input<string>,
   defaultDeny: k8s.networking.v1.NetworkPolicy,
   connectorName: string,
   httpsAddress: pulumi.Input<string>,
   hosts: string[],
+  additionalRecords: PrivateDnsRecord[] = [],
 ) {
   const name = "private-access-dns";
   const labels = { app: name };
@@ -23,6 +29,7 @@ export function configurePrivateDns(
     reload
     hosts /dev/null {
         ${httpsAddress} ${hosts.join(" ")}
+        ${pulumi.all(additionalRecords.map(record => pulumi.interpolate`${record.address} ${record.host}`)).apply(records => records.join("\n        "))}
     }
 }
 `,

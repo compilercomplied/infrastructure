@@ -24,7 +24,8 @@ export function configureCertManager() {
             installCRDs: true, // Crucial to register ClusterIssuer and Certificate CRDs
             extraArgs: [
                 "--dns01-recursive-nameservers-only",
-                "--dns01-recursive-nameservers=1.1.1.1:53,8.8.8.8:53"
+                // Plain DNS on this network can return stale negative answers even for explicit public resolvers.
+                "--dns01-recursive-nameservers=https://1.1.1.1/dns-query,https://dns.google/dns-query"
             ]
         },
     }, { dependsOn: namespace });

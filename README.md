@@ -1,24 +1,16 @@
-# Infrastructure
+# Homelab infrastructure
 
-This project contains the infrastructure-as-code (IaC) for a k3s cluster
-containing different workflows. Kubernetes resources are managed with Pulumi;
-state is hosted on Pulumi. Bare-metal provisioning lives in [ansible/](./ansible/README.md).
+Changes go through PR review and CI deployment so the repository remains the
+source of truth. Run setup and preview through [mise](mise.toml); never apply
+Pulumi changes locally. See [agent instructions](AGENTS.md) before contributing.
 
-- **[architecture.md](./docs/architecture.md)** — the high-level map: cluster
-  topology, namespaces, security & storage patterns, and the shared-database
-  model.
-- **[workloads.md](./docs/workloads.md)** — Hermes Agent, MCP sidekicks,
-  and agent namespaces.
-- **[selfhosted.md](./docs/selfhosted.md)** — how self-hosted services are
-  declared and exposed.
+The code owns resource inventories, hostnames, settings, and deployment mechanics.
+Start at [the Pulumi entry point](iac/index.ts) or [the Ansible playbook](ansible/playbooks/provision_cluster.yml).
+Documentation preserves the reasoning and operational constraints:
 
-# Deployment view
-
-This is deployed through the local Pulumi stack, and its CI preview runs on
-every pull request. Related tasks live in `mise.toml`. **Never run `pulumi up`
-by hand** — changes land via a merged PR.
-
-# Local development
-
-Mise is a prerequisite. The task `mise run project-setup` prepares the project
-(toolchain + deps); `mise run preview-deployment` runs the validation dry-run.
+- [Architecture decisions](docs/architecture.md)
+- [Host provisioning boundaries](ansible/README.md) and [maintenance recovery](docs/host-maintenance.md)
+- [Application access constraints](docs/selfhosted.md) and [OIDC identity contracts](docs/authentik-oidc.md)
+- [Recovery limitations](docs/recovery.md)
+- [Codex desktop](docs/codex-desktop.md), [Doop](docs/doop.md), and [Pulp](docs/pulp.md)
+- [Forgejo lifecycle constraints](iac/workloads/forgejo/README.md)

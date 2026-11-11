@@ -165,3 +165,6 @@ config:
     secure: v1:BDI+0OiSaWYjYEz6:rBeuuCDOh8Gyf9RYTHVYo+/eRZ5HXpLOEAR/kinUKbxOoWRhfWcXjkLltbfA9Eac0hd4fg9jBAHAoqUELSL6+wk3i517SPzvRBvH9bgjlWs=
   selfhosted:pulpDbEncryptionKey:
     secure: v1:juUZaF+5Pn9ajZxA:ZAHs+VPjYQnenxPrK0EotabM3TZAGzMov+VwczVOP/Mwerg/CCNSaCYkZQHuK4vrqkvavEiYLjkAa1QY
+  codexDesktop:desktopPassword:
+    secure: v1:q9xsXHx8RzmqSOoU:2F84wLq7XmTJsol+bWFRh/kcfLaIQtcZqv5+Jnbj/2F19rRxTPGgKn39YgvcqHNpmFfzTRAVYq1GRnY=
+  codexDesktop:enabled: "true"
