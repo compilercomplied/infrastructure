@@ -20,10 +20,14 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+      - name: Install Ansible
+        run: |
+          python3 -m venv "$RUNNER_TEMP/ansible-venv"
+          "$RUNNER_TEMP/ansible-venv/bin/python" -m pip install ansible-core
+          echo "$RUNNER_TEMP/ansible-venv/bin" >> "$GITHUB_PATH"
       - name: Validate provisioning before queueing
         run: |
-          python3 -m pip install --user ansible-core
-          ansible-galaxy collection install -r ansible/requirements.yml
+          ansible-galaxy collection install --no-cache -r ansible/requirements.yml
           cd ansible
           ansible-playbook playbooks/provision_cluster.yml --syntax-check
           python3 -B -m unittest discover -s tests -v
