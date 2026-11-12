@@ -3,7 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import { createPVC } from "../../library/k8s-pvc";
 import { Labels } from "../../workloads/selfhosted/labels";
 
-export const sharedMariaDbImage = "mariadb:11.4";
+export const sharedMariaDbImage = "mariadb:11.8";
 
 export interface MariaDbDatabaseArgs {
   name: string;
