@@ -15,7 +15,7 @@ export function configureLoki(
     ...cachedHelmChart({
       chart: "loki",
       // renovate: datasource=helm depName=loki registryUrl=https://grafana.github.io/helm-charts
-      version: "6.21.0", // Latest stable 6.x chart for Loki 3.x
+      version: "6.55.0", // Latest stable 6.x chart for Loki 3.x
       fetchOpts: {
         repo: "https://grafana.github.io/helm-charts",
       },
