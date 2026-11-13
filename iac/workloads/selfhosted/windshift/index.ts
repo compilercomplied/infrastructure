@@ -10,7 +10,7 @@ import { windshiftSettings } from "./settings";
 import { oidcClientSecret, oidcIssuer } from "../../../library/oidc-app";
 
 const windshiftImage = "ghcr.io/windshiftapp/windshift@sha256:98292b54b55ff1414bc315d9cd852edbe452f14f4fad436073166cebfa921a23";
-const bootstrapImage = "python:3.11-alpine";
+const bootstrapImage = "python:3.15-alpine";
 
 const bootstrapScript = fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.py"), "utf8");
 

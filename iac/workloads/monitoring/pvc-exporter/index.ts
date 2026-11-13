@@ -41,7 +41,7 @@ export function configurePvcExporter(
           // Mount hostPath of local-path storage so we can read directory sizes
           containers: [{
             name: "exporter",
-            image: "python:3.11-alpine",
+            image: "python:3.15-alpine",
             command: ["python", "/app/pvc-exporter.py"],
             ports: [{ containerPort: 9123, name: "metrics" }],
             env: [
