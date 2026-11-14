@@ -5,7 +5,8 @@
         "validate:oidc": "node scripts/validate-oidc.cjs",
         "check:app-access": "node scripts/check-app-access.cjs",
         "check:security": "node scripts/check-workload-security.cjs",
-        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access && npm run check:security"
+        "check:keycloak": "node scripts/check-keycloak.cjs",
+        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access && npm run check:security && npm run check:keycloak"
     },
     "devDependencies": {
         "@types/node": "^18",
@@ -16,6 +17,7 @@
         "@pulumi/forgejo": "file:sdks/forgejo",
         "@pulumi/kubernetes": "^4.0.0",
         "@pulumi/pulumi": "^3.113.0",
+        "@pulumi/random": "4.19.1",
         "@pulumi/tailscale": "0.29.4"
     }
 }

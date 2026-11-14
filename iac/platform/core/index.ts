@@ -1,8 +1,10 @@
 import * as k8s from "@pulumi/kubernetes";
 import { configureAuthentik } from "./authentik";
+import { configureKeycloak } from "./keycloak";
+import * as pulumi from "@pulumi/pulumi";
 import { configureNamespaceSecurity } from "../../workloads/selfhosted/security";
 
-export function configureInfrastructure() {
+export function configureInfrastructure(dependencies: pulumi.Resource[] = []) {
   const namespace = new k8s.core.v1.Namespace("infrastructure", {
     metadata: { name: "infrastructure" }
   });
@@ -63,6 +65,7 @@ export function configureInfrastructure() {
   }, { aliases: [{ name: "kata-node-label-debian" }] });
 
   const authentik = configureAuthentik(namespaceName, []);
+  const keycloak = configureKeycloak(namespaceName, [security.defaultDeny, ...dependencies]);
 
   return {
     namespace: namespaceName,
@@ -70,5 +73,6 @@ export function configureInfrastructure() {
     androidKvmNodeLabel,
     sysctlTuner,
     authentik,
+    keycloak,
   };
 }

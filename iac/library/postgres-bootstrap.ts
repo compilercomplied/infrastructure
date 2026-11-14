@@ -19,6 +19,7 @@ export interface PostgresBootstrapArgs {
   databaseName?: string;
   username?: string;
   host?: string;
+  automountServiceAccountToken?: boolean;
   resourceNames?: {
     configMap?: string;
     secret?: string;
@@ -71,6 +72,7 @@ export function createPostgresBootstrap(args: PostgresBootstrapArgs): k8s.batch.
         },
         spec: {
           restartPolicy: "Never",
+          automountServiceAccountToken: args.automountServiceAccountToken,
           securityContext: workloadPodSecurityContext(),
           containers: [secureWorkloadContainer({
             name: "db-init",

@@ -142,6 +142,7 @@ config:
   privateAccess:apps:
     grafana.gdario.dev: private
     auth.gdario.dev: private
+    keycloak.gdario.dev: private
     design.gdario.dev: private
     draw.gdario.dev: private
     git.gdario.dev: private

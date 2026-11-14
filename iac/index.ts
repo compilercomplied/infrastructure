@@ -27,7 +27,10 @@ configureMaintenance();
 const sharedResources = configureSharedResources();
 
 const selfhosted = configureSelfhosted(sharedResources.postgres, sharedResources.mariadb);
-configureInfrastructure();
+const infrastructure = configureInfrastructure([sharedResources.postgres]);
+export const keycloakUrl = infrastructure.keycloak.url;
+export const keycloakAutomationClientId = infrastructure.keycloak.automationClientId;
+export const keycloakAutomationClientSecret = pulumi.secret(infrastructure.keycloak.automationSecret);
 
 configureForgejo([sharedResources.postgres]);
 
