@@ -5,6 +5,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { postgresClientImage } from "../platform/shared-resources/shared-postgres";
 import { Labels } from "../workloads/selfhosted/labels";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "./workload-security";
 
 const sharedPostgresHost = "shared-postgres.shared-resources.svc.cluster.local";
 
@@ -70,7 +71,8 @@ export function createPostgresBootstrap(args: PostgresBootstrapArgs): k8s.batch.
         },
         spec: {
           restartPolicy: "Never",
-          containers: [{
+          securityContext: workloadPodSecurityContext(),
+          containers: [secureWorkloadContainer({
             name: "db-init",
             image: postgresClientImage,
             command: ["/bin/sh", "-ec", `
@@ -101,7 +103,7 @@ export function createPostgresBootstrap(args: PostgresBootstrapArgs): k8s.batch.
               { name: "ADMIN_PASSWORD", valueFrom: { secretKeyRef: { name: bootstrapSecret.metadata.name, key: "ADMIN_PASSWORD" } } },
             ],
             volumeMounts: [{ name: "scripts", mountPath: "/scripts", readOnly: true }],
-          }],
+          })],
           volumes: [{ name: "scripts", configMap: { name: scriptConfigMap.metadata.name, defaultMode: 0o755 } }],
         },
       },

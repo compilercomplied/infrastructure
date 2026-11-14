@@ -5,6 +5,7 @@ import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../library/workload-security";
 import { Labels } from "../labels";
 import { GrimmorySettings } from "./settings";
 import { oidcIssuer } from "../../../library/oidc-app";
@@ -25,6 +26,8 @@ export function configureGrimmory(
   const app = new SelfhostedApp("grimmory", {
     namespace,
     image: grimmoryImage,
+    // The upstream entrypoint prepares the data owners and invokes su-exec.
+    containerSecurityContext: { capabilities: { add: ["CHOWN", "SETUID", "SETGID"] } },
     endpoints: [{ name: "http", servicePort: 80, containerPort: 6060, ingress: { name: "grimmory", host: grimmoryIdentity.host }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowMariaDb]: "true",
@@ -101,7 +104,8 @@ export function configureGrimmory(
         },
         spec: {
           restartPolicy: "Never",
-          containers: [{
+          securityContext: workloadPodSecurityContext(),
+          containers: [secureWorkloadContainer({
             name: "patch",
             image: grimmoryMariaDbImage,
             command: ["/bin/sh", "/scripts/patch.sh"],
@@ -134,7 +138,7 @@ export function configureGrimmory(
               name: "scripts",
               mountPath: "/scripts",
             }],
-          }],
+          })],
           volumes: [{
             name: "scripts",
             configMap: {

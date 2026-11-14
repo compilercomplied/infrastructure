@@ -34,7 +34,14 @@ export function configureHermesAgent(
         fsGroupChangePolicy: "OnRootMismatch",
         supplementalGroups: [990],
       },
-      containerSecurityContext: { privileged: false },
+      // s6, Android tooling and nested sandboxes need a separate compatibility
+      // rollout before replacing their existing runtime privileges.
+      containerSecurityContext: {
+        privileged: false,
+        allowPrivilegeEscalation: true,
+        capabilities: { drop: [] },
+        seccompProfile: { type: "Unconfined" },
+      },
       endpoints: [
         {
           name: "http",

@@ -5,6 +5,7 @@ import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../library/workload-security";
 import { Labels } from "../labels";
 import { windshiftSettings } from "./settings";
 import { oidcClientSecret, oidcIssuer } from "../../../library/oidc-app";
@@ -69,7 +70,8 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
         metadata: { labels: { app: `${name}-bootstrap` }, annotations: { "bootstrap-checksum": bootstrapChecksum } },
         spec: {
           restartPolicy: "OnFailure",
-          containers: [{
+          securityContext: workloadPodSecurityContext(),
+          containers: [secureWorkloadContainer({
             name: "bootstrap",
             image: bootstrapImage,
             command: ["python", "/scripts/bootstrap-windshift.py"],
@@ -78,7 +80,7 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
               name,
               valueFrom: { secretKeyRef: { name: bootstrapSecret.metadata.name, key: name } },
             })),
-          }],
+          })],
           volumes: [{ name: "bootstrap-script", configMap: { name: bootstrapConfigMap.metadata.name } }],
         },
       },

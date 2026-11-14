@@ -9,6 +9,7 @@ import { createPrivateService } from "./workload-service";
 import { ManagedVolume, createManagedVolumeBackups, planManagedVolumes } from "./workload-volumes";
 import { createManagedEnvironment } from "./workload-environment";
 import { AppSettings } from "./app-settings";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "./workload-security";
 
 // The Pod template checksum rolls out settings changes without deleting the
 // fixed-name ConfigMap and cascading replacement to its dependents.
@@ -262,7 +263,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
             serviceAccountName: args.serviceAccountName,
             automountServiceAccountToken: args.automountServiceAccountToken,
             nodeSelector: args.nodeSelector,
-            securityContext: args.podSecurityContext,
+            securityContext: workloadPodSecurityContext(args.podSecurityContext),
             containers: [{
               name,
               image: args.image,
@@ -282,8 +283,8 @@ export class SelfhostedApp extends pulumi.ComponentResource {
               livenessProbe: args.livenessProbe,
               resources: args.resources,
               securityContext: args.containerSecurityContext,
-            }, ...(args.additionalContainers || [])],
-            initContainers: args.initContainers,
+            }, ...(args.additionalContainers || [])].map(secureWorkloadContainer),
+            initContainers: args.initContainers?.map(secureWorkloadContainer),
             volumes: [...k8sVolumes, ...(args.additionalVolumes || [])],
             affinity: args.affinity,
           },

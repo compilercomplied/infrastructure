@@ -51,6 +51,8 @@ export function configureDoop(namespace: pulumi.Input<string>, dependencies: pul
     additionalVolumes: [{ name: "proxy", configMap: { name: proxy.metadata.name } }],
     additionalContainers: [{
       name: "proxy",
+      // The root Nginx master initializes cache paths and manages non-root workers.
+      securityContext: { capabilities: { add: ["CHOWN", "SETUID", "SETGID", "KILL"] } },
       image: fs.readFileSync(path.join(__dirname, "proxy-image.txt"), "utf8").trim(),
       volumeMounts: [{ name: "proxy", mountPath: "/etc/nginx/conf.d", readOnly: true }],
       readinessProbe: { httpGet: { path: "/healthz", port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10 },

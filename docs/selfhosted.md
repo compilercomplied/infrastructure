@@ -23,3 +23,16 @@ notification content: clients fetch messages from the homelab.
 For application-specific trust boundaries, see [Doop](doop.md), [Pulp](pulp.md),
 and [Codex desktop](codex-desktop.md). [OIDC identity contracts](authentik-oidc.md)
 cover changes that must agree across the identity provider and application.
+
+## Container startup compatibility
+
+[Shared security defaults](../iac/library/workload-security.ts) also cover sidecars,
+init containers, backups and bootstrap jobs. Capability exceptions belong beside
+the workload that needs them. Users and read-only root filesystems remain explicit:
+changing them centrally can break image startup or access to existing PVC data.
+
+Keep Tandoor's upstream entrypoint: it owns database migrations, static collection
+and the bundled Nginx/Gunicorn startup. Its capability exception preserves that
+contract without maintaining a replacement script. Desktop and agent sandboxes
+retain explicit compatibility exceptions until their nested runtimes are tested;
+privileged Docker sidecars are not confined by pod-level seccomp.

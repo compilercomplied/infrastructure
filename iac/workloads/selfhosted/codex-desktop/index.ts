@@ -56,7 +56,15 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
     nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
     podSecurityContext: { supplementalGroups: [990] },
     // containerd's AppArmor mount denial breaks the nested bubblewrap sandboxes used by Glycin and Codex.
-    containerSecurityContext: { privileged: false, appArmorProfile: { type: "Unconfined" } },
+    containerSecurityContext: {
+      privileged: false,
+      appArmorProfile: { type: "Unconfined" },
+      // APT, s6 and nested bubblewrap sandboxes retain their current privileges
+      // until a desktop-specific rollout can verify installation and sandboxing.
+      allowPrivilegeEscalation: true,
+      capabilities: { drop: [] },
+      seccompProfile: { type: "Unconfined" },
+    },
     endpoints: [{ name: "https", containerPort: 3001 }],
     settings: {
       config: {

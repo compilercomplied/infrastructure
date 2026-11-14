@@ -43,6 +43,9 @@ export function configureForgejo(
   const app = new SelfhostedApp(name, {
     namespace,
     image,
+    // s6, SSH sessions and the upstream ownership repair still require the
+    // image's default capabilities. Narrow them separately from app hardening.
+    containerSecurityContext: { capabilities: { drop: [] } },
     endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "forgejo", host: forgejoIdentity.host } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",

@@ -2,8 +2,11 @@ import { outlineIdentity } from "./identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../library/workload-security";
 import { Labels } from "../labels";
 import { outlineMinioSettings, outlineRedisSettings, outlineSettings } from "./settings";
+
+const minioImage = "minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e";
 
 export function configureOutline(
   namespace: pulumi.Input<string>,
@@ -14,6 +17,8 @@ export function configureOutline(
   const redis = new SelfhostedApp(`${name}-redis`, {
     namespace,
     image: "redis:7-alpine",
+    // Redis fixes existing data ownership before switching to its service user.
+    containerSecurityContext: { capabilities: { add: ["CHOWN", "SETUID", "SETGID"] } },
     settings: outlineRedisSettings,
     endpoints: [{ name: "http", servicePort: 80, containerPort: 6379, allowIngressFrom: [{ podSelector: { app: name }, port: 6379 }] }],
     volumes: [
@@ -29,7 +34,7 @@ export function configureOutline(
   // MinIO
   const minio = new SelfhostedApp(`${name}-minio`, {
     namespace,
-    image: "minio/minio@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+    image: minioImage,
     imagePullPolicy: "IfNotPresent",
     settings: outlineMinioSettings,
     endpoints: [{
@@ -59,9 +64,12 @@ export function configureOutline(
     spec: {
       template: {
         spec: {
-          containers: [{
+          securityContext: workloadPodSecurityContext(),
+          containers: [secureWorkloadContainer({
             name: "mc",
-            image: "minio/mc:latest",
+            // This server image includes mc; the separate minio/mc repository
+            // no longer pulls. Reuse the existing image without upgrading storage.
+            image: minioImage,
             env: [
               { name: "MINIO_ROOT_PASSWORD", value: outlineMinioSettings.secrets["MINIO_ROOT_PASSWORD"] }
             ],
@@ -71,7 +79,7 @@ export function configureOutline(
               mc mb myminio/outline || true;
               mc anonymous set public myminio/outline;
             `]
-          }],
+          })],
           restartPolicy: "OnFailure"
         }
       }

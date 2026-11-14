@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../library/workload-security";
 
 export function configureCloudflared(
     namespace: pulumi.Input<string>,
@@ -40,8 +41,9 @@ export function configureCloudflared(
                     },
                 },
                 spec: {
+                    securityContext: workloadPodSecurityContext(),
                     containers: [
-                        {
+                        secureWorkloadContainer({
                             name: "cloudflared",
                             image: "cloudflare/cloudflared:latest",
                             args: [
@@ -72,7 +74,7 @@ export function configureCloudflared(
                                     memory: "128Mi",
                                 },
                             },
-                        },
+                        }),
                     ],
                 },
             },

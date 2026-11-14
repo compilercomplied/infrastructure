@@ -4,7 +4,8 @@
     "scripts": {
         "validate:oidc": "node scripts/validate-oidc.cjs",
         "check:app-access": "node scripts/check-app-access.cjs",
-        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access"
+        "check:security": "node scripts/check-workload-security.cjs",
+        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access && npm run check:security"
     },
     "devDependencies": {
         "@types/node": "^18",

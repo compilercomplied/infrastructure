@@ -101,6 +101,8 @@ export function configureMemos(
   const app = new SelfhostedApp(name, {
     namespace,
     image: "neosmemo/memos:0.31.0",
+    // The image repairs legacy data ownership before switching to UID/GID 10001.
+    containerSecurityContext: { capabilities: { add: ["CHOWN", "SETUID", "SETGID"] } },
     endpoints: [{
       name: "http",
       servicePort: 80,

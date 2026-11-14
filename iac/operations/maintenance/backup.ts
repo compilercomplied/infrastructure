@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { postgresClientImage } from "../../platform/shared-resources/shared-postgres";
 import { Labels } from "../../workloads/selfhosted/labels";
+import { secureWorkloadContainer, workloadPodSecurityContext } from "../../library/workload-security";
 
 // Load the standalone script files to satisfy the script-ownership guidelines.
 // This decouples script logic from the Pulumi infrastructure definition.
@@ -225,14 +226,18 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
             },
             spec: {
               restartPolicy: "OnFailure",
-              initContainers: dumpContainer ? [dumpContainer] : undefined,
-              containers: [{
+              securityContext: workloadPodSecurityContext(),
+              initContainers: dumpContainer ? [secureWorkloadContainer(dumpContainer)] : undefined,
+              containers: [secureWorkloadContainer({
                 name: "restic-backup",
                 image: resticImage,
                 command: ["/bin/sh", "/scripts/backup-restic.sh"],
                 env: env,
                 volumeMounts: volumeMounts,
-              }],
+                // PVC backups must read files owned by every application's UID,
+                // including private keys; the source volume remains read-only.
+                securityContext: source.type === "pvc" ? { capabilities: { add: ["DAC_READ_SEARCH"] } } : undefined,
+              })],
               volumes: volumes,
             },
           },
