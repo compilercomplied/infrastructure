@@ -1,0 +1,141 @@
+---
+- name: Install host intrusion protection
+  ansible.builtin.apt:
+    name: [fail2ban, nftables, python3-systemd]
+    state: present
+    update_cache: true
+
+- name: Authorize the declared administrator key before disabling passwords
+  ansible.posix.authorized_key:
+    user: gdario
+    key: "{{ lookup('ansible.builtin.file', 'gdario-macbookair.pub') }}"
+    state: present
+
+- name: Ensure SSH configuration includes drop-ins
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^Include /etc/ssh/sshd_config.d/\*.conf$'
+    line: Include /etc/ssh/sshd_config.d/*.conf
+    insertbefore: BOF
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload SSH
+
+- name: Configure key-only SSH authentication
+  ansible.builtin.copy:
+    dest: /etc/ssh/sshd_config.d/00-homelab.conf
+    content: |
+      PubkeyAuthentication yes
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+    owner: root
+    group: root
+    mode: '0644'
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload SSH
+
+- name: Create monitoring and dedicated security log directories
+  ansible.builtin.file:
+    path: '{{ item.path }}'
+    state: directory
+    owner: root
+    group: '{{ item.group }}'
+    mode: '{{ item.mode }}'
+  loop:
+    - { path: /var/log/fail2ban, group: adm, mode: '0750' }
+    - { path: /var/lib/node_exporter/textfile_collector, group: root, mode: '0755' }
+
+- name: Configure bounded SSH bans
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/homelab.local
+    content: |
+      [DEFAULT]
+      ignoreip = 127.0.0.1/8 ::1
+      banaction = nftables[type=multiport]
+      bantime = 1h
+      findtime = 10m
+      maxretry = 5
+
+      [sshd]
+      enabled = true
+      backend = systemd
+      filter = sshd[publickey=any]
+      port = ssh
+      journalmatch = _SYSTEMD_UNIT=ssh.service + _SYSTEMD_UNIT=sshd.service + _COMM=sshd + _COMM=sshd-session
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart Fail2ban
+
+# Debian's jail-level journalmatch takes precedence over filter overrides.
+- name: Remove the superseded filter override
+  ansible.builtin.file:
+    path: /etc/fail2ban/filter.d/sshd.local
+    state: absent
+  notify: Restart Fail2ban
+
+- name: Limit log sharing to Fail2ban events
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/fail2ban.d/homelab.local
+    content: |
+      [Definition]
+      logtarget = /var/log/fail2ban/fail2ban.log
+    mode: '0644'
+  notify: Restart Fail2ban
+
+- name: Rotate security logs and reopen the active log file
+  ansible.builtin.copy:
+    dest: /etc/logrotate.d/fail2ban
+    content: |
+      /var/log/fail2ban/fail2ban.log {
+          weekly
+          rotate 4
+          compress
+          delaycompress
+          missingok
+          notifempty
+          create 0640 root adm
+          postrotate
+              /usr/bin/fail2ban-client flushlogs >/dev/null
+          endscript
+      }
+    mode: '0644'
+
+- name: Apply validated SSH and Fail2ban settings
+  ansible.builtin.meta: flush_handlers
+
+- name: Enable Fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban
+    enabled: true
+    state: started
+
+- name: Install the textfile metrics collector
+  ansible.builtin.copy:
+    src: fail2ban-metrics.py
+    dest: /usr/local/sbin/fail2ban-metrics
+    owner: root
+    group: root
+    mode: '0755'
+  notify: Collect Fail2ban metrics
+
+- name: Install metrics units
+  ansible.builtin.copy:
+    src: '{{ item }}'
+    dest: '/etc/systemd/system/{{ item }}'
+    owner: root
+    group: root
+    mode: '0644'
+  loop: [fail2ban-metrics.service, fail2ban-metrics.timer]
+  register: fail2ban_metrics_units
+
+- name: Enable periodic metrics collection
+  ansible.builtin.systemd_service:
+    name: fail2ban-metrics.timer
+    enabled: true
+    state: started
+    daemon_reload: '{{ fail2ban_metrics_units.changed }}'
+
+- name: Publish the initial metrics
+  ansible.builtin.systemd_service:
+    name: fail2ban-metrics.service
+    state: started

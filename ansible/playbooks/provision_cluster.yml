@@ -13,4 +13,6 @@
     - users
     - common
     - cluster
+    - role: host_security
+      tags: host-security
     - host_maintenance

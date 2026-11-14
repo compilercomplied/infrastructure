@@ -164,6 +164,20 @@ loki.process "pod_logs_parser" {
   }
 }
 
+local.file_match "fail2ban" {
+  path_targets = [{
+    __path__ = "/var/log/host-fail2ban/fail2ban.log",
+    job = "fail2ban",
+    service_name = "fail2ban",
+    host = "debian",
+  }]
+}
+
+loki.source.file "fail2ban" {
+  targets = local.file_match.fail2ban.targets
+  forward_to = [loki.write.local.receiver]
+}
+
 loki.write "local" {
   endpoint {
     url = "http://${lokiService}.${namespace}.svc.cluster.local:3100/loki/api/v1/push"
@@ -176,6 +190,9 @@ loki.write "local" {
     ...cachedHelmChart(monitoringCharts["alloy"]),
     values: {
       alloy: {
+        mounts: {
+          extra: [{ name: "fail2ban-logs", mountPath: "/var/log/host-fail2ban", readOnly: true }],
+        },
         configMap: {
           content: alloyConfig,
         },
@@ -185,6 +202,9 @@ loki.write "local" {
       },
       controller: {
         type: "daemonset",
+        volumes: {
+          extra: [{ name: "fail2ban-logs", hostPath: { path: "/var/log/fail2ban", type: "Directory" } }],
+        },
       },
     },
   },

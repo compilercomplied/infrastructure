@@ -1,0 +1,15 @@
+[Unit]
+Description=Export Fail2ban counters for the node exporter textfile collector
+Wants=fail2ban.service
+After=fail2ban.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/fail2ban-metrics
+TimeoutStartSec=20s
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/node_exporter/textfile_collector
+RestrictAddressFamilies=AF_UNIX
