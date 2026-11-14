@@ -37,6 +37,37 @@ class MaintenanceTests(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 m.busy_reasons()
 
+    def test_terminal_runner_pods_do_not_block_live_runner_inspection(self):
+        for phase in ('Succeeded', 'Failed'):
+            with self.subTest(phase=phase):
+                pods = [
+                    {'metadata': {'name': 'old-runner', 'labels': {'app': 'forgejo-runner'}},
+                     'status': {'phase': phase}},
+                    {'metadata': {'name': 'live-runner', 'labels': {'app': 'forgejo-runner'}},
+                     'status': {'phase': 'Running'}, 'spec': {'containers': [{'name': 'dind'}]}},
+                ]
+                with patch.object(m, 'kubectl', side_effect=[
+                    '{"items": []}', json.dumps({'items': pods}), 'active-ci-container',
+                ]) as kubectl:
+                    self.assertEqual(m.busy_reasons(), ['CI containers in live-runner'])
+                    self.assertEqual(kubectl.call_count, 3)
+                    self.assertEqual(kubectl.call_args.args[3], 'live-runner')
+
+    def test_only_terminal_runner_pods_are_idle(self):
+        pods = [{'metadata': {'name': 'old', 'labels': {'app': 'forgejo-android-runner'}},
+                 'status': {'phase': 'Succeeded'}}]
+        with patch.object(m, 'kubectl', side_effect=['{"items": []}', json.dumps({'items': pods})]):
+            self.assertEqual(m.busy_reasons(), [])
+
+    def test_uninspectable_nonterminal_runner_still_blocks_maintenance(self):
+        for phase in ('Pending', 'Unknown', None):
+            with self.subTest(phase=phase):
+                pods = [{'metadata': {'name': 'current', 'labels': {'app': 'forgejo-runner'}},
+                         'status': {'phase': phase}}]
+                with patch.object(m, 'kubectl', side_effect=['{"items": []}', json.dumps({'items': pods})]):
+                    with self.assertRaisesRegex(RuntimeError, 'not running'):
+                        m.busy_reasons()
+
     def test_busy_deadline_does_not_force_reboot(self):
         with patch.object(m, 'busy_reasons', return_value=['backup']), \
              patch.object(m.time, 'monotonic', return_value=100), \

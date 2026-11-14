@@ -81,6 +81,9 @@ def busy_reasons():
     for pod in pods:
         if not pod['metadata'].get('labels', {}).get('app', '').startswith(('forgejo-runner', 'forgejo-android-runner')):
             continue
+        # Kubernetes retains completed rollout pods; they cannot run CI containers.
+        if pod['status'].get('phase') in ('Succeeded', 'Failed'):
+            continue
         if pod['status'].get('phase') != 'Running':
             raise RuntimeError('Cannot inspect a Forgejo runner that is not running')
         if any(c['name'] == 'dind' for c in pod['spec']['containers']):

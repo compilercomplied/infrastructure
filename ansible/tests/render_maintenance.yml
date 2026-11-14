@@ -14,6 +14,20 @@
 
     - name: Validate rendered artifacts
       block:
+        - name: Render k3s configuration
+          ansible.builtin.template:
+            src: ../roles/cluster/templates/k3s-config.yaml.j2
+            dest: '{{ maintenance_render.path }}/k3s-config.yaml'
+            mode: '0600'
+
+        - name: Verify k3s preserves the allocated service ranges
+          vars:
+            cluster_config: "{{ lookup('file', maintenance_render.path ~ '/k3s-config.yaml') | from_yaml }}"
+            allocated_network: "{{ lookup('file', 'fixtures/cluster-network.json') | from_json }}"
+          ansible.builtin.assert:
+            that:
+              - cluster_config['service-cidr'].split(',') == allocated_network.serviceCidrs
+
         - name: Render configuration and units
           ansible.builtin.template:
             src: '../roles/host_maintenance/templates/{{ item }}.j2'
