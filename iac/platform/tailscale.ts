@@ -27,7 +27,7 @@ export function configureTailscale() {
     namespace: namespace.metadata.name,
     chart: "tailscale-operator",
     // renovate: datasource=helm depName=tailscale-operator registryUrl=https://pkgs.tailscale.com/helmcharts
-    version: "1.104.4",
+    version: "1.104.7",
     fetchOpts: { repo: "https://pkgs.tailscale.com/helmcharts" },
     values: {
       operatorConfig: { defaultTags: [config.get("operatorTag") ?? "tag:k8s-operator"] },
