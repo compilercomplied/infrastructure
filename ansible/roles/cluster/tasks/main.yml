@@ -55,3 +55,7 @@
 - name: Configure passive cooling fancontrol
   ansible.builtin.import_tasks: fancontrol.yml
 
+- name: Configure private registry DNS on the cluster host
+  ansible.builtin.import_tasks: private-app-dns.yml
+  tags: private-app-dns
+

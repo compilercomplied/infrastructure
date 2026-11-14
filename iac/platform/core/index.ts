@@ -18,7 +18,7 @@ export function configureInfrastructure() {
   });
 
   // DaemonSet to bump inotify limits on all nodes to fix fsnotify watcher errors
-  // in applications like Grafana or Syncthing.
+  // in applications like Grafana.
   const sysctlTuner = new k8s.apps.v1.DaemonSet("sysctl-tuner", {
     metadata: {
       name: "sysctl-tuner",

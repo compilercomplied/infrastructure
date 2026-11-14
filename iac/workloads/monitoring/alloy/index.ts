@@ -1,3 +1,4 @@
+import { monitoringCharts } from "../charts";
 import * as k8s from "@pulumi/kubernetes";
 import { cachedHelmChart } from "../../../library/cached-helm-chart";
 import * as pulumi from "@pulumi/pulumi";
@@ -172,14 +173,7 @@ loki.write "local" {
 
   const alloy = new k8s.helm.v3.Chart("alloy", {
     namespace: namespace,
-    ...cachedHelmChart({
-      chart: "alloy",
-      // renovate: datasource=helm depName=alloy registryUrl=https://grafana.github.io/helm-charts
-      version: "0.12.6",
-      fetchOpts: {
-        repo: "https://grafana.github.io/helm-charts",
-      },
-    }),
+    ...cachedHelmChart(monitoringCharts["alloy"]),
     values: {
       alloy: {
         configMap: {

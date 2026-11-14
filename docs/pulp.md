@@ -29,6 +29,20 @@ screens; use the API or CLI for those formats.
 
 ## Recovery dependencies
 
+The private `https://pulp.gdario.dev/pulp/content/ci-tools/` distribution stores
+the pinned Pulumi CLI, Forgejo Terraform provider, and monitoring Helm charts.
+Pulp's initialization mirrors the declared versions, verifies archive checksums,
+and publishes the repository after every required file is available. Old versions
+remain available for rollbacks. A warm initialization reuses stored files.
+
+CI downloads these archives and their checksum metadata from Pulp. A version
+missing from the mirror falls back to its official release source so version
+update PRs can run before deployment populates the mirror. Network failures and
+server errors fail the build. The explicit `PULP_BOOTSTRAP=1` environment setting
+bypasses Pulp for initial provisioning or recovery. For example, run
+`PULP_BOOTSTRAP=1 mise run preview-deployment` when Pulp is unavailable. The CLI
+installer is `node iac/scripts/install-pulumi.cjs` and uses the same setting.
+
 Restore `pulpDbEncryptionKey` with the database: database contents alone cannot
 recover encrypted remote credentials. Package files must also agree with the
 restored database. Redis sessions are disposable; their loss can require another

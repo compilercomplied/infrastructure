@@ -1,0 +1,31 @@
+---
+- name: Read the private ingress address from the running cluster
+  ansible.builtin.command:
+    argv:
+      - /usr/local/bin/k3s
+      - kubectl
+      - --request-timeout=10s
+      - get
+      - services
+      - --namespace=kube-system
+      - --field-selector=metadata.name=traefik-tailnet
+      - '-o=jsonpath={range .items[*]}{.spec.clusterIP}{end}'
+  register: private_ingress_address
+  changed_when: false
+  check_mode: false
+
+# Containerd resolves registry names on the node, outside cluster and Tailscale DNS.
+- name: Route the Forgejo registry hostname through the private listener
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: '# {mark} ANSIBLE PRIVATE REGISTRY DNS'
+    block: '{{ private_ingress_address.stdout }} git.gdario.dev'
+  when: private_ingress_address.stdout | length > 0
+
+- name: Verify the private registry hostname and HTTPS certificate
+  ansible.builtin.uri:
+    url: https://git.gdario.dev/api/v1/version
+    use_proxy: false
+    validate_certs: true
+    status_code: 200
+  when: private_ingress_address.stdout | length > 0

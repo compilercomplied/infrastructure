@@ -23,6 +23,15 @@ name resolution consistent when changing exposure.
 Default-deny ingress makes each required connection an explicit decision rather
 than trusting namespace membership. Shared infrastructure is especially sensitive:
 an application's need to reach one database does not justify access to its peers.
+
+Application exposure is declared once in `privateAccess:apps` as `public`,
+`private`, or `both`. The shared [access policy](../iac/library/app-access.ts)
+is loaded once to keep ingress listeners, cluster DNS, and Tailscale split DNS
+aligned. Enabling private access provisions its listener, approves the connector
+routes, and publishes split DNS together. Cluster clients reach private apps
+through the internal private listener, retaining the same hostname and TLS
+identity without requiring Tailscale inside each pod.
+
 The [ingress helper](../iac/library/ingress.ts) and
 [private-access configuration](../iac/platform/private-access.ts) own the mechanics.
 

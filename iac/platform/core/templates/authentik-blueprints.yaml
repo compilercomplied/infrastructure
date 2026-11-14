@@ -86,35 +86,18 @@ entries:
       name: Penpot SSO
 
   # OIDC_APP_REGISTRATIONS
-  # ---------------------------------------------------------------------------
-  # Syncthing SSO (Forward Proxy)
-  # ---------------------------------------------------------------------------
-  - model: authentik_providers_proxy.proxyprovider
-    id: syncthing-provider
-    identifiers:
-      name: Syncthing SSO
-    attrs:
-      external_host: https://syncthing.gdario.dev
-      mode: forward_single
-      authorization_flow: !Find [authentik_flows.flow, [pk, 9faae557-fad6-4f95-876c-545adc95b3e4]]
-      invalidation_flow: !Find [authentik_flows.flow, [pk, 12830a53-f573-488d-bdc2-f12ddc59c0a7]]
-      intercept_header_auth: true
-      access_token_validity: minutes=10
-      refresh_token_validity: days=30
-
   - model: authentik_core.application
+    state: absent
     identifiers:
       slug: syncthing
-    attrs:
-      name: Syncthing
-      provider: !KeyOf syncthing-provider
-      meta_launch_url: https://syncthing.gdario.dev
-      meta_publisher: GDario Labs
 
-  # Attach the Syncthing proxy provider to the Embedded Outpost
   - model: authentik_outposts.outpost
     identifiers:
       name: authentik Embedded Outpost
     attrs:
-      providers:
-        - !KeyOf syncthing-provider
+      providers: []
+
+  - model: authentik_providers_proxy.proxyprovider
+    state: absent
+    identifiers:
+      name: Syncthing SSO

@@ -3,7 +3,8 @@
     "main": "index.ts",
     "scripts": {
         "validate:oidc": "node scripts/validate-oidc.cjs",
-        "check": "tsc --noEmit && npm run validate:oidc"
+        "check:app-access": "node scripts/check-app-access.cjs",
+        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access"
     },
     "devDependencies": {
         "@types/node": "^18",

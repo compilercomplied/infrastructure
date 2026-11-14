@@ -1,8 +1,9 @@
+import { monitoringCharts } from "../charts";
 import { grafanaIdentity } from "./identity";
 import * as k8s from "@pulumi/kubernetes";
 import { cachedHelmChart } from "../../../library/cached-helm-chart";
 import * as pulumi from "@pulumi/pulumi";
-import { createLetsEncryptIngress, type LetsEncryptIngressArgs } from "../../../library/ingress";
+import { createLetsEncryptIngress } from "../../../library/ingress";
 import { createBackupJob } from "../../../operations/maintenance/backup";
 import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
 
@@ -11,8 +12,7 @@ import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcCli
  */
 export function configureGrafana(
   namespace: pulumi.Input<string>,
-  dependencies: pulumi.Resource[] = [],
-  entryPoints?: LetsEncryptIngressArgs["entryPoints"]
+  dependencies: pulumi.Resource[] = []
 ) {
   const config = new pulumi.Config();
   const adminPassword = config.requireSecret("grafanaAdminPassword");
@@ -22,14 +22,7 @@ export function configureGrafana(
 
   const grafana = new k8s.helm.v3.Chart("grafana", {
     namespace: namespace,
-    ...cachedHelmChart({
-      chart: "grafana",
-      // renovate: datasource=helm depName=grafana registryUrl=https://grafana.github.io/helm-charts
-      version: "8.15.0",
-      fetchOpts: {
-        repo: "https://grafana.github.io/helm-charts",
-      },
-    }),
+    ...cachedHelmChart(monitoringCharts["grafana"]),
     values: {
       assertNoLeakedSecrets: false,
       adminPassword: adminPassword,
@@ -123,7 +116,6 @@ export function configureGrafana(
     host: grafanaIdentity.host,
     serviceName: "grafana",
     servicePort: 80,
-    entryPoints,
     dependencies: [grafana],
   });
 

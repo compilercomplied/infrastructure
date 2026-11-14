@@ -1,3 +1,4 @@
+import { monitoringCharts } from "../../monitoring/charts";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -10,6 +11,7 @@ import { Labels } from "../labels";
 import { pulpIdentity } from "./identity";
 
 const image = "pulp/pulp:3.90";
+const ciTools = require("../../../scripts/ci-tools.cjs");
 const ciCertificateName = "pulp-ci-tls";
 
 export function configurePulp(namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
@@ -18,6 +20,8 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
   const files = {
     "settings.py": fs.readFileSync(path.join(__dirname, "settings.py"), "utf8"),
     "nginx.conf": fs.readFileSync(path.join(__dirname, "nginx.conf"), "utf8"),
+    "ci-tools.json": JSON.stringify({ ...ciTools, charts: Object.values(monitoringCharts) }),
+    "mirror-ci-tools.py": fs.readFileSync(path.join(__dirname, "scripts", "mirror-ci-tools.py"), "utf8"),
     "bootstrap.py": fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.py"), "utf8"),
   };
   const runtimeChecksum = crypto.createHash("sha256").update(JSON.stringify(files)).digest("hex");
@@ -109,7 +113,7 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
     },
     initContainers: [{
       name: "migrate", image, env, volumeMounts: mounts,
-      command: ["/bin/sh", "-ec", "mkdir -p /var/lib/pulp/media /var/lib/pulp/tmp; pulpcore-manager migrate --noinput; pulpcore-manager shell < /etc/pulp/runtime/bootstrap.py"],
+      command: ["/bin/sh", "-ec", "mkdir -p /var/lib/pulp/media /var/lib/pulp/tmp; pulpcore-manager migrate --noinput; pulpcore-manager shell < /etc/pulp/runtime/bootstrap.py; pulpcore-manager shell < /etc/pulp/runtime/mirror-ci-tools.py"],
       resources,
     }],
     additionalContainers: [

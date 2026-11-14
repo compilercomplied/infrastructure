@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { appAccess, tailnetTargetPort } from "../../../library/app-access";
 import { createPVC } from "../../../library/k8s-pvc";
 import { forgejoIdentity } from "../app/identity";
 
@@ -127,8 +128,8 @@ container:
           ports: [{ port: 3000, protocol: "TCP" }],
         },
         {
-          // In-cluster DNS resolves git.gdario.dev to Traefik. NetworkPolicy matches the backend
-          // Pod port after the Service's 443 → 8443 translation, so permit only that TLS endpoint.
+          // NetworkPolicy matches the destination Pod port after Service translation.
+          // Follow cluster DNS when the Forgejo access policy changes listeners.
           to: [
             {
               namespaceSelector: {
@@ -137,7 +138,7 @@ container:
               podSelector: { matchLabels: { "app.kubernetes.io/name": "traefik" } },
             },
           ],
-          ports: [{ port: 8443, protocol: "TCP" }],
+          ports: [{ port: appAccess.privateHosts.includes(forgejoIdentity.host) ? tailnetTargetPort : 8443, protocol: "TCP" }],
         },
         {
           to: [

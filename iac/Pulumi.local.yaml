@@ -3,7 +3,6 @@ config:
   tailscale:enabled: "true"
   tailscale:operatorTag: "tag:kubernetes"
   privateAccess:enabled: "true"
-  privateAccess:approveRoutes: "true"
   privateAccess:connectorDeviceId: nkf9ajkzmk11CNTRL
   tailscale:clientId: k3DUmg4Dak11CNTRL
   tailscale:clientSecret:
@@ -140,23 +139,22 @@ config:
   privateAccess:dnsClientId: kkTF1wtQQW11CNTRL
   privateAccess:dnsClientSecret:
     secure: v1:X8SqQ8nUXaHwUiQ8:vniBdTclLUn2SURb/Wwv9yNFnL6b62ZglRwFE3oc8Vg/qoFo23j4d7X/+ZDt4qfLtSIr/aq6xYSZNium9zlcdTyLCROb/9WR7N2E4SvQv1w=
-  privateAccess:publishDns: "true"
-  privateAccess:grafanaPrivate: "true"
-  privateAccess:publishDualDns: true
-  privateAccess:dualHosts:
-    - design.gdario.dev
-    - draw.gdario.dev
-    - git.gdario.dev
-    - grimmory.gdario.dev
-    - hermes-api.gdario.dev
-    - hermes.gdario.dev
-    - linkwarden.gdario.dev
-    - notes.gdario.dev
-    - notifications.gdario.dev
-    - outline.gdario.dev
-    - projects.gdario.dev
-    - recipes.gdario.dev
-    - syncthing.gdario.dev
+  privateAccess:apps:
+    grafana.gdario.dev: private
+    auth.gdario.dev: private
+    design.gdario.dev: private
+    draw.gdario.dev: private
+    git.gdario.dev: private
+    grimmory.gdario.dev: private
+    hermes-api.gdario.dev: private
+    hermes.gdario.dev: private
+    linkwarden.gdario.dev: private
+    notes.gdario.dev: private
+    notifications.gdario.dev: private
+    outline.gdario.dev: private
+    projects.gdario.dev: private
+    recipes.gdario.dev: private
+    pulp.gdario.dev: private
   selfhosted:pulpDbPassword:
     secure: v1:EqPktOAbR0XhwHDm:AwCXCwvpXysXSJdbhl+Ep0ZSkkSQ8WMfPYAer0yCaW4setogwwq/NF/wTeeNUS0OynNI+57d/OWPKaZoZYr87A==
   selfhosted:pulpOidcClientSecret:

@@ -5,14 +5,8 @@ const os = require("node:os");
 const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 
-const version = "1.7.0";
-// Pins come from the official v1.7.0 SHA256SUMS release asset.
-const assets = {
-  linux_amd64: [644666685, "1234b9b826c205be582fca1c93c51b6220dbcba67cff46cecad1aa9ce90fa056"],
-  linux_arm64: [644666755, "5d0b391e69113efe4cc5fd18c3faa1c4771f81c48dc18514f49b3972770d7a49"],
-  darwin_amd64: [644666847, "9398f8a9900390f218ef11342330f4883e18a42b619af1cdcfc82df501867897"],
-  darwin_arm64: [644666753, "812c66aa4b67ff8d3460e4c53097642f2a4657c3de07f1b3d69611ddd6036469"],
-};
+const { forgejoVersion: version, forgejoAssets: assets } = require("./ci-tools.cjs");
+const { fetchMirrored } = require("./pulp-download.cjs");
 
 async function main() {
   const project = await fs.readFile(path.join(__dirname, "../Pulumi.yaml"), "utf8");
@@ -21,8 +15,8 @@ async function main() {
     throw new Error(`Forgejo provider pin differs from Pulumi.yaml (${declared}); update the asset and SHA256 pins together.`);
   }
   const platform = `${process.platform}_${process.arch === "x64" ? "amd64" : process.arch}`;
-  const asset = assets[platform];
-  if (!asset) throw new Error(`Unsupported Forgejo provider platform: ${platform}. Supported: ${Object.keys(assets).join(", ")}`);
+  const expected = assets[platform];
+  if (!expected) throw new Error(`Unsupported Forgejo provider platform: ${platform}. Supported: ${Object.keys(assets).join(", ")}`);
 
   const home = process.env.PULUMI_HOME || path.join(os.homedir(), ".pulumi");
   const cache = path.join(home, "dynamic_tf_plugins/registry.opentofu.org/svalabs/forgejo", version, platform);
@@ -38,12 +32,9 @@ async function main() {
   const unzip = spawnSync("unzip", ["-v"], { stdio: "ignore" });
   if (unzip.error || unzip.status !== 0) throw new Error("Forgejo provider cache setup requires unzip on PATH.");
 
-  const [id, expected] = asset;
-  const response = await fetch(`https://api.github.com/repos/svalabs/terraform-provider-forgejo/releases/assets/${id}`, {
-    headers: { Accept: "application/octet-stream", "X-GitHub-Api-Version": "2022-11-28" },
-    signal: AbortSignal.timeout(120000),
-  });
-  if (!response.ok) throw new Error(`Forgejo release asset API returned HTTP ${response.status}`);
+  const filename = `terraform-provider-forgejo_${version}_${platform}.zip`;
+  const upstream = `https://github.com/svalabs/terraform-provider-forgejo/releases/download/v${version}/${filename}`;
+  const response = await fetchMirrored(`forgejo/${version}/${filename}`, upstream);
   const archive = Buffer.from(await response.arrayBuffer());
   const actual = createHash("sha256").update(archive).digest("hex");
   if (actual !== expected) throw new Error(`Forgejo archive SHA256 mismatch: expected ${expected}, got ${actual}`);

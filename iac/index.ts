@@ -19,8 +19,8 @@ const tailscale = configureTailscale();
 const certManager = configureCertManager();
 const kvmDevicePlugin = configureKvmDevicePlugin();
 const codexDesktop = configureCodexDesktop(tailscale, certManager.letsEncryptProd, kvmDevicePlugin);
-const grafanaEntryPoints = configurePrivateAccess(tailscale, codexDesktop ? [codexDesktop.dnsRecord] : []);
-configureMonitoring(grafanaEntryPoints);
+configurePrivateAccess(tailscale, codexDesktop ? [codexDesktop.dnsRecord] : []);
+configureMonitoring();
 
 configureMaintenance();
 

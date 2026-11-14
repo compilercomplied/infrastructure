@@ -1,3 +1,4 @@
+import { monitoringCharts } from "../charts";
 import * as k8s from "@pulumi/kubernetes";
 import { cachedHelmChart } from "../../../library/cached-helm-chart";
 import * as pulumi from "@pulumi/pulumi";
@@ -15,14 +16,7 @@ export function configurePrometheus(
   const alertWebhookUrl = new pulumi.Config("monitoring").getSecret("alertWebhookUrl");
   const kubePrometheusStack = new k8s.helm.v3.Chart("kube-prometheus-stack", {
     namespace: namespace,
-    ...cachedHelmChart({
-      chart: "kube-prometheus-stack",
-      // renovate: datasource=helm depName=kube-prometheus-stack registryUrl=https://prometheus-community.github.io/helm-charts
-      version: "81.6.9",
-      fetchOpts: {
-        repo: "https://prometheus-community.github.io/helm-charts",
-      },
-    }),
+    ...cachedHelmChart(monitoringCharts["kube-prometheus-stack"]),
     values: {
       // Disable CRD installation here; we manage them explicitly in crds.ts
       crds: {

@@ -1,16 +1,11 @@
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
+import { appAccess } from "./app-access";
 
 export interface RateLimitConfig {
   average?: number;
   burst?: number;
   period?: string;
-}
-
-export const tailnetEntryPoint = "tailnet";
-
-export function getDualAccessHosts(): string[] {
-  return new pulumi.Config("privateAccess").getObject<string[]>("dualHosts") ?? [];
 }
 
 export interface LetsEncryptIngressArgs {
@@ -19,7 +14,6 @@ export interface LetsEncryptIngressArgs {
   host: string;
   serviceName: pulumi.Input<string>;
   servicePort?: number;
-  entryPoints?: readonly [string, ...string[]];
   rateLimit?: RateLimitConfig | false;
   middlewares?: pulumi.Input<string>[];
   dependencies?: pulumi.Resource[];
@@ -45,7 +39,6 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncr
     host,
     serviceName,
     servicePort = 80,
-    entryPoints = getDualAccessHosts().includes(host) ? ["websecure", tailnetEntryPoint] : ["websecure"],
     rateLimit = {},
     middlewares = [],
     dependencies = [],
@@ -99,7 +92,7 @@ export function createLetsEncryptIngress(args: LetsEncryptIngressArgs): LetsEncr
       namespace,
       annotations: {
         ...(host.endsWith(".home.arpa") ? {} : { "cert-manager.io/cluster-issuer": "letsencrypt-prod" }),
-        "traefik.ingress.kubernetes.io/router.entrypoints": entryPoints.join(","),
+        "traefik.ingress.kubernetes.io/router.entrypoints": appAccess.entryPoints(host),
         "traefik.ingress.kubernetes.io/router.tls": "true",
         ...extraAnnotations,
       },

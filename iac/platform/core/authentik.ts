@@ -110,6 +110,7 @@ export function configureAuthentik(
 
   // Authentik reads blueprint files from the mounted volume; a pod restart also refreshes
   // its environment when an OIDC secret changes.
+  const blueprintProvider = new k8s.Provider(`${name}-blueprints-config`, { enableConfigMapMutable: true });
   const blueprintsConfigMap = new k8s.core.v1.ConfigMap(`${name}-blueprints`, {
     metadata: {
       name: `${name}-blueprints`,
@@ -118,7 +119,7 @@ export function configureAuthentik(
     data: {
       "cluster-bootstrap.yaml": blueprint,
     },
-  }, { dependsOn: dependencies });
+  }, { provider: blueprintProvider, dependsOn: dependencies });
 
   const serverName = `${name}-server`;
   const serverDeployment = new k8s.apps.v1.Deployment(`${serverName}`, {

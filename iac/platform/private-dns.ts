@@ -22,13 +22,13 @@ export function configurePrivateDns(
   const config = new k8s.core.v1.ConfigMap(name, {
     metadata: { name, namespace },
     data: {
-      // Split DNS forwards only the pilot names, so this resolver can serve local records only.
+      // Split DNS forwards only the configured private names, so this resolver can serve local records only.
       Corefile: pulumi.interpolate`.:${dnsPort} {
     errors
     ready
     reload
     hosts /dev/null {
-        ${httpsAddress} ${hosts.join(" ")}
+        ${hosts.length ? pulumi.interpolate`${httpsAddress} ${hosts.join(" ")}` : ""}
         ${pulumi.all(additionalRecords.map(record => pulumi.interpolate`${record.address} ${record.host}`)).apply(records => records.join("\n        "))}
     }
 }
