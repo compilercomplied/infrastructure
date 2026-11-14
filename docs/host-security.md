@@ -5,6 +5,20 @@ keyboard-interactive authentication. It authorizes the MacBook Air public key
 from `ansible/roles/host_security/files/gdario-macbookair.pub` without removing
 other authorized keys. The private key stays on the Mac.
 
+Host provisioning uses a separate CI key so revoking or rotating deployment access
+does not affect personal access. Ansible authorizes it with SSH's `restrict`
+option, disabling forwarding and PTYs while allowing the noninteractive commands
+needed by provisioning. The workflow verifies that its private key matches the
+declared public key and checks the server against an authenticated host-key pin.
+
+The [Pulumi resources](../iac/workloads/forgejo/host-provision.ts) manage both
+repository secrets; the private key comes from encrypted stack configuration.
+CI connects as the host administrator because Ansible manages root-owned files
+and services. Repository workflow changes therefore remain privileged changes.
+Initial authorization uses the existing administrator connection and the same
+Ansible role. For rotation, authorize the replacement public key before publishing
+the replacement private key, then verify the provisioning workflow succeeds.
+
 Fail2ban watches the host SSH journal. Five logged failures within ten minutes trigger
 a one-hour ban using nftables on the SSH port. Only loopback is exempt; LAN and
 Tailscale addresses can be banned too. This protects host SSH, not application

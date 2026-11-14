@@ -11,6 +11,7 @@ import { configureForgejoAndroidRunner } from "./android-runner";
 import { configureRenovate } from "./renovate";
 import { configureReviewWebhook } from "./review-webhook";
 import { reconcileManagedForgejoMachineUsers } from "./users";
+import { configureHostProvisionAccess } from "./host-provision";
 
 export function configureForgejo(dependencies: pulumi.Resource[] = []) {
   const namespace = new k8s.core.v1.Namespace("forgejo", {
@@ -31,6 +32,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
     selfhosted.requireSecret("forgejo-secret"),
     [forgejoApp.deployment, namespace, ...dependencies],
   );
+  const hostProvisionAccess = configureHostProvisionAccess(provider, [forgejoApp.deployment, namespace, ...dependencies]);
   const renovateAccess = provisionRenovateAccess(provider, users.renovate, config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
   const forgejoAndroidRunner = configureForgejoAndroidRunner(namespaceName, forgejoApp.androidRunnerSecret, [forgejoApp.deployment, namespace]);
@@ -50,6 +52,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
     forgejoRunner,
     forgejoAndroidRunner,
     users,
+    hostProvisionAccess,
     renovateAccess,
     reviewWebhook,
     renovate,

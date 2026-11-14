@@ -11,6 +11,13 @@
     key: "{{ lookup('ansible.builtin.file', 'gdario-macbookair.pub') }}"
     state: present
 
+- name: Authorize the dedicated CI deployment key without forwarding or PTY access
+  ansible.posix.authorized_key:
+    user: gdario
+    key: "{{ lookup('ansible.builtin.file', 'host-provision.pub') }}"
+    key_options: restrict
+    state: present
+
 - name: Ensure SSH configuration includes drop-ins
   ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config

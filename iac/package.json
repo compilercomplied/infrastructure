@@ -6,7 +6,8 @@
         "check:app-access": "node scripts/check-app-access.cjs",
         "check:security": "node scripts/check-workload-security.cjs",
         "check:keycloak": "node scripts/check-keycloak.cjs",
-        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access && npm run check:security && npm run check:keycloak"
+        "check:host-provision": "node scripts/check-host-provision.cjs",
+        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access && npm run check:security && npm run check:keycloak && npm run check:host-provision"
     },
     "devDependencies": {
         "@types/node": "^18",

@@ -35,6 +35,7 @@ jobs:
           python3 -B -m unittest discover -s tests -v
           ansible-playbook -i localhost, tests/render_maintenance.yml
       - name: Configure authenticated host access
+        shell: bash
         env:
           HOST_SSH_KEY: ${{ secrets.HOST_SSH_KEY }}
           HOST_SSH_KNOWN_HOSTS: ${{ secrets.HOST_SSH_KNOWN_HOSTS }}
@@ -45,6 +46,9 @@ jobs:
           printf '%s\n' "$HOST_SSH_KEY" > ~/.ssh/host-provision
           chmod 600 ~/.ssh/host-provision
           printf '%s\n' "$HOST_SSH_KNOWN_HOSTS" > ~/.ssh/host-provision-known-hosts
+          ssh-keygen -y -f ~/.ssh/host-provision | awk '{print $1 " " $2}' > "$RUNNER_TEMP/host-provision.pub"
+          diff -u <(awk '{print $1 " " $2}' ansible/roles/host_security/files/host-provision.pub) "$RUNNER_TEMP/host-provision.pub"
+          diff -u ansible/roles/host_security/files/host-provision-known-hosts <(printf '%s\n' "$HOST_SSH_KNOWN_HOSTS" | sed '/^$/d')
       - name: Queue host-local Ansible provisioning
         env:
           DEPLOY_REVISION: ${{ github.sha }}
@@ -53,12 +57,12 @@ jobs:
           case "$DEPLOY_REVISION" in *[!0-9a-f]*|'') exit 1 ;; esac
           # Provisioning outlives a k3s restart, which also restarts this CI runner.
           git archive --format=tar HEAD ansible > /tmp/host-provision.tar
-          remote_dir=$(ssh -i ~/.ssh/host-provision -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/host-provision-known-hosts gdario@192.168.50.200 'mktemp -d /var/tmp/host-provision.XXXXXXXX')
+          remote_dir=$(ssh -i ~/.ssh/host-provision -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/host-provision-known-hosts gdario@192.168.50.200 'mktemp -d /var/tmp/host-provision.XXXXXXXX')
           case "$remote_dir" in /var/tmp/host-provision.*) ;; *) exit 1 ;; esac
-          scp -i ~/.ssh/host-provision -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/host-provision-known-hosts /tmp/host-provision.tar "gdario@192.168.50.200:$remote_dir/source.tar"
-          ssh -i ~/.ssh/host-provision -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/host-provision-known-hosts gdario@192.168.50.200 \
+          scp -i ~/.ssh/host-provision -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/host-provision-known-hosts /tmp/host-provision.tar "gdario@192.168.50.200:$remote_dir/source.tar"
+          ssh -i ~/.ssh/host-provision -o IdentitiesOnly=yes -o IdentityAgent=none -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/host-provision-known-hosts gdario@192.168.50.200 \
             "sudo -n chown -R root:root '$remote_dir' && sudo -n chmod 700 '$remote_dir' && sudo -n tar -xf '$remote_dir/source.tar' -C '$remote_dir' && sudo -n systemd-run --unit='host-provision-$DEPLOY_REVISION' --on-active=60s --property=WorkingDirectory='$remote_dir/ansible' --collect --property=TimeoutStartSec=4h /usr/local/sbin/host-provision '$remote_dir'"
           echo "Queued host-provision-$DEPLOY_REVISION; completion is recorded in the host journal, not this launcher job."
       - name: Remove deployment credentials
         if: always()
-        run: rm -f ~/.ssh/host-provision ~/.ssh/host-provision-known-hosts /tmp/host-provision.tar
+        run: rm -f ~/.ssh/host-provision ~/.ssh/host-provision-known-hosts "$RUNNER_TEMP/host-provision.pub" /tmp/host-provision.tar
