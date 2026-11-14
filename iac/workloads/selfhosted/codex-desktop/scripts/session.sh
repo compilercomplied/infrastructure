@@ -9,6 +9,9 @@ xset s off || true
 xset -dpms || true
 
 while true; do
+  # A crashed app must not relaunch while dpkg is replacing its files.
+  while [ -f /run/codex-desktop-upgrading ]; do sleep 2; done
+  dpkg-query -W -f='${Version}' chatgpt > /config/.cache/codex-desktop-version
   # Electron's setuid sandbox is unavailable in this container; the pod is the outer isolation boundary.
   chatgpt --no-sandbox --disable-gpu >> /config/.cache/codex-desktop.log 2>&1 || true
   sleep 5

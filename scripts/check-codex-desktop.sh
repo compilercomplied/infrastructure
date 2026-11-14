@@ -29,7 +29,8 @@ cp "$source_dir/scripts/init.sh" "$init_dir/"
 chmod +x "$init_dir/init.sh"
 mkdir -p "$init_dir/ssl" "$init_dir/services"
 cp "$source_dir/scripts/reload-cert.sh" "$init_dir/services/reload-cert"
-chmod +x "$init_dir/services/reload-cert"
+cp "$source_dir/scripts/maintenance.sh" "$init_dir/services/apt-maintenance"
+chmod +x "$init_dir/services/"*
 make_certificate() {
   openssl req -x509 -newkey rsa:2048 -nodes -days 1 -subj /CN=localhost \
     -addext subjectAltName=DNS:localhost -keyout "$init_dir/ssl/cert.key" \
@@ -42,7 +43,7 @@ start() {
   docker run --platform "$platform" -d --name "$name" \
     --security-opt apparmor=unconfined \
     --shm-size=1g -p 127.0.0.1::3001 \
-    -e PUID=1000 -e PGID=1000 -e CUSTOM_USER=gdario -e PASSWORD=smoke-test-only \
+    -e PUID=1000 -e PGID=1000 -e TZ=Europe/Madrid -e CUSTOM_USER=gdario -e PASSWORD=smoke-test-only \
     -e PIXELFLUX_WAYLAND=false \
     -v "$volume:/config" -v "$init_dir:/custom-cont-init.d:ro" \
     -v "$init_dir/ssl:/config/ssl:ro" -v "$init_dir/services:/custom-services.d:ro" \
@@ -71,6 +72,27 @@ docker rm -f "$name" >/dev/null
 start
 docker exec "$name" grep -qx preserved /config/workspaces/restart-check
 docker exec "$name" test -s /config/.local/share/keyrings/login.keyring
+# Simulate an older running client without changing installed packages or waiting for a new vendor release.
+desktop_pid=$(docker exec "$name" pgrep -u abc -x xfce4-session)
+app_pid=$(docker exec "$name" pgrep -o -u abc -x ChatGPT)
+docker exec -u abc "$name" sh -c 'printf 0 > /config/.cache/codex-desktop-version'
+if ! docker exec "$name" /opt/codex-desktop/upgrade.sh > "$init_dir/upgrade.log" 2>&1; then
+  cat "$init_dir/upgrade.log"
+  exit 1
+fi
+restarted=false
+for attempt in $(seq 1 30); do
+  sleep 2
+  current_pid=$(docker exec "$name" pgrep -o -u abc -x ChatGPT || true)
+  if [ -n "$current_pid" ] && [ "$current_pid" != "$app_pid" ] &&
+    docker exec "$name" bash -c 'test "$(cat /config/.cache/codex-desktop-version)" = "$(dpkg-query -W -f="\${Version}" chatgpt)"'; then
+    restarted=true
+    break
+  fi
+done
+test "$restarted" = true
+test "$(docker exec "$name" pgrep -u abc -x xfce4-session)" = "$desktop_pid"
+docker logs "$name" 2>&1 | rg 'Next Codex desktop APT maintenance: .*T04:00:00\+0[12]:00' >/dev/null
 docker exec -i -u abc "$name" python3 <<'PY'
 import os
 import subprocess
@@ -102,4 +124,4 @@ for attempt in $(seq 1 12); do
   test "$(docker exec "$name" pgrep -u abc -x xfce4-session)" = "$session_pid"
   docker exec "$name" pgrep -u abc -x xfwm4 >/dev/null
 done
-echo 'Passed: authenticated TLS, certificate renewal without session replacement, and persistent, unlocked desktop state.'
+echo 'Passed: startup upgrades, maintenance app restart without desktop replacement, authenticated TLS, certificate renewal, and persistent unlocked state.'

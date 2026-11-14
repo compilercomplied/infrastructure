@@ -39,7 +39,7 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
       issuerRef: { name: issuer.metadata.name, kind: "ClusterIssuer" },
     },
   }, { dependsOn: [namespace, issuer] });
-  const files = Object.fromEntries(["init.sh", "session.sh", "reload-cert.sh"].map(file => [
+  const files = Object.fromEntries(["init.sh", "session.sh", "reload-cert.sh", "upgrade.sh", "maintenance.sh"].map(file => [
     file, fs.readFileSync(path.join(__dirname, "scripts", file), "utf8"),
   ]));
   const scripts = new k8s.core.v1.ConfigMap(`${name}-scripts`, {
@@ -73,7 +73,10 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
       { name: "init", configMap: { name: scripts.metadata.name, defaultMode: 0o755, items: [{ key: "init.sh", path: "init.sh" }] } },
       { name: "shm", emptyDir: { medium: "Memory", sizeLimit: "1Gi" } },
       { name: "tls", secret: { secretName: `${name}-tls`, defaultMode: 0o600, items: [{ key: "tls.crt", path: "cert.pem" }, { key: "tls.key", path: "cert.key" }] } },
-      { name: "services", configMap: { name: scripts.metadata.name, defaultMode: 0o755, items: [{ key: "reload-cert.sh", path: "reload-cert" }] } },
+      { name: "services", configMap: { name: scripts.metadata.name, defaultMode: 0o755, items: [
+        { key: "reload-cert.sh", path: "reload-cert" },
+        { key: "maintenance.sh", path: "apt-maintenance" },
+      ] } },
     ],
     additionalVolumeMounts: [
       { name: "scripts", mountPath: "/opt/codex-desktop", readOnly: true },

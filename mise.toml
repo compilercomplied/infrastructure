@@ -55,6 +55,10 @@ run = "scripts/check-doop.sh"
 description = "Check private Codex browser access, autostart and persistence with local Docker"
 run = "scripts/check-codex-desktop.sh"
 
+[tasks."codex-desktop:test-maintenance"]
+description = "Test APT maintenance and restart decisions in an isolated container"
+run = "python3 scripts/tests/test_codex_desktop_maintenance.py"
+
 [tasks."ansible:test"]
 description = "Test maintenance safety decisions without contacting the host"
 run = ["python3 -B -m unittest discover -s ansible/tests -v", "ansible-playbook -i localhost, ansible/tests/render_maintenance.yml"]
