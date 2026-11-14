@@ -167,5 +167,10 @@ config:
   codexDesktop:desktopPassword:
     secure: v1:q9xsXHx8RzmqSOoU:2F84wLq7XmTJsol+bWFRh/kcfLaIQtcZqv5+Jnbj/2F19rRxTPGgKn39YgvcqHNpmFfzTRAVYq1GRnY=
   codexDesktop:enabled: "true"
+  keycloakIdentity:googleSubjects:
+    secure: v1:JvPe1s9OIIJCv0Uj:bFJ81aRezl8oT/WchXdI5AV9/4PmFwi/tuts3fxIOJr/cx4ii8ooOcZOSm+Bi0SHkqXqzjBH7VUnV0rhGSLNU7v/LLbUStO8mQOtomNnmnBW4j4YTF0=
+  keycloakIdentity:googleClientId: 854252703954-s1rh82v1lj5etofkd8irps2gct5to49i.apps.googleusercontent.com
+  keycloakIdentity:googleClientSecret:
+    secure: v1:SSS0gJShfTCT0FCC:IlNajs2BXIsvDnFcNd8Stw0d7klDItIDQlRlYBR2h8arKLlvk9efzWa9hfzAeGLcwE4H
   forgejo:hostProvisionPrivateKey:
     secure: v1:nyddWj7cvsR/iJqk:WJ3XBE4D4WnDQCfBYtef6G1FF8PTyH/QVmmS+SnI+10OgR84/+WswywZXhsh3uCgdSewXdSShFpeLd6+4jhsbRVlcoZaRXXSVW2qqMFcUx21nAoZLkIoEcSvRPxlc1IE/BzzF7FAVreA2NJM/olXZxnD7Te8g5EyicIn8tNzcxtB/Le+pb5WHehbf0cA1pTN1QdQXbcQ2lSk+ZdvjDVQkaXfmyQX/Hdm2eH/mqnvIJr9EPcrGF2lkYLAsWVzQnhNY0+a/DkRlCcZ/br9aUpqxDt2els3AulNB8RCLKuCllp9RBb07n6dmxrvDtxuo/takIaAGvSpG8iHLLDoa0nR0+RCw9iRRd/hz6rXLCgAsHGKqWkJKSLs61ZoWUbSt5W8owtm423Spj+MdFypnrXf8oM4Zeri8DyVhVwJ2/FHO23CY4IqRDKRycVLzcoGz0Nm3TA3DjCok5rI7RlJEWWhhbEMi9I/lOBf0V+5snd6jBxrRVUDEphZrkM1oy5eHI+acBROLdM6DnqRn9th8z6HiaWb0rQYoUrHvoH8JKBQi51W5ZbpQToNBZjxHN1k6Er0puQ=
