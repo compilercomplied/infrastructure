@@ -26,6 +26,8 @@ export function configureGrafana(
     values: {
       assertNoLeakedSecrets: false,
       adminPassword: adminPassword,
+      // Overlapping pods contend for the same SQLite database during rollouts.
+      deploymentStrategy: { type: "Recreate" },
       persistence: {
         enabled: true,
         size: "10Gi",
@@ -49,10 +51,10 @@ export function configureGrafana(
         },
         auth: {
           disable_login_form: true,
-          oauth_auto_login: true,
         },
         "auth.generic_oauth": {
           enabled: true,
+          auto_login: true,
           name: "Keycloak",
           allow_sign_up: true,
           client_id: grafanaIdentity.clientId,
@@ -105,6 +107,11 @@ export function configureGrafana(
       const props = args.props as any;
       if (Array.isArray(props?.rules) && props.rules.length === 0) {
         delete props.rules;
+      }
+      if (args.type === "kubernetes:apps/v1:Deployment") {
+        // A new name avoids SSA retaining rollingUpdate defaults, including during preview.
+        props.metadata.name = "grafana-server";
+        return { props, opts: { ...args.opts, deleteBeforeReplace: true } };
       }
       return { props, opts: args.opts };
     }],

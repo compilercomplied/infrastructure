@@ -18,6 +18,18 @@ export function configurePrometheus(
     namespace: namespace,
     ...cachedHelmChart(monitoringCharts["kube-prometheus-stack"]),
     values: {
+      defaultRules: {
+        // k3s exposes these components through the existing apiserver scrape.
+        rules: {
+          kubeSchedulerAlerting: false,
+          kubeControllerManager: false,
+          kubeProxy: false,
+        },
+        disabled: {
+          // Retained failed jobs must not page forever; use the bounded health rule.
+          KubeJobFailed: true,
+        },
+      },
       // Disable CRD installation here; we manage them explicitly in crds.ts
       crds: {
         enabled: false,

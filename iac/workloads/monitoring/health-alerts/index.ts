@@ -16,6 +16,16 @@ export function configureHealthAlerts(
       groups: [{
         name: "selfhosted-health",
         rules: [{
+          alert: "KubeJobFailed",
+          // Backup freshness rules below retain coverage after this failure window.
+          expr: 'kube_job_failed{job="kube-state-metrics"} > 0 and on(namespace, job_name) (time() - kube_job_created{job="kube-state-metrics"} < 86400)',
+          for: "15m",
+          labels: { severity: "warning" },
+          annotations: {
+            summary: "Job failed: {{ $labels.namespace }}/{{ $labels.job_name }}",
+            description: "A job created within the last 24 hours failed to complete.",
+          },
+        }, {
           alert: "HostMaintenanceFailed",
           expr: "host_maintenance_update_success == 0 and host_maintenance_last_attempt_timestamp_seconds > 0",
           for: "2h",
