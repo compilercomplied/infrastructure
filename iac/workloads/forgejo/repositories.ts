@@ -13,5 +13,6 @@ export function configureRepositories(host: pulumi.Input<string>, users: Managed
     createRepo({ name: "forgejo-workflow-templates", isPublic: true, requiredStatusChecks: [] }),
     createRepo({ name: "tandoor-mcp" }),
     createRepo({ name: "agent-dev-environment" }),
+    createRepo({ name: "hitl-auth-server" }),
   ];
 }
