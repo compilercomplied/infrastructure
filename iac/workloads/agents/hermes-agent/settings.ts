@@ -1,7 +1,7 @@
 import { hermesIdentity } from "./identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../../library/app-settings";
-import { oidcClientSecret, oidcIssuer } from "../../../library/oidc-app";
+import { oidcClientSecret, keycloakIssuer } from "../../../library/oidc-app";
 
 export class HermesAgentSettings implements AppSettings {
   public readonly config: AppConfig;
@@ -12,7 +12,7 @@ export class HermesAgentSettings implements AppSettings {
     this.config = {
       "HERMES_DASHBOARD": "1",
       "HERMES_DASHBOARD_PUBLIC_URL": hermesIdentity.url,
-      "HERMES_DASHBOARD_OIDC_ISSUER": oidcIssuer(hermesIdentity),
+      "HERMES_DASHBOARD_OIDC_ISSUER": keycloakIssuer,
       "HERMES_DASHBOARD_OIDC_CLIENT_ID": hermesIdentity.clientId,
       "HERMES_DASHBOARD_OIDC_SCOPES": hermesIdentity.scopes.join(" "),
       "API_SERVER_ENABLED": "true",

@@ -41,14 +41,15 @@ export function configureSharedPostgres(
       `;
   });
 
-  // Create a secret containing database initialization scripts
+  // Retiring an initialization entry must not replace the live database engine.
+  const initProvider = new k8s.Provider(`${name}-init-config`, { enableSecretMutable: true });
   const initScriptSecret = new k8s.core.v1.Secret(`${name}-init-script`, {
     metadata: {
       name: `${name}-init-script`,
       namespace,
     },
     stringData: initScripts,
-  }, { dependsOn: dependencies });
+  }, { dependsOn: dependencies, provider: initProvider });
 
   // PostgreSQL deployment secret for admin password
   const postgresSecret = new k8s.core.v1.Secret(`${name}-secrets`, {

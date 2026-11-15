@@ -38,7 +38,6 @@ export function configureExcaliDash(namespace: pulumi.Input<string>, dependencie
     }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
-      [Labels.Network.AllowAuthentik]: "true",
     },
     ipFamilyPolicy: "SingleStack",
     ipFamilies: ["IPv4"],

@@ -6,9 +6,8 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../library/workload-security";
-import { Labels } from "../labels";
 import { windshiftSettings } from "./settings";
-import { oidcClientSecret, oidcIssuer } from "../../../library/oidc-app";
+import { oidcClientSecret, keycloakIssuer } from "../../../library/oidc-app";
 
 const windshiftImage = "ghcr.io/windshiftapp/windshift@sha256:98292b54b55ff1414bc315d9cd852edbe452f14f4fad436073166cebfa921a23";
 const bootstrapImage = "python:3.15-alpine";
@@ -24,7 +23,7 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
     "WINDSHIFT_FORGEJO_PAT": config.requireSecret("windshiftForgejoPat"),
     "OIDC_CLIENT_SECRET": oidcClientSecret(windshiftIdentity, config),
     "OIDC_CLIENT_ID": windshiftIdentity.clientId,
-    "OIDC_ISSUER": oidcIssuer(windshiftIdentity),
+    "OIDC_ISSUER": keycloakIssuer,
     "OIDC_SCOPES": windshiftIdentity.scopes.join(" "),
     "WINDSHIFT_ORIGIN": windshiftIdentity.url,
   };
@@ -50,7 +49,6 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
       healthCheck: { protocol: "http", path: "/readyz" },
       allowIngressFrom: [{ podSelector: { app: `${name}-bootstrap` } }],
     }],
-    labels: { [Labels.Network.AllowAuthentik]: "true" },
     settings: windshiftSettings,
     volumes: [{ name: "data", mountPath: "/data", size: "5Gi" }],
     additionalVolumes: [{ name: "tmp", emptyDir: { medium: "Memory", sizeLimit: "64Mi" } }],

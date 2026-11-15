@@ -12,7 +12,7 @@ export class MemosSettings implements AppSettings {
     // (the default storage template writes to ./assets).
     "MEMOS_DATA": "/var/opt/memos",
     // Memos builds OAuth redirect and cookie URLs from this canonical address,
-    // which is also the address registered as the callback in Authentik.
+    // which is also the address registered as the callback in Keycloak.
     "MEMOS_INSTANCE_URL": memosIdentity.url,
   };
   public readonly secrets: AppSecrets;

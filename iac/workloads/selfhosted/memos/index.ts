@@ -7,7 +7,7 @@ import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { Labels } from "../labels";
 import { memosSettings } from "./settings";
-import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
+import { keycloakAuthorizeUrl, keycloakTokenUrl, keycloakUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
 
 export function configureMemos(
   namespace: pulumi.Input<string>,
@@ -17,27 +17,18 @@ export function configureMemos(
   const config = new pulumi.Config("selfhosted");
   const clientSecretOutput = oidcClientSecret(memosIdentity, config);
 
-  // Memos configures SSO, its sign-in policy, and its access mode only through
-  // JSON files mounted at /etc/secrets: there is no matching environment
-  // variable. Declaring those files here is what keeps the OIDC contract
-  // declarative — the client id, callback URL, and scopes have to match the
-  // Authentik blueprint — and keeps them out of the instance database, where
-  // they would otherwise be editable state.
-  //
-  // The identity key is `sub`: it survives an Authentik username rename, unlike
-  // preferred_username. Users can still rename their Memos account afterwards.
   const identityProviderFile = clientSecretOutput.apply(clientSecret => JSON.stringify({
-    uid: "authentik",
-    name: "Authentik",
+    uid: "keycloak",
+    name: "Keycloak",
     type: "OAUTH2",
     config: {
       oauth2Config: {
         clientId: memosIdentity.clientId,
         clientSecret,
-        authUrl: authentikAuthorizeUrl,
-        tokenUrl: authentikTokenUrl,
-        userInfoUrl: authentikUserInfoUrl,
-        scopes: memosIdentity.scopes,
+        authUrl: keycloakAuthorizeUrl,
+        tokenUrl: keycloakTokenUrl,
+        userInfoUrl: keycloakUserInfoUrl,
+        scopes: memosIdentity.scopes.filter(scope => scope !== "offline_access"),
         fieldMapping: {
           identifier: "sub",
           displayName: "name",
@@ -48,14 +39,11 @@ export function configureMemos(
     },
   }));
 
-  // Authentik is the only sign-in path for regular users; the one exception is
-  // the first-run owner account, which Memos always allows to be created with a
-  // password and documents as the recovery path. Registration itself stays open
-  // because that is the switch that lets first-time SSO users get an account.
+  // An unmapped identity must fail rather than silently create a duplicate account.
   const generalSettingFile = JSON.stringify({
     key: "GENERAL",
     generalSetting: {
-      disallowUserRegistration: false,
+      disallowUserRegistration: true,
       disallowPasswordAuth: true,
     },
   });
@@ -71,7 +59,7 @@ export function configureMemos(
   });
 
   const deploymentConfigFiles: Record<string, pulumi.Input<string>> = {
-    "memos-idp-authentik.json": identityProviderFile,
+    "memos-idp-keycloak.json": identityProviderFile,
     "memos-instance-setting-general.json": generalSettingFile,
     "memos-instance-setting-access.json": accessSettingFile,
   };
@@ -112,7 +100,6 @@ export function configureMemos(
     }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
-      [Labels.Network.AllowAuthentik]: "true",
     },
     settings: memosSettings,
     databases: [{
@@ -165,5 +152,6 @@ export function configureMemos(
 
   return {
     deployment: app.deployment,
+    deploymentConfig: deploymentConfigSecret,
   };
 }

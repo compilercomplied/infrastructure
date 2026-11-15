@@ -6,7 +6,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
-import { oidcClientSecret, oidcIssuer } from "../../../library/oidc-app";
+import { oidcClientSecret, keycloakIssuer } from "../../../library/oidc-app";
 import { Labels } from "../labels";
 import { pulpIdentity } from "./identity";
 
@@ -92,7 +92,7 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
       },
     ],
     ipFamilyPolicy: "SingleStack", ipFamilies: ["IPv4"],
-    labels: { [Labels.Network.AllowPostgres]: "true", [Labels.Network.AllowAuthentik]: "true" },
+    labels: { [Labels.Network.AllowPostgres]: "true" },
     settings,
     volumes: [{ name: "data", mountPath: "/var/lib/pulp", size: "30Gi" }],
     databases: [{ type: "postgres", databaseName: "pulp", username: "pulp", host: "shared-postgres.shared-resources.svc.cluster.local", passwordSecret: databasePassword }],
@@ -142,7 +142,7 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
         name: "oidc", image: "quay.io/oauth2-proxy/oauth2-proxy:v7.15.6",
         args: [
           "--http-address=127.0.0.1:4180", "--provider=oidc",
-          `--oidc-issuer-url=${oidcIssuer(pulpIdentity)}`, `--client-id=${pulpIdentity.clientId}`,
+          `--oidc-issuer-url=${keycloakIssuer}`, `--client-id=${pulpIdentity.clientId}`,
           `--redirect-url=${pulpIdentity.url}${pulpIdentity.callbackPath}`,
           `--scope=${pulpIdentity.scopes.join(" ")}`, "--email-domain=*",
           "--oidc-email-claim=email", "--set-xauthrequest=true", "--reverse-proxy=true",

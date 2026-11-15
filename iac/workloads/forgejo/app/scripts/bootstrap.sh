@@ -52,32 +52,32 @@ echo "Forgejo is ready. Proceeding with configuration..."
 # Forgejo keeps this source in its database, so restarts must reconcile changed
 # client credentials as well as scopes.
 # We run this as the 'git' user using su-exec to bypass Gitea/Forgejo root checks.
-authentik_source_id=$(su-exec git forgejo admin auth list | while IFS= read -r line; do
-  if [[ "$line" == *Authentik* ]]; then
+oidc_source_id=$(su-exec git forgejo admin auth list | while IFS= read -r line; do
+  if [[ "$line" == *Keycloak* ]]; then
     set -- $line
     printf '%s' "$1"
     break
   fi
 done)
 
-if [ -z "$authentik_source_id" ]; then
-  echo "Adding Authentik OIDC authentication source..."
+if [ -z "$oidc_source_id" ]; then
+  echo "Adding Keycloak OIDC authentication source..."
   su-exec git forgejo admin auth add-oauth \
-    --name "Authentik" \
+    --name "Keycloak" \
     --provider "openidConnect" \
-    --key "$AUTHENTIK_CLIENT_ID" \
-    --secret "${AUTHENTIK_CLIENT_SECRET}" \
-    --auto-discover-url "$AUTHENTIK_DISCOVERY_URL" \
-    --scopes "$AUTHENTIK_SCOPES"
+    --key "$OIDC_CLIENT_ID" \
+    --secret "${OIDC_CLIENT_SECRET}" \
+    --auto-discover-url "$OIDC_DISCOVERY_URL" \
+    --scopes "$OIDC_SCOPES"
 else
-  echo "Updating Authentik OIDC source..."
+  echo "Updating Keycloak OIDC source..."
   su-exec git forgejo admin auth update-oauth \
-    --id "$authentik_source_id" \
+    --id "$oidc_source_id" \
     --provider "openidConnect" \
-    --key "$AUTHENTIK_CLIENT_ID" \
-    --secret "${AUTHENTIK_CLIENT_SECRET}" \
-    --auto-discover-url "$AUTHENTIK_DISCOVERY_URL" \
-    --scopes "$AUTHENTIK_SCOPES"
+    --key "$OIDC_CLIENT_ID" \
+    --secret "${OIDC_CLIENT_SECRET}" \
+    --auto-discover-url "$OIDC_DISCOVERY_URL" \
+    --scopes "$OIDC_SCOPES"
 fi
 
 # Seed the admin user if not already present (checking word boundaries to handle ID column)

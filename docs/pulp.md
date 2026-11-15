@@ -1,7 +1,7 @@
 # Pulp trust and retention constraints
 
 Browser SSO and package-client authentication serve different callers. Browsers
-can follow Authentik redirects; build tools need a machine credential and a real
+can follow Keycloak redirects; build tools need a machine credential and a real
 authentication failure. Keep the trusted identity header behind the proxy so a
 client cannot assert another user's email. The declared operator account gets
 administrator privileges; other authenticated users still need explicit RBAC.

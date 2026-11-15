@@ -6,5 +6,4 @@ export const excalidashIdentity = defineOidcApp("excalidash", {
   host: "draw.gdario.dev",
   callbackPath: "/api/auth/oidc/callback",
   scopes: ["openid", "profile", "email"],
-  verifiedLocalEmail: true,
 });

@@ -5,7 +5,7 @@ import { cachedHelmChart } from "../../../library/cached-helm-chart";
 import * as pulumi from "@pulumi/pulumi";
 import { createLetsEncryptIngress } from "../../../library/ingress";
 import { createBackupJob } from "../../../operations/maintenance/backup";
-import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
+import { keycloakAuthorizeUrl, keycloakTokenUrl, keycloakUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
 
 /**
  * Standalone Grafana Visualization Layer
@@ -53,14 +53,14 @@ export function configureGrafana(
         },
         "auth.generic_oauth": {
           enabled: true,
-          name: "Authentik",
+          name: "Keycloak",
           allow_sign_up: true,
           client_id: grafanaIdentity.clientId,
           client_secret: grafanaSecret,
           scopes: grafanaIdentity.scopes.join(" "),
-          auth_url: authentikAuthorizeUrl,
-          token_url: authentikTokenUrl,
-          api_url: authentikUserInfoUrl,
+          auth_url: keycloakAuthorizeUrl,
+          token_url: keycloakTokenUrl,
+          api_url: keycloakUserInfoUrl,
           role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || 'Viewer'",
         }
       },

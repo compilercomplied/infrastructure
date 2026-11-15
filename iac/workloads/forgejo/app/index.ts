@@ -20,6 +20,8 @@ export function configureForgejo(
 
   const settings = forgejoSettings;
 
+  // Bootstrap edits must not replace dependent repository policy resources.
+  const bootstrapProvider = new k8s.Provider(`${name}-bootstrap-config`, { enableConfigMapMutable: true });
   const bootstrapConfigMap = new k8s.core.v1.ConfigMap(`${name}-bootstrap-scripts`, {
     metadata: {
       name: `${name}-bootstrap-scripts`,
@@ -28,7 +30,7 @@ export function configureForgejo(
     data: {
       "bootstrap-forgejo.sh": bootstrapScriptContent,
     },
-  }, { dependsOn: dependencies });
+  }, { dependsOn: dependencies, provider: bootstrapProvider });
 
   const dbInitJob = createPostgresBootstrap({
     name,
@@ -49,8 +51,6 @@ export function configureForgejo(
     endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "forgejo", host: forgejoIdentity.host } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
-      [Labels.Network.AllowAuthentik]: "true",
-      "auth.gdario.dev/oidc-scopes": "offline-access-v1",
     },
     settings,
     databases: [{

@@ -50,6 +50,7 @@ async function main() {
     const deployments = [fixture, apps.tandoor, apps.linkwarden, apps.grimmory, apps.outline.outline,
       apps.outline.redis, apps.outline.minio, apps.ntfy, apps.memos, apps.windshift, apps.excalidash, apps.doop, apps.pulp];
     await pulumi.all([
+      apps.memos.deploymentConfig.stringData,
       ...deployments.map(app => app.deployment.spec), apps.cloudflared.spec,
       ...deployments.flatMap(app => app.backupJobs || []).map(job => job.spec),
       apps.windshift.bootstrap.spec,
@@ -62,6 +63,23 @@ async function main() {
     if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, unwrap(v)]));
     return value;
   };
+  const memosConfig = unwrap(resources.find(r => r.type === "kubernetes:core/v1:Secret" && r.name === "memos-deployment-config").inputs).stringData;
+  const provider = JSON.parse(memosConfig["memos-idp-keycloak.json"]);
+  assert.equal(provider.uid, "keycloak");
+  assert.equal(provider.name, "Keycloak");
+  assert.equal(memosConfig["memos-idp-authentik.json"], undefined);
+  const endpoints = provider.config.oauth2Config;
+  assert.equal(endpoints.fieldMapping.identifier, "sub");
+  assert.equal(endpoints.authUrl, "https://keycloak.gdario.dev/realms/homelab/protocol/openid-connect/auth");
+  assert.equal(endpoints.tokenUrl, "https://keycloak.gdario.dev/realms/homelab/protocol/openid-connect/token");
+  assert.equal(endpoints.userInfoUrl, "https://keycloak.gdario.dev/realms/homelab/protocol/openid-connect/userinfo");
+  assert.deepEqual(endpoints.scopes, ["openid", "profile", "email"]);
+  assert.deepEqual(JSON.parse(memosConfig["memos-instance-setting-general.json"]).generalSetting, {
+    disallowUserRegistration: true, disallowPasswordAuth: true,
+  });
+  assert.equal(JSON.parse(memosConfig["memos-instance-setting-access.json"]).accessSetting.accessMode, "INSTANCE_ACCESS_MODE_PRIVATE");
+  const memos = unwrap(resources.find(r => r.type === "kubernetes:apps/v1:Deployment" && r.name === "memos").inputs);
+  assert.equal(memos.spec.template.metadata.labels["network/allow-authentik"], undefined);
   const podSpecs = resources.flatMap(({ type, name, inputs: rawInputs }) => {
     const inputs = unwrap(rawInputs);
     if (type === "kubernetes:apps/v1:Deployment" || type === "kubernetes:batch/v1:Job") {

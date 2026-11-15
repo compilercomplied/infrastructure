@@ -10,7 +10,7 @@ Documentation preserves the reasoning and operational constraints:
 
 - [Architecture decisions](docs/architecture.md)
 - [Host provisioning boundaries](ansible/README.md) and [maintenance recovery](docs/host-maintenance.md)
-- [Application access constraints](docs/selfhosted.md) and [OIDC identity contracts](docs/authentik-oidc.md)
+- [Application access constraints](docs/selfhosted.md) and [Identity management](docs/keycloak.md)
 - [Recovery limitations](docs/recovery.md)
 - [Codex desktop](docs/codex-desktop.md), [Doop](docs/doop.md), and [Pulp](docs/pulp.md)
 - [Forgejo lifecycle constraints](iac/workloads/forgejo/README.md)

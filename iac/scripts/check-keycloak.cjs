@@ -90,7 +90,6 @@ async function main() {
   const google = get("keycloak:oidc/googleIdentityProvider:GoogleIdentityProvider", "homelab-google");
   assert.equal(google.alias, "google");
   assert.equal(google.clientId, stack["keycloakIdentity:googleClientId"]);
-  assert.notEqual(google.clientId, stack["selfhosted:googleClientId"]);
   assert.equal(google.syncMode, "FORCE");
   assert.equal(google.storeToken, false);
   assert.equal(google.firstBrokerLoginFlowAlias, "prelinked-identities-only");
@@ -121,10 +120,13 @@ async function main() {
     assert.equal(client.directAccessGrantsEnabled, false);
     assert.equal(client.implicitFlowEnabled, false);
     assert.equal(client.fullScopeAllowed, false);
+    assert.equal(client.accessTokenLifespan, "3600");
+    const defaults = get("keycloak:openid/clientDefaultScopes:ClientDefaultScopes", `homelab-oidc-${app.key}-default-scopes`);
+    assert.ok(defaults.defaultScopes.includes("basic"));
     const scopes = get("keycloak:openid/clientOptionalScopes:ClientOptionalScopes", `homelab-oidc-${app.key}-optional-scopes`);
     assert.deepEqual(scopes.optionalScopes, app.scopes.includes("offline_access") ? ["offline_access"] : []);
   }
-  console.log("Validated Keycloak hosting, pre-linked Google subjects, denied enrollment, group privileges, and staged OIDC clients.");
+  console.log("Validated Keycloak hosting, pre-linked Google subjects, denied enrollment, group privileges, and native OIDC clients.");
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

@@ -71,14 +71,14 @@ def available_repositories(connections_path, connection_id):
 
 def reconcile_sso():
     provider = {
-        "slug": "authentik", "name": "Authentik", "provider_type": "oidc", "enabled": True,
+        "slug": "keycloak", "name": "Keycloak", "provider_type": "oidc", "enabled": True,
         "is_default": True, "issuer_url": os.environ["OIDC_ISSUER"],
         "client_id": os.environ["OIDC_CLIENT_ID"], "client_secret": os.environ["OIDC_CLIENT_SECRET"],
         "scopes": os.environ["OIDC_SCOPES"], "auto_provision_users": True,
         "require_verified_email": True,
         "attribute_mapping": json.dumps({"email": "email", "name": "name", "given_name": "given_name", "family_name": "family_name", "username": "preferred_username", "email_verified": "email_verified"}),
     }
-    existing = next((item for item in request("GET", "/api/sso/providers") if item["slug"] == "authentik"), None)
+    existing = next((item for item in request("GET", "/api/sso/providers") if item["slug"] == "keycloak"), None)
     request("POST" if existing is None else "PUT", "/api/sso/providers" if existing is None else f"/api/sso/providers/{existing['id']}", provider)
 
 

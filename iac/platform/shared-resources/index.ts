@@ -13,7 +13,6 @@ export function configureSharedResources() {
 
   const config = new pulumi.Config("selfhosted");
   const tandoorDbPassword = config.requireSecret("tandoorDbPassword");
-  const authentikDbPassword = config.requireSecret("authentikDbPassword");
   const linkwardenDbPassword = config.requireSecret("linkwardenDbPassword");
   const forgejoDbPassword = config.requireSecret("forgejoDbPassword");
   const outlineDbPassword = config.requireSecret("outlineDbPassword");
@@ -24,7 +23,6 @@ export function configureSharedResources() {
 
   const postgres = configureSharedPostgres(namespaceName, [
     { name: "tandoor", password: tandoorDbPassword },
-    { name: "authentik", password: authentikDbPassword },
     { name: "linkwarden", password: linkwardenDbPassword },
     { name: "forgejo", password: forgejoDbPassword },
     { name: "outline", password: outlineDbPassword },

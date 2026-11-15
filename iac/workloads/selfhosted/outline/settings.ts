@@ -1,7 +1,7 @@
 import { outlineIdentity } from "./identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../../library/app-settings";
-import { authentikAuthorizeUrl, authentikTokenUrl, authentikUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
+import { keycloakAuthorizeUrl, keycloakTokenUrl, keycloakUserInfoUrl, oidcClientSecret } from "../../../library/oidc-app";
 
 export class OutlineSettings implements AppSettings {
   public readonly config: AppConfig = {
@@ -20,11 +20,11 @@ export class OutlineSettings implements AppSettings {
     "AWS_S3_FORCE_PATH_STYLE": "true",
     "AWS_S3_ACL": "private",
     "OIDC_CLIENT_ID": outlineIdentity.clientId,
-    "OIDC_AUTH_URI": authentikAuthorizeUrl,
-    "OIDC_TOKEN_URI": authentikTokenUrl,
-    "OIDC_USERINFO_URI": authentikUserInfoUrl,
+    "OIDC_AUTH_URI": keycloakAuthorizeUrl,
+    "OIDC_TOKEN_URI": keycloakTokenUrl,
+    "OIDC_USERINFO_URI": keycloakUserInfoUrl,
     "OIDC_USERNAME_CLAIM": "preferred_username",
-    "OIDC_DISPLAY_NAME": "Authentik",
+    "OIDC_DISPLAY_NAME": "Keycloak",
     "OIDC_SCOPES": outlineIdentity.scopes.join(" "),
   };
   public readonly secrets: AppSecrets;

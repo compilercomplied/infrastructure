@@ -89,7 +89,7 @@ export function configureOutline(
   // Outline Web App
   const outline = new SelfhostedApp(name, {
     namespace,
-    image: "outlinewiki/outline:latest",
+    image: "outlinewiki/outline:1.12.0",
     endpoints: [{
       name: "http",
       servicePort: 80,
@@ -104,7 +104,6 @@ export function configureOutline(
     ipFamilyPolicy: "SingleStack",
     ipFamilies: ["IPv6"],
     labels: {
-      [Labels.Network.AllowAuthentik]: "true",
       [Labels.Network.AllowPostgres]: "true",
     },
     settings: outlineSettings,

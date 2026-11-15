@@ -29,7 +29,6 @@ export function configureTandoorRecipes(
     }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
-      [Labels.Network.AllowAuthentik]: "true",
     },
     settings: tandoorRecipesSettings,
     volumes: [

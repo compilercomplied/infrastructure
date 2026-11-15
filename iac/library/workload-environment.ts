@@ -6,6 +6,7 @@ export interface ManagedEnvironmentArgs {
   namespace: pulumi.Input<string>;
   config?: Record<string, pulumi.Input<string>>;
   configMapProvider?: k8s.Provider;
+  secretProvider?: k8s.Provider;
   secrets?: Record<string, pulumi.Input<string>>;
   dependencies?: pulumi.Resource[];
   parent?: pulumi.Resource;
@@ -43,7 +44,7 @@ export function createManagedEnvironment(args: ManagedEnvironmentArgs): ManagedE
         namespace: args.namespace,
       },
       stringData: args.secrets,
-    }, { dependsOn: dependencies, parent: args.parent, aliases: args.aliases });
+    }, { dependsOn: dependencies, parent: args.parent, aliases: args.aliases, provider: args.secretProvider });
 
     envFrom.push({ secretRef: { name: secret.metadata.name } });
   }

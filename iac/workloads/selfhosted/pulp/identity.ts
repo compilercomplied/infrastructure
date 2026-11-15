@@ -5,5 +5,4 @@ export const pulpIdentity = defineOidcApp("pulp", {
   secretKey: "pulpOidcClientSecret",
   host: "pulp.gdario.dev",
   callbackPath: "/oauth2/callback",
-  verifiedLocalEmail: true,
 });

@@ -15,10 +15,12 @@ export function configureDoop(namespace: pulumi.Input<string>, dependencies: pul
   const name = "doop";
   const settings = new DoopSettings();
   const proxyConfig = "map $http_upgrade $connection_upgrade { default upgrade; '' close; }\n" + fs.readFileSync(path.join(__dirname, "nginx.conf"), "utf8");
+  // The checksum restarts Nginx; editing its config must not replace the app.
+  const proxyProvider = new k8s.Provider(`${name}-proxy-config`, { enableConfigMapMutable: true });
   const proxy = new k8s.core.v1.ConfigMap(`${name}-proxy`, {
     metadata: { name: `${name}-proxy`, namespace },
     data: { "default.conf": proxyConfig },
-  });
+  }, { provider: proxyProvider });
   const dbInit = createPostgresBootstrap({
     name,
     namespace,
@@ -33,7 +35,7 @@ export function configureDoop(namespace: pulumi.Input<string>, dependencies: pul
     settings,
     // In-memory canvas state and local-path storage both require a single writer.
     strategy: { type: "Recreate" },
-    labels: { [Labels.Network.AllowPostgres]: "true", [Labels.Network.AllowAuthentik]: "true" },
+    labels: { [Labels.Network.AllowPostgres]: "true" },
     endpoints: [{
       name: "http",
       containerPort: 8080,

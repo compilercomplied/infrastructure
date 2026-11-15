@@ -1,7 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../../library/app-settings";
 import { excalidashIdentity } from "./identity";
-import { oidcClientSecret, oidcIssuer } from "../../../library/oidc-app";
+import { oidcClientSecret, keycloakIssuer } from "../../../library/oidc-app";
 
 export class ExcaliDashSettings implements AppSettings {
   public readonly config: AppConfig;
@@ -15,8 +15,8 @@ export class ExcaliDashSettings implements AppSettings {
       "FRONTEND_URL": excalidashIdentity.url,
       "TRUST_PROXY": "1",
       "AUTH_MODE": "oidc_enforced",
-      "OIDC_PROVIDER_NAME": "Authentik",
-      "OIDC_ISSUER_URL": oidcIssuer(excalidashIdentity),
+      "OIDC_PROVIDER_NAME": "Keycloak",
+      "OIDC_ISSUER_URL": keycloakIssuer,
       "OIDC_CLIENT_ID": excalidashIdentity.clientId,
       "OIDC_REDIRECT_URI": `${excalidashIdentity.url}${excalidashIdentity.callbackPath}`,
       "OIDC_SCOPES": excalidashIdentity.scopes.join(" "),

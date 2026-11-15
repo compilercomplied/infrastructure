@@ -18,7 +18,6 @@ export function configureLinkwarden(
     endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "linkwarden", host: linkwardenIdentity.host }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",
-      [Labels.Network.AllowAuthentik]: "true",
     },
     settings: linkwardenSettings,
     databases: [

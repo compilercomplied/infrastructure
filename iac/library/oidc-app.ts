@@ -1,9 +1,10 @@
 import * as pulumi from "@pulumi/pulumi";
 
-export const authentikBaseUrl = "https://auth.gdario.dev";
-export const authentikAuthorizeUrl = `${authentikBaseUrl}/application/o/authorize/`;
-export const authentikTokenUrl = `${authentikBaseUrl}/application/o/token/`;
-export const authentikUserInfoUrl = `${authentikBaseUrl}/application/o/userinfo/`;
+export const keycloakIssuer = "https://keycloak.gdario.dev/realms/homelab";
+export const keycloakDiscoveryUrl = `${keycloakIssuer}/.well-known/openid-configuration`;
+export const keycloakAuthorizeUrl = `${keycloakIssuer}/protocol/openid-connect/auth`;
+export const keycloakTokenUrl = `${keycloakIssuer}/protocol/openid-connect/token`;
+export const keycloakUserInfoUrl = `${keycloakIssuer}/protocol/openid-connect/userinfo`;
 
 export type OidcScope = "openid" | "profile" | "email" | "offline_access";
 
@@ -14,8 +15,6 @@ export interface OidcAppDefinition {
   secretKey: string;
   slug?: string;
   scopes?: readonly OidcScope[];
-  providerName?: string;
-  verifiedLocalEmail?: boolean;
 }
 
 export interface OidcAppRegistration extends OidcAppDefinition {
@@ -23,7 +22,6 @@ export interface OidcAppRegistration extends OidcAppDefinition {
   slug: string;
   url: string;
   clientId: string;
-  secretEnv: string;
   scopes: readonly OidcScope[];
 }
 
@@ -37,17 +35,8 @@ export function defineOidcApp(key: string, definition: OidcAppDefinition): OidcA
     slug,
     url: `https://${definition.host}`,
     clientId: `${slug}-client-id`,
-    secretEnv: `AUTHENTIK_${key.toUpperCase()}_CLIENT_SECRET`,
     scopes: definition.scopes ?? standardScopes,
   };
-}
-
-export function oidcIssuer(app: OidcAppRegistration): string {
-  return `${authentikBaseUrl}/application/o/${app.slug}/`;
-}
-
-export function oidcDiscoveryUrl(app: OidcAppRegistration): string {
-  return `${oidcIssuer(app)}.well-known/openid-configuration`;
 }
 
 export function oidcClientSecret(app: OidcAppRegistration, config = new pulumi.Config("selfhosted")): pulumi.Output<string> {

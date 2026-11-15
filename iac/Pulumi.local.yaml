@@ -19,17 +19,8 @@ config:
     secure: v1:sXM6s/lzaAlCh6jY:ZeIJA/EhGPCJDibM12qCpbldEdFcFwUj7GpmGtbLdrggJ+ocM9bq7XeC55/yBINcWrsPndqCPLEUoxqxqQ==
   selfhosted:acmeEmail:
     secure: v1:63mTCGgbokqEQbQk:6DlZYtMRQdAssgOv3+VF+zKe4aLxvI+DO2r/mTzJr6AVl008oLA=
-  selfhosted:authentikSecretKey:
-    secure: v1:qRHntYhxER/hTI6b:eCHqTCxfMWcLl4dDnYV6IAkFzBEEmao2UWeGJbSY
-  selfhosted:authentikDbPassword:
-    secure: v1:l7WYkpBVdIuGso+S:ekYbYHWBh0ofFSLT47puwjpYj3cik4nSpIBAnSNl
-  selfhosted:authentikAdminPassword:
-    secure: v1:JHK36FRjKPpTcqKC:IwwW05k0UnYzHqrkhmy9Mpth9tvijoYqKBkR9flz
   selfhosted:tandoori-secret:
     secure: v1:/GQsWrM01KeSd0Pu:voQirc/p/FuNMcWuGdG0NyimTfax04Lhs1RLpqlCfu/8hb6NaJ0ry26CaWXRSlVZ85u9aC7H/Gjq5W7beuBCJ41QVpdRQa9dcCxitu6Pww==
-  selfhosted:googleClientId: 378512581891-tlc2ft2ni04025rn2t48uvl9oap466f8.apps.googleusercontent.com
-  selfhosted:googleClientSecret:
-    secure: v1:tm9NKWCBw3VzYZ+X:oSsqAJsPcf4w01baC+wO8gcHoIpKOZrYAbg8gKuvU+KJUzXAsY5ZVvap3/eqhsb4hp4B
   selfhosted:linkwardenDbPassword:
     secure: v1:kXtJMf3gM2uMJ6ol:Gpy6o2iyo+S1wYCAvpxRW6c/arkzY1IPSUkXJVgz/ZAi2/JmaSV4skYt3J4r2IWj
   selfhosted:linkwarden-secret:
@@ -64,8 +55,6 @@ config:
     secure: v1:9MfiHEJS8eqhn3HU:o8eGTkJWSXMQSKEbTEJ2qNpmd1WRiTm5LRDVDo8/F9BZT2byGmZcezhMath6kNqF
   selfhosted:grimmory-secret:
     secure: v1:KPOwOrdSP6GxZP+B:BwhkePXcEa8p7bEHpwAk6j7l3i860kDkJV5yyEF6LmvzqG8P1TITJKI8FpSJ+hQa
-  selfhosted:authentikRedisPassword:
-    secure: v1:8vxIhfqylXKZnJVo:WdH1BdgkJjSFwHysMJ0lMVvGSDVGzeK6x4RAv9zsl2Z2NitdWV2mcdvD3Nt5DivI
   selfhosted:wgEasyPassword:
     secure: v1:3bjEtBIkkx8cY9Ko:yXQVdo7xQrHVFrVocxKtSfv7Pv+aAoOQpTZasxQQ/LSAZBlSpIGE9d3ap1iA2ILt
   selfhosted:wgEasyPasswordHash:
@@ -141,7 +130,6 @@ config:
     secure: v1:X8SqQ8nUXaHwUiQ8:vniBdTclLUn2SURb/Wwv9yNFnL6b62ZglRwFE3oc8Vg/qoFo23j4d7X/+ZDt4qfLtSIr/aq6xYSZNium9zlcdTyLCROb/9WR7N2E4SvQv1w=
   privateAccess:apps:
     grafana.gdario.dev: private
-    auth.gdario.dev: private
     keycloak.gdario.dev: private
     design.gdario.dev: private
     draw.gdario.dev: private

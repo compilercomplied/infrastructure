@@ -2,7 +2,7 @@ import { forgejoIdentity } from "./identity";
 import * as crypto from "crypto";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../../library/app-settings";
-import { oidcClientSecret, oidcDiscoveryUrl } from "../../../library/oidc-app";
+import { oidcClientSecret, keycloakDiscoveryUrl } from "../../../library/oidc-app";
 
 export class ForgejoSettings implements AppSettings {
   public readonly config: AppConfig = {
@@ -22,9 +22,9 @@ export class ForgejoSettings implements AppSettings {
     "FORGEJO__openid__ENABLE_OPENID_SIGNIN": "false",
     "FORGEJO__oauth2_client__ENABLE_AUTO_REGISTRATION": "true",
     "FORGEJO__oauth2_client__ACCOUNT_LINKING": "auto",
-    "AUTHENTIK_CLIENT_ID": forgejoIdentity.clientId,
-    "AUTHENTIK_DISCOVERY_URL": oidcDiscoveryUrl(forgejoIdentity),
-    "AUTHENTIK_SCOPES": forgejoIdentity.scopes.join(" "),
+    "OIDC_CLIENT_ID": forgejoIdentity.clientId,
+    "OIDC_DISCOVERY_URL": keycloakDiscoveryUrl,
+    "OIDC_SCOPES": forgejoIdentity.scopes.join(" "),
     "FORGEJO__actions__ENABLED": "true",
     "FORGEJO__actions__ARTIFACT_RETENTION_DAYS": "14",
     // The review receiver is internal; preserve public webhooks without allowing other private destinations.
@@ -45,7 +45,7 @@ export class ForgejoSettings implements AppSettings {
     this.postgresMasterPassword = config.requireSecret("postgresPassword");
     this.secrets = {
       "FORGEJO__database__PASSWD": this.databasePassword,
-      "AUTHENTIK_CLIENT_SECRET": forgejoSecret,
+      "OIDC_CLIENT_SECRET": forgejoSecret,
       "USER_EMAIL": config.requireSecret("user-gdario-email"),
       // Offline runners need stable, distinct secrets so their identities survive reconciliation.
       "RUNNER_SECRET": pulumi.secret(forgejoSecret.apply(secret =>

@@ -1,7 +1,7 @@
 import { tandoorIdentity } from "./identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../../library/app-settings";
-import { oidcClientSecret, oidcDiscoveryUrl } from "../../../library/oidc-app";
+import { oidcClientSecret, keycloakDiscoveryUrl } from "../../../library/oidc-app";
 
 export class TandoorRecipesSettings implements AppSettings {
   public readonly config: AppConfig = {
@@ -27,9 +27,9 @@ export class TandoorRecipesSettings implements AppSettings {
       "SCOPE": ${JSON.stringify(tandoorIdentity.scopes)},
       "SERVERS": [
         {
-          "id": "authentik",
-          "name": "Authentik",
-          "server_url": "${oidcDiscoveryUrl(tandoorIdentity)}",
+          "id": "keycloak",
+          "name": "Keycloak",
+          "server_url": "${keycloakDiscoveryUrl}",
           "token_auth_method": "client_secret_basic",
           "APP": {
             "client_id": "${tandoorIdentity.clientId}",

@@ -1,7 +1,6 @@
 import { hermesIdentity } from "./identity";
 import * as pulumi from "@pulumi/pulumi";
 import { HermesAgent } from "../../../library/hermes-agent";
-import { Labels } from "../../selfhosted/labels";
 import { getAuthorizedUsers } from "../../selfhosted/users";
 import { HermesAgentSettings } from "./settings";
 
@@ -75,7 +74,6 @@ export function configureHermesAgent(
         value: "/opt/android-data/gradle",
       }],
       labels: {
-        [Labels.Network.AllowAuthentik]: "true",
       },
       args: ["gateway", "run"],
       strategy: { type: "RollingUpdate", rollingUpdate: { maxSurge: 0, maxUnavailable: 1 } },

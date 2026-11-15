@@ -15,6 +15,9 @@ export class GrimmorySettings implements AppSettings {
       "GROUP_ID": "1000",
       "TZ": "Europe/Rome",
       "DISK_TYPE": "LOCAL",
+      // Keycloak is private. Upstream scopes this exception to the admin-configured
+      // OIDC endpoints; metadata and import clients retain their SSRF filtering.
+      "OIDC_ALLOW_UNSAFE_HOSTS": "true",
     };
 
     this.secrets = {

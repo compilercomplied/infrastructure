@@ -12,9 +12,10 @@ import { AppSettings } from "./app-settings";
 import { secureWorkloadContainer, workloadPodSecurityContext } from "./workload-security";
 
 // The Pod template checksum rolls out settings changes without deleting the
-// fixed-name ConfigMap and cascading replacement to its dependents.
+// fixed-name ConfigMap or Secret and cascading replacement to its dependents.
 const settingsConfigProvider = new k8s.Provider("selfhosted-settings-config", {
   enableConfigMapMutable: true,
+  enableSecretMutable: true,
 });
 
 function environmentChecksum(values?: Record<string, pulumi.Input<string>>): pulumi.Output<string> | undefined {
@@ -135,6 +136,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
       config,
       configMapProvider: configChecksum ? settingsConfigProvider : undefined,
       secrets,
+      secretProvider: args.settings ? settingsConfigProvider : undefined,
       dependencies,
       parent: this,
       aliases: childAliases,

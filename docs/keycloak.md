@@ -1,10 +1,9 @@
-# Keycloak foundation
+# Keycloak identity management
 
-Keycloak runs alongside Authentik so identity migration can be tested without
-changing existing login paths. The [deployment](../iac/platform/core/keycloak/index.ts)
-uses the existing private-access boundary and shared PostgreSQL engine, with a
-separate database and backup. Authentik remains the source of application sign-in
-until each integration has an explicit account-linking and rollback strategy.
+Keycloak provides application sign-in through the private-access boundary. Its
+[deployment](../iac/platform/core/keycloak/index.ts) uses shared PostgreSQL with
+a separate database and backup. The [client registry](../iac/platform/core/oidc-apps.ts)
+and application adapters define matching callbacks, scopes and encrypted credentials.
 
 ## Administrative bootstrap
 
@@ -53,51 +52,56 @@ interrupted bootstrap recovery, revocation, restart persistence, and administrat
 access in disposable local containers. This does not contact the cluster. PR CI
 remains the deployment-preview source of truth.
 
-## Direct Google federation and staged migration
+## Human access and Google federation
 
-Human users are pre-linked to their existing immutable Google subjects, captured
-from the current Google source links and stored in encrypted Pulumi config.
+Human users are pre-linked to their existing immutable Google subjects, stored in encrypted Pulumi config.
 Unlinked identities are denied by a dedicated first-broker-login flow. Realm
 registration being disabled would not, by itself, prevent broker enrollment.
 Onboarding another person therefore requires an explicit identity mapping rather
 than email matching or an invitation to whichever Google account signs in first.
 
-Google owns human profile fields and email verification after authentication;
-IaC seeds their initial values and owns the subject links and group membership.
-The provider ignores subsequent profile changes rather than clearing Google's
-verification flag on each deployment. No local human password is provisioned.
-Group claims use the existing flat names so applications can retain their role
-expressions. The identity platform's administrator credential is separate from
-human users and future agent credentials.
+Google refreshes human profile fields and email verification on authentication;
+IaC owns the subject links and group membership. Refresh live user state before
+updates to existing users: Pulumi's `ignoreChanges` reuses recorded state, which
+may predate Google's latest profile update. Human users have no local passwords.
+Flat group claims preserve the applications' existing role expressions.
 
-Google federation uses a dedicated OAuth client with separate encrypted
-credentials. Keeping that registration separate from Authentik isolates callback
-changes and credential rotation, and preserves the old login path for rollback.
-The Google-side client must accept the callback exported by the stack before a
-direct login can succeed. Its testing audience must include the mapped users.
-Google's [web-server OAuth documentation](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred)
+Google federation uses a dedicated OAuth client with encrypted credentials. The
+Google-side client must accept the callback exported by the stack; Keycloak's
+subject links control enrollment. Google's
+[web-server OAuth documentation](https://developers.google.com/identity/protocols/oauth2/web-server#creatingcred)
 requires an exact registered redirect URI. The Keycloak provider manages only
-Keycloak's side of federation; it does not manage the Google-side registration.
+Keycloak's side of federation.
 
-Application clients are staged from the existing OIDC registry. Staging a client
-does not move the application's configured issuer, existing accounts, or API
-credentials. Migrate in this order:
+## Account continuity and machine access
 
-1. Verify direct Google login for both known users in the Keycloak account
-   console. Verify an unlinked Google identity is rejected and that human email
-   verification and group claims match expectations.
-2. Select one application and determine how its current account is tied to the
-   old issuer and subject. Capture the old and new identity links and account ID
-   before switching endpoints. A matching email alone is insufficient evidence
-   that data ownership and privileges will be preserved.
-3. Change that application's provider settings through code. Verify the existing
-   account ID, data access, administrator/member roles, fresh login, session
-   renewal, and API credentials. Retain the Authentik registration and record
-   the reverse identity mapping until rollback has been tested.
-4. Repeat for the remaining applications; retire Authentik only after no active
-   workload depends on its issuers or federation configuration.
+Applications bind their original local accounts to native Keycloak subjects. Some
+include the issuer or local provider name in that key. Preserve local account IDs:
+they own data, permissions and API credentials. Future identity-provider changes
+need conflict-checked mappings verified against immutable upstream identities;
+email matching alone does not establish continuity. There are no legacy subject
+claims, runtime migration adapters or Authentik login paths.
 
-New agent identities should be introduced after the human-login pilot, so a new
-principal and a changed identity provider are not two simultaneous causes of an
-account-linking failure. Machine clients need explicit scopes and app support;
-the staged browser clients deliberately do not enable client-credentials grants.
+An OIDC client registration does not provision an application account, grant app
+permissions or create an API token. Browser clients deliberately exclude
+client-credentials grants. Agents still need the application's supported machine
+authentication and explicitly granted permissions; moving browser sign-in does
+not convert existing application tokens into Keycloak tokens.
+
+## Recovery after retirement
+
+The retired Authentik database and its media/template volumes were retained as
+offline recovery data, with the database role disabled for login. Final snapshots are in the encrypted Restic repository;
+the two retained PVCs are outside active Pulumi ownership. They are not a live
+login dependency. Restore historical data in isolation: restoring an old app
+database can also restore obsolete identity bindings, so verify its native
+Keycloak links before reopening access. Never reassign another person's subject.
+
+The retired Google OAuth client may still exist in its original, inaccessible
+Google Cloud project. Removing that registration is separate from homelab
+retirement; no running workload consumes its credentials.
+
+Grimmory's upstream HTTP client blocks private OIDC hosts by default. Its
+[OIDC-only exception](../iac/workloads/selfhosted/grimmory/settings.ts) permits
+the administrator-configured private Keycloak endpoints; metadata and import
+requests retain their separate SSRF filtering.

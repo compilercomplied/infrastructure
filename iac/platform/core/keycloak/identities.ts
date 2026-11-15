@@ -99,10 +99,11 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
       standardFlowEnabled: true, implicitFlowEnabled: false,
       directAccessGrantsEnabled: false, serviceAccountsEnabled: false,
       fullScopeAllowed: false, validRedirectUris: [app.url + app.callbackPath],
-      webOrigins: [app.url], accessTokenLifespan: "1h",
+      // Client overrides are raw seconds; the realm accepts duration syntax.
+      webOrigins: [app.url], accessTokenLifespan: "3600",
     }, opts);
     clientScopes.push(new keycloak.openid.ClientDefaultScopes(`homelab-oidc-${app.key}-default-scopes`, {
-      realmId: realm.id, clientId: client.id, defaultScopes: ["profile", "email", groupsScope.name],
+      realmId: realm.id, clientId: client.id, defaultScopes: ["basic", "profile", "email", groupsScope.name],
     }, opts));
     clientScopes.push(new keycloak.openid.ClientOptionalScopes(`homelab-oidc-${app.key}-optional-scopes`, {
       realmId: realm.id, clientId: client.id, optionalScopes: app.scopes.includes("offline_access") ? ["offline_access"] : [],

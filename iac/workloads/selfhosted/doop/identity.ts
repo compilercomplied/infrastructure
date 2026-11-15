@@ -6,6 +6,5 @@ export const doopIdentity = defineOidcApp("doop", {
   host: "design.gdario.dev",
   callbackPath: "/api/auth/oauth2/callback/oidc",
   scopes: ["openid", "profile", "email"],
-  // Authentik manages local identities; this claim also gates Doop's admin bootstrap.
-  verifiedLocalEmail: true,
+  // Verified email gates the application's administrator bootstrap.
 });

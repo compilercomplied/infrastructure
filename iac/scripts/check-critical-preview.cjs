@@ -1,10 +1,9 @@
 const { readFileSync } = require("node:fs");
 
 const criticalResources = new Set([
+  "urn:pulumi:local::infrastructure::custom:selfhosted:App$kubernetes:apps/v1:Deployment::keycloak",
   "urn:pulumi:local::infrastructure::kubernetes:apps/v1:StatefulSet::shared-postgres",
   "urn:pulumi:local::infrastructure::kubernetes:core/v1:PersistentVolumeClaim::shared-postgres-pvc",
-  "urn:pulumi:local::infrastructure::kubernetes:apps/v1:Deployment::authentik-server",
-  "urn:pulumi:local::infrastructure::kubernetes:apps/v1:Deployment::authentik-worker",
 ]);
 
 let preview;

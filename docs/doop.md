@@ -1,6 +1,6 @@
 # Doop access constraints
 
-Use Authentik for sign-in. The deployed upstream version bypasses password email
+Use Keycloak for sign-in. The deployed upstream version bypasses password email
 verification when SMTP is unset, even with verification required. The
 [proxy](../iac/workloads/selfhosted/doop/nginx.conf) closes those password routes
 because an environment setting alone cannot enforce the intended account policy.

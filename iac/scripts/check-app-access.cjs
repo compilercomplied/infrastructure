@@ -70,7 +70,7 @@ async function main() {
   assert.throws(loadAppAccess, /requires privateAccess:enabled/);
 
   assert.equal(stackApps["grafana.gdario.dev"], "private");
-  assert.equal(stackApps["auth.gdario.dev"], "private");
+  assert.equal(stackApps["keycloak.gdario.dev"], "private");
   assert.equal(stackApps["pulp.gdario.dev"], "private");
   assert.ok(Object.values(stackApps).every(mode => mode === "private"));
   for (const key of ["grafanaPrivate", "dualHosts", "publishDualDns", "approveRoutes", "publishDns"]) {
@@ -113,7 +113,7 @@ async function main() {
   ]), /unique hosts/);
 
   await pulumi.runtime.runInPulumiStack(async () => {
-    const ingresses = ["grafana", "auth", "public"].map(name => createLetsEncryptIngress({
+    const ingresses = ["grafana", "keycloak", "public"].map(name => createLetsEncryptIngress({
       name, namespace: "test", host: `${name}.gdario.dev`, serviceName: name,
       targetPort: 3000, podSelector: { app: name },
     }));
@@ -130,7 +130,7 @@ async function main() {
     assert.ok(match, `Missing ${type} ${name}`);
     return match.inputs;
   };
-  for (const [name, entrypoints] of [["grafana", "tailnet"], ["auth", "tailnet"], ["public", "websecure"]]) {
+  for (const [name, entrypoints] of [["grafana", "tailnet"], ["keycloak", "tailnet"], ["public", "websecure"]]) {
     const ingress = resource("kubernetes:networking.k8s.io/v1:Ingress", `${name}-ingress`);
     assert.equal(ingress.metadata.annotations["traefik.ingress.kubernetes.io/router.entrypoints"], entrypoints);
     assert.equal(ingress.spec.tls[0].secretName, `${name}-tls-cert`);

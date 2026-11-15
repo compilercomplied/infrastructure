@@ -5,12 +5,23 @@ The exceptions below matter when provisioning accounts or diagnosing sign-in.
 
 ## Memos owner recovery
 
-Memos retains password access for the first-run owner as a recovery path when
-SSO is unavailable. Protect that account's credentials. Regular users are created
-through SSO; disabling all registration would also prevent their first sign-in.
-Identity uses the Authentik subject so a username change does not create a new
-account. Deployment-managed settings must be changed in code because Memos treats
-mounted configuration as authoritative.
+Memos retains administrator password access as a recovery path when SSO is
+unavailable. Protect that account's credentials. Regular users use SSO.
+Registration is disabled: an unmapped login must fail rather than create a
+duplicate account with separate notes and API tokens. New users need an explicit
+provisioning step.
+
+Memos identifies an SSO account by both provider UID and subject, not by email.
+The [provider configuration](../iac/workloads/selfhosted/memos/index.ts) uses the
+Keycloak provider UID and native `sub`. Keep the matching local identity records
+when restoring data; changing the provider UID or subject creates a different
+login binding.
+
+Existing personal API tokens belong to the local account; changing the login
+provider does not replace them with Keycloak tokens. Deployment-managed settings
+must be changed in code because Memos treats mounted configuration as authoritative. See the
+[account-continuity constraints](keycloak.md#account-continuity)
+when changing identity bindings.
 
 ## ntfy publisher credentials
 
@@ -21,7 +32,7 @@ auth database. The iOS wakeup relay is a delivery dependency, not the source of
 notification content: clients fetch messages from the homelab.
 
 For application-specific trust boundaries, see [Doop](doop.md), [Pulp](pulp.md),
-and [Codex desktop](codex-desktop.md). [OIDC identity contracts](authentik-oidc.md)
+and [Codex desktop](codex-desktop.md). [Identity management](keycloak.md)
 cover changes that must agree across the identity provider and application.
 
 ## Container startup compatibility

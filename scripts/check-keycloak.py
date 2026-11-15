@@ -2,6 +2,7 @@
 """Exercise the bootstrap against disposable Keycloak and PostgreSQL containers."""
 
 import importlib.util
+import base64
 import http.client
 import json
 import os
@@ -62,7 +63,7 @@ def main():
                "-p", "127.0.0.1::9000", "-p", "127.0.0.1::8080", "--memory", "1g", "--cpus", "2",
                "-e", "KC_DB=postgres", "-e", f"KC_DB_URL=jdbc:postgresql://{PREFIX}-db:5432/keycloak",
                "-e", "KC_DB_USERNAME=keycloak", "-e", "KC_DB_PASSWORD=" + db_password,
-               "-e", "KC_HOSTNAME=https://keycloak.gdario.dev", "-e", "KC_HTTP_ENABLED=true",
+               "-e", "KC_HOSTNAME=http://localhost", "-e", "KC_HTTP_ENABLED=true",
                "-e", "KC_PROXY_HEADERS=xforwarded", "-e", "KC_HEALTH_ENABLED=true", "-e", "KC_METRICS_ENABLED=true",
                "-e", "KC_CACHE=local", "-e", "KC_BOOTSTRAP_ADMIN_CLIENT_ID=bootstrap-iac",
                "-e", "KC_BOOTSTRAP_ADMIN_CLIENT_SECRET=" + temporary_secret, IMAGE, "start")
@@ -120,7 +121,9 @@ bootstrap.main()
         assert api.clients("bootstrap-iac") == []
         assert len(api.clients("pulumi")) == 1
         # The future Pulumi provider needs administrative API access, not just successful authentication.
-        api.request("POST", "/admin/realms", {"realm": "provider-check", "enabled": True})
+        api.request("POST", "/admin/realms", {"realm": "provider-check", "enabled": True,
+                    "sslRequired": "none", "attributes": {"frontendUrl": base}})
+        check_application_tokens(api, module, base)
         api.request("DELETE", "/admin/realms/provider-check")
         try:
             api.login("bootstrap-iac", temporary_secret)
@@ -132,6 +135,41 @@ bootstrap.main()
         for suffix in ("-server", "-db"):
             subprocess.run(["docker", "rm", "-f", "-v", PREFIX + suffix], capture_output=True)
         subprocess.run(["docker", "network", "rm", PREFIX], capture_output=True)
+
+
+def check_application_tokens(api, module, base):
+    realm = "/admin/realms/provider-check"
+    lifespan = re.search(r'accessTokenLifespan: "(\d+)"', (SOURCE / "identities.ts").read_text())[1]
+    api.request("POST", realm + "/clients", {
+        "clientId": "memos-check", "secret": "disposable-client-secret", "enabled": True,
+        "standardFlowEnabled": True, "publicClient": False, "directAccessGrantsEnabled": True,
+        "redirectUris": [base + "/callback"], "attributes": {"access.token.lifespan": lifespan},
+    })
+    client = api.request("GET", realm + "/clients?clientId=memos-check")[0]
+    scopes = api.request("GET", realm + "/client-scopes")
+    basic = next(scope for scope in scopes if scope["name"] == "basic")
+    api.request("PUT", realm + f"/clients/{client['id']}/default-client-scopes/{basic['id']}")
+    api.request("POST", realm + "/users", {
+        "username": "pilot", "enabled": True, "firstName": "Pilot", "lastName": "Test",
+        "email": "pilot@example.invalid", "emailVerified": True,
+        "credentials": [{"type": "password", "value": "disposable-test-password", "temporary": False}],
+    })
+
+    # A disposable password grant exercises the same token generator without a
+    # browser or TLS proxy. Production browser clients keep this grant disabled.
+    oidc = "/realms/provider-check/protocol/openid-connect"
+    unauthenticated = module.Keycloak()
+    tokens = unauthenticated.request("POST", oidc + "/token", {
+        "grant_type": "password", "client_id": "memos-check", "client_secret": "disposable-client-secret",
+        "username": "pilot", "password": "disposable-test-password", "scope": "openid profile email",
+    }, form=True)
+    assert 3500 < tokens["expires_in"] <= 3600
+    access = json.loads(base64.urlsafe_b64decode(tokens["access_token"].split(".")[1] + "=="))
+    assert access["sub"] and access["sub"] != "a" * 64
+    unauthenticated.token = tokens["access_token"]
+    userinfo = unauthenticated.request("GET", oidc + "/userinfo")
+    assert userinfo["sub"] == access["sub"]
+    print("Validated real Keycloak token issuance, numeric client expiry, native subject and userinfo.")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-import * as pulumi from "@pulumi/pulumi";
 import { OidcAppRegistration } from "../../library/oidc-app";
 import { tandoorIdentity } from "../../workloads/selfhosted/tandoor-recipes/identity";
 import { linkwardenIdentity } from "../../workloads/selfhosted/linkwarden/identity";
@@ -29,23 +28,17 @@ export const oidcApps: readonly OidcAppRegistration[] = [
   pulpIdentity,
 ];
 
-export function oidcSecretEnvironment(config = new pulumi.Config("selfhosted")): Record<string, pulumi.Output<string>> {
-  return Object.fromEntries(oidcApps.map(app => [app.secretEnv, config.requireSecret(app.secretKey)]));
-}
-
 export function validateOidcApps(): void {
   const keys = new Set<string>();
   const slugs = new Set<string>();
   const clientIds = new Set<string>();
-  const environments = new Set<string>();
   for (const app of oidcApps) {
-    if (keys.has(app.key) || slugs.has(app.slug) || clientIds.has(app.clientId) || environments.has(app.secretEnv)) {
+    if (keys.has(app.key) || slugs.has(app.slug) || clientIds.has(app.clientId)) {
       throw new Error(`Duplicate OIDC registration: ${app.slug}`);
     }
     keys.add(app.key);
     slugs.add(app.slug);
     clientIds.add(app.clientId);
-    environments.add(app.secretEnv);
     if (!app.scopes.includes("openid") || new Set(app.scopes).size !== app.scopes.length) {
       throw new Error(`Invalid OIDC scopes: ${app.slug}`);
     }
