@@ -67,6 +67,13 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
   const groups = groupDefinitions.map(group => new keycloak.Group(`homelab-${group.name}`, {
     realmId: realm.id, name: group.name,
   }, opts));
+  const realmManagement = keycloak.openid.getClientOutput({
+    realmId: realm.id, clientId: "realm-management",
+  }, opts);
+  const realmAdmin = keycloak.getRoleOutput({
+    realmId: realm.id, clientId: realmManagement.id, name: "realm-admin",
+  }, opts);
+  const administratorRoles: keycloak.UserRoles[] = [];
   const users = authorizedUsers.map(user => {
     const identity = new keycloak.User(`homelab-user-${user.name.toLowerCase()}`, {
       realmId: realm.id, username: user.name.toLowerCase(), firstName: user.name,
@@ -78,6 +85,13 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
         identityProvider: google.alias, userId: validatedSubjects.apply(values => values[user.name]), userName: user.email,
       }],
     }, { ...opts, dependsOn: [profile], ignoreChanges: ["email", "emailVerified", "firstName", "lastName"] });
+    if (user.name === "gdario") {
+      administratorRoles.push(new keycloak.UserRoles("homelab-user-gdario-admin", {
+        realmId: realm.id, userId: identity.id, roleIds: [realmAdmin.id],
+        // Preserve Keycloak's default account roles alongside the explicit admin grant.
+        exhaustive: false,
+      }, opts));
+    }
     return identity;
   });
   const memberships = authorizedUsers.map((user, userIndex) => new keycloak.UserGroups(`homelab-user-${user.name.toLowerCase()}-groups`, {
@@ -126,7 +140,7 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
   });
   return {
     realm, google, users, groups, clients, agentUsers,
-    resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...groups, ...memberships, ...agentUsers.flatMap(agent => [agent.user, agent.membership]), groupsScope, groupMapping, ...clients, ...clientScopes],
+    resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...administratorRoles, ...groups, ...memberships, ...agentUsers.flatMap(agent => [agent.user, agent.membership]), groupsScope, groupMapping, ...clients, ...clientScopes],
     issuer: pulumi.interpolate`${foundation.url}/realms/${realm.realm}`,
     googleCallback: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/broker/${google.alias}/endpoint`,
     accountUrl: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/account/`,
