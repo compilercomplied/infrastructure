@@ -1,8 +1,9 @@
 import * as pulumi from "@pulumi/pulumi";
+import { ManagedForgejoUsers } from "./users";
 import { createRepositoryFactory } from "./policy";
 
-export function configureRepositories(host: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
-  const createRepo = createRepositoryFactory(host, dependencies);
+export function configureRepositories(host: pulumi.Input<string>, users: ManagedForgejoUsers, dependencies: pulumi.Resource[] = []) {
+  const createRepo = createRepositoryFactory(host, users, dependencies);
 
   return [
     createRepo({ name: "homelab-iac" }),

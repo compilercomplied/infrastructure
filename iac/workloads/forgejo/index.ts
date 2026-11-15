@@ -9,10 +9,11 @@ import { configureForgejoRunner } from "./runner";
 import { configureForgejoAndroidRunner } from "./android-runner";
 import { configureRenovate } from "./renovate";
 import { configureReviewWebhook } from "./review-webhook";
-import { reconcileManagedForgejoMachineUsers } from "./users";
+import { reconcileManagedForgejoUsers, ManagedForgejoUsers } from "./users";
+import { configureRepositories } from "./repositories";
 import { configureHostProvisionAccess } from "./host-provision";
 
-export function configureForgejo(dependencies: pulumi.Resource[] = []) {
+export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pulumi.Input<string>>, dependencies: pulumi.Resource[] = []) {
   const namespace = new k8s.core.v1.Namespace("forgejo", {
     metadata: { name: "forgejo" }
   }, { dependsOn: dependencies });
@@ -21,16 +22,17 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
 
   const forgejoApp = configureForgejoApp(namespaceName, [...dependencies, namespace]);
   const config = new pulumi.Config("forgejo");
-  const selfhosted = new pulumi.Config("selfhosted");
   const provider = new forgejo.Provider("forgejo-renovate", {
     host: forgejoApp.apiUrl,
     apiToken: config.requireSecret("apiToken"),
   }, { dependsOn: [forgejoApp.deployment, namespace, ...dependencies] });
-  const users = reconcileManagedForgejoMachineUsers(
-    provider,
-    selfhosted.requireSecret("forgejo-secret"),
+  const users = reconcileManagedForgejoUsers(
+    forgejoApp.apiUrl,
+    config.requireSecret("apiToken"),
+    subjects,
     [forgejoApp.deployment, namespace, ...dependencies],
   );
+  const repositories = configureRepositories(forgejoApp.apiUrl, users, [forgejoApp.deployment]);
   const hostProvisionAccess = configureHostProvisionAccess(provider, [forgejoApp.deployment, namespace, ...dependencies]);
   const renovateAccess = provisionRenovateAccess(provider, users.renovate, config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
@@ -51,6 +53,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
     forgejoRunner,
     forgejoAndroidRunner,
     users,
+    repositories,
     hostProvisionAccess,
     renovateAccess,
     reviewWebhook,

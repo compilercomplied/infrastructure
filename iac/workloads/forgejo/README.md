@@ -5,6 +5,15 @@ and branch policy. Personal repositories remain under their owners' control.
 Use [the repository declarations](repositories.ts) and [policy](policy/) for
 current permissions rather than maintaining a second matrix here.
 
+[Accounts](users.ts) and the native Owners team are retained on removal from
+Pulumi because their IDs anchor contribution history, repository ownership, and
+credentials. OIDC bindings use Keycloak subject IDs rather than mutable display
+names so a rename cannot silently select a different identity.
+The [OIDC account resource](oidc-user.ts) uses the admin API because the bridged
+[provider requires a local password](https://registry.terraform.io/providers/svalabs/forgejo/1.7.0/docs/resources/user)
+even for external authentication. This avoids
+creating a second credential alongside Keycloak.
+
 The runner can deploy changes to itself. Replacing it during a Pulumi update can
 terminate the job before the update completes; a merged commit is not evidence
 that the deployment settled. Check the completed deployment before retrying or
@@ -13,7 +22,7 @@ assuming a failed run rolled back.
 ## Retention is not reference-aware garbage collection
 
 Large Android image archives were consuming Actions storage despite already
-being published to the registry. The [image publisher](https://git.gdario.dev/hermes/android-ci-image)
+being published to the registry. The [image publisher](https://git.gdario.dev/agent-hermes/android-ci-image)
 keeps CI artifacts as metadata; use its export procedure when an offline image
 is actually needed.
 

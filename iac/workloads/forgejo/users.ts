@@ -1,60 +1,33 @@
-import * as crypto from "crypto";
-import * as forgejo from "@pulumi/forgejo";
 import * as pulumi from "@pulumi/pulumi";
+import { ForgejoOidcUser } from "./oidc-user";
 
-interface ManagedMachineUserDefinition {
-  resourceName: string;
-  login: string;
-  fullName: string;
-  email: string;
-  passwordSalt: string;
-  security: Omit<forgejo.UserArgs, "login" | "fullName" | "email" | "password">;
-}
+export const forgejoUserLogins = {
+  dario: "dario", codingBot: "coding-bot", reviewingBot: "reviewing-bot",
+  codex: "agent-codex", hermes: "agent-hermes", renovate: "renovate",
+} as const;
 
-// Human accounts are bootstrapped by Forgejo/OIDC and deliberately stay outside Pulumi reconciliation.
-export const externallyManagedForgejoUsers = ["dario"] as const;
+export type ManagedForgejoUsers = Record<keyof typeof forgejoUserLogins, ForgejoOidcUser>;
 
-export const managedForgejoMachineUsers = {
-  renovate: {
-    resourceName: "forgejo-renovate-user",
-    login: "renovate",
-    fullName: "Renovate",
-    email: "renovate@gdario.dev",
-    passwordSalt: "renovate-bot-v1",
-    security: {
-      admin: false,
-      allowCreateOrganization: false,
-      allowGitHook: false,
-      allowImportLocal: false,
-      maxRepoCreation: 0,
-      mustChangePassword: false,
-      prohibitLogin: false,
-      restricted: true,
-      sendNotify: false,
-      visibility: "private",
-    },
-  },
-} as const satisfies Record<string, ManagedMachineUserDefinition>;
-
-type ManagedMachineUsers = {
-  [Name in keyof typeof managedForgejoMachineUsers]: forgejo.User;
-};
-
-export function reconcileManagedForgejoMachineUsers(
-  provider: forgejo.Provider,
-  passwordSeed: pulumi.Input<string>,
+export function reconcileManagedForgejoUsers(
+  host: pulumi.Input<string>,
+  adminToken: pulumi.Input<string>,
+  subjects: Record<keyof ManagedForgejoUsers, pulumi.Input<string>>,
   dependencies: pulumi.Resource[] = [],
-): ManagedMachineUsers {
-  return Object.fromEntries(Object.entries(managedForgejoMachineUsers).map(([name, definition]) => [
+): ManagedForgejoUsers {
+  const sourceId = new pulumi.Config("forgejo").requireNumber("keycloakSourceId");
+  const humanEmail = new pulumi.Config("selfhosted").requireSecret("user-gdario-email");
+  return Object.fromEntries(Object.entries(forgejoUserLogins).map(([name, login]) => [
     name,
-    new forgejo.User(definition.resourceName, {
-      login: definition.login,
-      fullName: definition.fullName,
-      email: definition.email,
-      password: pulumi.secret(pulumi.output(passwordSeed).apply(seed =>
-        crypto.createHash("sha256").update(`${seed}:${definition.passwordSalt}`).digest("hex")
-      )),
-      ...definition.security,
-    }, { provider, protect: true, dependsOn: dependencies }),
-  ])) as ManagedMachineUsers;
+    new ForgejoOidcUser(`forgejo-${login}-user`, {
+      host, adminToken, login, sourceId, loginName: subjects[name as keyof ManagedForgejoUsers],
+      email: name === "dario" ? humanEmail : `${login}@gdario.dev`,
+      fullName: name === "renovate" ? "Renovate" : login.startsWith("agent-") ? login : "",
+      active: true, admin: name === "dario", restricted: name === "renovate",
+      visibility: name === "renovate" ? "private" : "public",
+      allowCreateOrganization: ["dario", "codingBot", "reviewingBot"].includes(name),
+      allowGitHook: false, allowImportLocal: false,
+      maxRepoCreation: name === "renovate" ? 0 : -1,
+      mustChangePassword: false, prohibitLogin: false,
+    }, { dependsOn: dependencies }),
+  ])) as ManagedForgejoUsers;
 }

@@ -74,6 +74,7 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     realmId: realm.id, clientId: realmManagement.id, name: "realm-admin",
   }, opts);
   const administratorRoles: keycloak.UserRoles[] = [];
+  const humanSubjects: Record<string, pulumi.Output<string>> = {};
   const users = authorizedUsers.map(user => {
     const identity = new keycloak.User(`homelab-user-${user.name.toLowerCase()}`, {
       realmId: realm.id, username: user.name.toLowerCase(), firstName: user.name,
@@ -92,6 +93,7 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
         exhaustive: false,
       }, opts));
     }
+    humanSubjects[user.name] = identity.id;
     return identity;
   });
   const memberships = authorizedUsers.map((user, userIndex) => new keycloak.UserGroups(`homelab-user-${user.name.toLowerCase()}-groups`, {
@@ -106,9 +108,9 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     }, { ...opts, dependsOn: [profile] });
     const membership = new keycloak.UserGroups(`homelab-${agent.username}-groups`, {
       realmId: realm.id, userId: user.id, exhaustive: true,
-      groupIds: groups.filter((_, index) => groupDefinitions[index].name === "hermes-users").map(group => group.id),
+      groupIds: groups.filter((_, index) => groupDefinitions[index].name === "hermes-users" && [agentIdentities.hermes.username, agentIdentities.codex.username].includes(agent.username)).map(group => group.id),
     }, opts);
-    return { user, membership };
+    return { name: agent.username, user, membership };
   });
   const groupsScope = new keycloak.openid.ClientScope("homelab-groups-scope", {
     realmId: realm.id, name: "homelab-groups", includeInTokenScope: true,
@@ -139,7 +141,8 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     return client;
   });
   return {
-    realm, google, users, groups, clients, agentUsers,
+    realm, google, users, groups, clients, agentUsers, humanSubjects,
+    agentSubjects: Object.fromEntries(agentUsers.map(agent => [agent.name, agent.user.id])),
     resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...administratorRoles, ...groups, ...memberships, ...agentUsers.flatMap(agent => [agent.user, agent.membership]), groupsScope, groupMapping, ...clients, ...clientScopes],
     issuer: pulumi.interpolate`${foundation.url}/realms/${realm.realm}`,
     googleCallback: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/broker/${google.alias}/endpoint`,

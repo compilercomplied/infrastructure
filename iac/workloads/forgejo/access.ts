@@ -1,6 +1,7 @@
 import * as forgejo from "@pulumi/forgejo";
 import * as pulumi from "@pulumi/pulumi";
-import { managedForgejoMachineUsers } from "./users";
+import { forgejoUserLogins } from "./users";
+import { ForgejoOidcUser } from "./oidc-user";
 import { ForgejoAdminToken } from "./admin-token";
 import { forgejoIdentity } from "./app/identity";
 
@@ -16,7 +17,7 @@ const renovateTokenScopes = [
 
 export function provisionRenovateAccess(
   provider: forgejo.Provider,
-  renovate: forgejo.User,
+  renovate: ForgejoOidcUser,
   adminToken: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = [],
 ) {
@@ -33,7 +34,7 @@ export function provisionRenovateAccess(
   const token = new ForgejoAdminToken("forgejo-renovate-token", {
     host: forgejoIdentity.url,
     adminToken,
-    name: managedForgejoMachineUsers.renovate.login,
+    name: forgejoUserLogins.renovate,
     user: renovate.login,
     scopes: renovateTokenScopes,
   }, { protect: true, dependsOn: [renovate, collaborator] });

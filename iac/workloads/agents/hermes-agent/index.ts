@@ -5,7 +5,7 @@ import { HermesAgent } from "../../../library/hermes-agent";
 import { getAuthorizedUsers } from "../../selfhosted/users";
 import { HermesAgentSettings } from "./settings";
 
-const androidImage = "git.gdario.dev/hermes/hermes-android@sha256:30298bc5b07f19459d36783a1ecbce8acf0733fab315ba8f2c0bc898b0179b97";
+const androidImage = "git.gdario.dev/agent-hermes/hermes-android@sha256:30298bc5b07f19459d36783a1ecbce8acf0733fab315ba8f2c0bc898b0179b97";
 
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,

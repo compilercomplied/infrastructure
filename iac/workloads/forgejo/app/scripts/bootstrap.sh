@@ -1,39 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-# Create custom template directory if not exists, and write the template to hide the password sign-in form.
-# We do this before starting the process so Gitea/Forgejo loads it on boot.
-mkdir -p /data/gitea/templates/user/auth
-cat << 'EOF' > /data/gitea/templates/user/auth/signin_inner.tmpl
-<div class="ui container fluid">
-	{{template "base/alert" .}}
-	<h4 class="ui top attached header center">
-		{{ctx.Locale.Tr "auth.oauth_signin_title"}}
-	</h4>
-	<div class="ui attached segment">
-		{{if .OAuth2Providers}}
-		<div id="oauth2-login-navigator" class="tw-py-1">
-			<div class="tw-flex tw-flex-col tw-justify-center">
-				<div id="oauth2-login-navigator-inner" class="tw-flex tw-flex-col tw-flex-wrap tw-items-center tw-gap-2">
-					{{range $provider := .OAuth2Providers}}
-						<a class="{{$provider.Name}} ui button tw-flex tw-items-center tw-justify-center tw-py-2 tw-w-full oauth-login-link" href="{{AppSubUrl}}/user/oauth2/{{$provider.DisplayName}}">
-							{{$provider.IconHTML 28}}
-							{{ctx.Locale.Tr "sign_in_with_provider" $provider.DisplayName}}
-						</a>
-					{{end}}
-				</div>
-			</div>
-		</div>
-		{{else}}
-		<div class="ui negative message">
-			No authentication methods available.
-		</div>
-		{{end}}
-	</div>
-</div>
-EOF
-chown -R git:git /data/gitea/templates
-
 # Start the main Forgejo process in the background using the official entrypoint (which launches s6-svscan)
 /usr/bin/entrypoint &
 pid=$!
@@ -88,14 +55,6 @@ if ! su-exec git forgejo admin user list | grep -q "[[:space:]]dario[[:space:]]"
     --email "${USER_EMAIL}" \
     --random-password \
     --admin
-fi
-
-# Ensure Gitea API access token exists for the MCP server.
-if [ ! -f /data/gitea/hermes-token.txt ]; then
-  echo "Generating access token for dario..."
-  token=$(su-exec git forgejo admin user generate-access-token --username dario --token-name hermes-mcp --raw)
-  echo "$token" > /data/gitea/hermes-token.txt
-  chown git:git /data/gitea/hermes-token.txt
 fi
 
 # Register each offline runner with its own pre-shared secret. Forgejo derives a runner UUID

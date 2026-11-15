@@ -7,7 +7,6 @@ import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { Labels } from "../../selfhosted/labels";
 import { forgejoSettings } from "./settings";
-import { configureRepositories } from "../repositories";
 
 const bootstrapScriptContent = fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.sh"), "utf8");
 
@@ -201,7 +200,6 @@ export function configureForgejo(
 
   // Provider configuration can contact the API before resource-level dependsOn is honored.
   const apiUrl = app.deployment.status.apply(() => forgejoIdentity.url);
-  const repositories = configureRepositories(apiUrl, [app.deployment]);
 
   return {
     deployment: app.deployment,
@@ -212,6 +210,5 @@ export function configureForgejo(
 
     runnerSecret: settings.secrets["RUNNER_SECRET"],
     androidRunnerSecret: settings.secrets["ANDROID_RUNNER_SECRET"],
-    repositories,
   };
 }

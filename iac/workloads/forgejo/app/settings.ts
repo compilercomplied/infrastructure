@@ -19,6 +19,7 @@ export class ForgejoSettings implements AppSettings {
     "FORGEJO__service__DISABLE_REGISTRATION": "true",
     "FORGEJO__service__ALLOW_ONLY_EXTERNAL_REGISTRATION": "false",
     "FORGEJO__service__ENABLE_BASIC_AUTHENTICATION": "false",
+    "FORGEJO__service__ENABLE_INTERNAL_SIGNIN": "false",
     "FORGEJO__openid__ENABLE_OPENID_SIGNIN": "false",
     "FORGEJO__oauth2_client__ENABLE_AUTO_REGISTRATION": "true",
     "FORGEJO__oauth2_client__ACCOUNT_LINKING": "auto",

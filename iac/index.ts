@@ -39,7 +39,14 @@ export const keycloakIssuer = identities.issuer;
 export const keycloakGoogleCallback = identities.googleCallback;
 export const keycloakAccountUrl = identities.accountUrl;
 
-configureForgejo([sharedResources.postgres]);
+configureForgejo({
+  dario: identities.humanSubjects.gdario,
+  codex: identities.agentSubjects[agentIdentities.codex.username],
+  hermes: identities.agentSubjects[agentIdentities.hermes.username],
+  codingBot: identities.agentSubjects[agentIdentities.codingBot.username],
+  reviewingBot: identities.agentSubjects[agentIdentities.reviewingBot.username],
+  renovate: identities.agentSubjects[agentIdentities.renovate.username],
+}, [sharedResources.postgres]);
 
 const gamePlatform = new GamePlatform("games");
 configureMinecraft(gamePlatform);

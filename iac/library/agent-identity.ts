@@ -10,14 +10,19 @@ export interface AgentIdentity {
 }
 
 export function createAgentIdentities() {
-  const create = (name: string): AgentIdentity => ({
-    username: `agent-${name}`,
-    email: `agent-${name}@gdario.dev`,
+  const create = (name: string, username = `agent-${name}`): AgentIdentity => ({
+    username,
+    email: `${username}@gdario.dev`,
     password: pulumi.secret(new random.RandomPassword(`keycloak-agent-${name}-password`, {
       length: 48, special: false,
     }).result),
   });
-  return { hermes: create("hermes"), codex: create("codex") };
+  return {
+    hermes: create("hermes"), codex: create("codex"),
+    codingBot: create("coding-bot", "coding-bot"),
+    reviewingBot: create("reviewing-bot", "reviewing-bot"),
+    renovate: create("renovate", "renovate"),
+  };
 }
 
 export function agentIdentitySettings(identity: AgentIdentity): AppSettings {

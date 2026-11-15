@@ -1,6 +1,8 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as forgejo from "@pulumi/forgejo";
 
+import { ManagedForgejoUsers } from "../users";
+
 export interface CreateRepoArgs {
   name: string;
   organization?: string;
@@ -8,7 +10,7 @@ export interface CreateRepoArgs {
   requiredStatusChecks?: string[];
 }
 
-export function createRepositoryFactory(host: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
+export function createRepositoryFactory(host: pulumi.Input<string>, users: ManagedForgejoUsers, dependencies: pulumi.Resource[] = []) {
   const provider = new forgejo.Provider("forgejo", {
     host,
     apiToken: new pulumi.Config("forgejo").requireSecret("apiToken"),
@@ -24,18 +26,16 @@ export function createRepositoryFactory(host: pulumi.Input<string>, dependencies
     const existing = organizations.get(organization);
     if (existing) return existing;
 
-    // Looking up the native Owners team also rejects personal namespaces without
-    // making this helper responsible for the organization's lifecycle.
-    const owners = forgejo.getTeamOutput({ organization, name: "Owners" }, {
-      provider,
-      dependsOn: dependencies,
-    });
-    const name = owners.apply(team => {
-      if (team.permission !== "owner" || !team.includesAllRepositories) {
-        throw new Error(`${organization} must have its native Owners team with access to all repositories`);
-      }
-      return organization;
-    });
+    // Forgejo creates Owners with the organization; retaining it protects native ownership.
+    const owners = new forgejo.Team(`forgejo-${organization}-owners`, {
+      organization, name: "Owners", permission: "owner",
+      includesAllRepositories: true, canCreateOrgRepo: true,
+      unitsMap: Object.fromEntries([
+        "repo.actions", "repo.code", "repo.ext_issues", "repo.ext_wiki", "repo.issues",
+        "repo.packages", "repo.projects", "repo.pulls", "repo.releases", "repo.wiki",
+      ].map(unit => [unit, "owner"])),
+    }, { provider, protect: true, retainOnDelete: true });
+    const name = pulumi.output(organization);
     const contributors = new forgejo.Team(`forgejo-${organization}-contributors`, {
       organization: name,
       name: "Contributors",
@@ -57,6 +57,17 @@ export function createRepositoryFactory(host: pulumi.Input<string>, dependencies
       protect: true,
       ignoreChanges: ["description"],
     });
+    if (organization === "home") {
+      for (const [login, user] of Object.entries({
+        "coding-bot": users.codingBot, "reviewing-bot": users.reviewingBot,
+        "agent-codex": users.codex, "agent-hermes": users.hermes,
+      })) {
+        new forgejo.TeamMember(`forgejo-${organization}-contributor-${login}`, {
+          teamId: contributors.teamId,
+          user: user.login,
+        }, { provider });
+      }
+    }
     const reviewers = new forgejo.Team(`forgejo-${organization}-reviewers`, {
       organization: name,
       name: "Reviewers",
@@ -72,8 +83,11 @@ export function createRepositoryFactory(host: pulumi.Input<string>, dependencies
     }, { provider, protect: true });
     new forgejo.TeamMember(`forgejo-${organization}-reviewing-bot`, {
       teamId: reviewers.teamId,
-      user: "reviewing-bot",
+      user: users.reviewingBot.login,
     }, { provider });
+    new forgejo.TeamMember(`forgejo-${organization}-owner-dario`, {
+      teamId: owners.teamId, user: users.dario.login,
+    }, { provider, protect: true });
     const result = { name, owners: owners.name, contributors, reviewers };
     organizations.set(organization, result);
     return result;
