@@ -1,5 +1,6 @@
 import hashlib
 import json
+import shutil
 import tempfile
 import urllib.request
 from pathlib import Path
@@ -53,7 +54,22 @@ def mirror(relative_path, url, expected):
     if item and ContentArtifact.objects.filter(content=item, artifact__isnull=False).exists():
         content.append(item.pk)
         return
-    store(relative_path, fetch(url), expected)
+    # NDK archives exceed the initializer's memory budget; verify them from disk.
+    with tempfile.TemporaryDirectory(dir="/var/lib/pulp/tmp") as directory:
+        temporary = Path(directory) / "artifact"
+        request = urllib.request.Request(url, headers={"User-Agent": "homelab-ci-mirror"})
+        with urllib.request.urlopen(request, timeout=180) as response, temporary.open("wb") as stream:
+            shutil.copyfileobj(response, stream, length=1024 * 1024)
+        candidate = Artifact.init_and_validate(str(temporary), expected_digests={"sha256": expected})
+        with transaction.atomic():
+            artifact = Artifact.objects.filter(sha256=expected).first()
+            if artifact is None:
+                artifact = candidate
+                artifact.save()
+            item, _ = FileContent.objects.get_or_create(relative_path=relative_path, digest=expected)
+            ContentArtifact.objects.get_or_create(content=item, relative_path=relative_path, defaults={"artifact": artifact})
+        content.append(item.pk)
+        print(f"Mirrored {relative_path}", flush=True)
 
 
 version = manifest["pulumiVersion"]
@@ -85,6 +101,9 @@ for chart in manifest["charts"]:
     filename = url.rsplit("/", 1)[1]
     mirror(f"helm/{name}/{version}/{filename}", url, entry["digest"])
     store(metadata_path, yaml.safe_dump({"apiVersion": "v1", "entries": {name: [entry]}}).encode())
+
+for archive in manifest["androidArchives"]:
+    mirror(archive["path"], archive["url"], archive["sha256"])
 
 # Publish only after every archive verifies, retaining older pins for rollbacks and in-flight jobs.
 with transaction.atomic():
