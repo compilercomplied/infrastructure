@@ -12,6 +12,7 @@ import { configureReviewWebhook } from "./review-webhook";
 import { reconcileManagedForgejoUsers, ManagedForgejoUsers } from "./users";
 import { configureRepositories } from "./repositories";
 import { configureHostProvisionAccess } from "./host-provision";
+import { configureRegistryAccess } from "./registry-access";
 
 export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pulumi.Input<string>>, dependencies: pulumi.Resource[] = []) {
   const namespace = new k8s.core.v1.Namespace("forgejo", {
@@ -33,6 +34,7 @@ export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pul
     [forgejoApp.deployment, namespace, ...dependencies],
   );
   const repositories = configureRepositories(forgejoApp.apiUrl, users, [forgejoApp.deployment]);
+  const registryAccess = configureRegistryAccess(provider, users.codingBot, config.requireSecret("apiToken"), repositories.map(repository => repository.repo));
   const hostProvisionAccess = configureHostProvisionAccess(provider, [forgejoApp.deployment, namespace, ...dependencies]);
   const renovateAccess = provisionRenovateAccess(provider, users.renovate, config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
@@ -55,6 +57,7 @@ export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pul
     users,
     repositories,
     hostProvisionAccess,
+    registryAccess,
     renovateAccess,
     reviewWebhook,
     renovate,
