@@ -1,6 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
 import * as forgejo from "@pulumi/forgejo";
-import { forgejoIdentity } from "../app/identity";
 
 export interface CreateRepoArgs {
   name: string;
@@ -9,9 +8,9 @@ export interface CreateRepoArgs {
   requiredStatusChecks?: string[];
 }
 
-export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
+export function createRepositoryFactory(host: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
   const provider = new forgejo.Provider("forgejo", {
-    host: forgejoIdentity.url,
+    host,
     apiToken: new pulumi.Config("forgejo").requireSecret("apiToken"),
   }, { dependsOn: dependencies });
   const organizations = new Map<string, {
@@ -27,7 +26,6 @@ export function createRepositoryFactory(dependencies: pulumi.Resource[] = []) {
 
     // Looking up the native Owners team also rejects personal namespaces without
     // making this helper responsible for the organization's lifecycle.
-    // Provider dependencies alone do not delay invokes during Forgejo's Recreate rollout.
     const owners = forgejo.getTeamOutput({ organization, name: "Owners" }, {
       provider,
       dependsOn: dependencies,

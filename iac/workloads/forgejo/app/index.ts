@@ -83,7 +83,7 @@ export function configureForgejo(
     },
     readinessProbe: {
       httpGet: {
-        path: "/user/login",
+        path: "/api/v1/version",
         port: 3000,
       },
       initialDelaySeconds: 5,
@@ -199,10 +199,13 @@ export function configureForgejo(
     },
   }, { dependsOn: app.deployment });
 
-  const repositories = configureRepositories([app.deployment]);
+  // Provider configuration can contact the API before resource-level dependsOn is honored.
+  const apiUrl = app.deployment.status.apply(() => forgejoIdentity.url);
+  const repositories = configureRepositories(apiUrl, [app.deployment]);
 
   return {
     deployment: app.deployment,
+    apiUrl,
     sshService,
     sshPolicy,
     internalHttpPolicy,

@@ -5,7 +5,6 @@ import { configureNamespaceSecurity } from "../selfhosted/security";
 
 import { provisionRenovateAccess } from "./access";
 import { configureForgejo as configureForgejoApp } from "./app";
-import { forgejoIdentity } from "./app/identity";
 import { configureForgejoRunner } from "./runner";
 import { configureForgejoAndroidRunner } from "./android-runner";
 import { configureRenovate } from "./renovate";
@@ -24,7 +23,7 @@ export function configureForgejo(dependencies: pulumi.Resource[] = []) {
   const config = new pulumi.Config("forgejo");
   const selfhosted = new pulumi.Config("selfhosted");
   const provider = new forgejo.Provider("forgejo-renovate", {
-    host: forgejoIdentity.url,
+    host: forgejoApp.apiUrl,
     apiToken: config.requireSecret("apiToken"),
   }, { dependsOn: [forgejoApp.deployment, namespace, ...dependencies] });
   const users = reconcileManagedForgejoMachineUsers(

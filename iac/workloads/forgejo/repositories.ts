@@ -1,8 +1,8 @@
 import * as pulumi from "@pulumi/pulumi";
 import { createRepositoryFactory } from "./policy";
 
-export function configureRepositories(dependencies: pulumi.Resource[] = []) {
-  const createRepo = createRepositoryFactory(dependencies);
+export function configureRepositories(host: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
+  const createRepo = createRepositoryFactory(host, dependencies);
 
   return [
     createRepo({ name: "homelab-iac" }),
