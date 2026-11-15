@@ -225,6 +225,7 @@ export function createBackupJob(args: BackupJobArgs): k8s.batch.v1.CronJob {
               labels: cronJobLabels,
             },
             spec: {
+              automountServiceAccountToken: false,
               restartPolicy: "OnFailure",
               securityContext: workloadPodSecurityContext(),
               initContainers: dumpContainer ? [secureWorkloadContainer(dumpContainer)] : undefined,

@@ -85,6 +85,7 @@ export function createMCPServer(args: MCPServerArgs): MCPServerResult {
           labels: { app: name, ...labels },
         },
         spec: {
+          automountServiceAccountToken: false,
           serviceAccountName: args.serviceAccountName,
           securityContext: args.securityContext,
           affinity: args.affinity,

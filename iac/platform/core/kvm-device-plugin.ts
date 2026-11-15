@@ -10,6 +10,7 @@ export function configureKvmDevicePlugin() {
       template: {
         metadata: { labels },
         spec: {
+          automountServiceAccountToken: false,
           nodeSelector: { "ci.gdario.dev/android-kvm": "true" },
           containers: [{
             name: "generic-device-plugin",

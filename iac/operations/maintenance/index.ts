@@ -22,6 +22,7 @@ export function configureMaintenance() {
           template: {
             spec: {
               hostPID: true,
+              automountServiceAccountToken: false,
               restartPolicy: "OnFailure",
               containers: [{
                 name: "image-gc",
@@ -59,6 +60,7 @@ export function configureMaintenance() {
           activeDeadlineSeconds: 21600,
           template: {
             spec: {
+              automountServiceAccountToken: false,
               restartPolicy: "OnFailure",
               // Interrupted backup pods can leave stale locks that block pruning.
               initContainers: [{

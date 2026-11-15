@@ -93,6 +93,7 @@ container:
           labels: { app: name },
         },
         spec: {
+          automountServiceAccountToken: false,
           hostNetwork: true,
           dnsPolicy: "ClusterFirstWithHostNet",
           terminationGracePeriodSeconds: 180,

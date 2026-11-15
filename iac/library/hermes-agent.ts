@@ -12,7 +12,6 @@ export interface HermesAgentArgs {
   dependencies?: pulumi.Resource[];
   serviceAccount: {
     name: string;
-    clusterRoleName: string;
   };
   app: HermesAppArgs;
 }
@@ -31,22 +30,13 @@ export class HermesAgent extends pulumi.ComponentResource {
     const legacyParentAlias = { parent: pulumi.rootStackResource };
     const account = new k8s.core.v1.ServiceAccount(`${name}-sa`, {
       metadata: { name: serviceAccount.name, namespace },
-    }, { parent: this, aliases: [legacyParentAlias] });
-
-    const clusterRoleBinding = new k8s.rbac.v1.ClusterRoleBinding(`${name}-admin-binding`, {
-      metadata: { name: `${name}-admin-binding` },
-      subjects: [{ kind: "ServiceAccount", name: account.metadata.name, namespace }],
-      roleRef: {
-        apiGroup: "rbac.authorization.k8s.io",
-        kind: "ClusterRole",
-        name: serviceAccount.clusterRoleName,
-      },
+      automountServiceAccountToken: false,
     }, { parent: this, aliases: [legacyParentAlias] });
 
     const app = new SelfhostedApp(name, {
       ...appArgs,
       namespace,
-      dependencies: [...dependencies, account, clusterRoleBinding],
+      dependencies: [...dependencies, account],
       serviceAccountName: account.metadata.name,
       automountServiceAccountToken: false,
       childAliases: [{ parent: this }],

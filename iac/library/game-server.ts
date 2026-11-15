@@ -185,6 +185,7 @@ export class GameServer extends pulumi.ComponentResource {
         template: {
           metadata: { labels: { app: name, service: args.service, ...(args.labels ?? {}) } },
           spec: {
+            automountServiceAccountToken: false,
             terminationGracePeriodSeconds: args.terminationGracePeriodSeconds ?? 180,
             dnsPolicy: dnsConfig ? "None" : undefined,
             dnsConfig,

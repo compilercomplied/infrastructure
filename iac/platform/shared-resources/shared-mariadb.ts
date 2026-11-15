@@ -67,6 +67,7 @@ export function configureSharedMariaDb(
           labels: { app: name },
         },
         spec: {
+          automountServiceAccountToken: false,
           terminationGracePeriodSeconds: 120,
           containers: [{
             name: "mariadb",

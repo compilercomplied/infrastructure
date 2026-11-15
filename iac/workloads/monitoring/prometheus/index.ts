@@ -30,10 +30,14 @@ export function configurePrometheus(
 
       alertmanager: {
         enabled: true,
+        serviceAccount: { automountServiceAccountToken: false },
+        alertmanagerSpec: { automountServiceAccountToken: false },
         config: {
           global: { resolve_timeout: "5m" },
           route: {
             receiver: alertWebhookUrl ? "webhook" : "discard",
+            // Replace the chart's Watchdog route, whose default receiver is not retained here.
+            routes: [],
             group_by: ["alertname", "job", "instance"],
             group_wait: "30s",
             group_interval: "5m",

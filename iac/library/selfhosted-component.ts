@@ -263,7 +263,7 @@ export class SelfhostedApp extends pulumi.ComponentResource {
           spec: {
             terminationGracePeriodSeconds: args.terminationGracePeriodSeconds ?? 60,
             serviceAccountName: args.serviceAccountName,
-            automountServiceAccountToken: args.automountServiceAccountToken,
+            automountServiceAccountToken: args.automountServiceAccountToken ?? false,
             nodeSelector: args.nodeSelector,
             securityContext: workloadPodSecurityContext(args.podSecurityContext),
             containers: [{

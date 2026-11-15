@@ -34,6 +34,7 @@ export function configureInfrastructure(dependencies: pulumi.Resource[] = []) {
           labels: { app: "sysctl-tuner" },
         },
         spec: {
+          automountServiceAccountToken: false,
           hostNetwork: true,
           hostPID: true,
           containers: [

@@ -39,6 +39,7 @@ export function configurePvcExporter(
         metadata: { labels: { app: name } },
         spec: {
           // Mount hostPath of local-path storage so we can read directory sizes
+          automountServiceAccountToken: false,
           containers: [{
             name: "exporter",
             image: "python:3.15-alpine",

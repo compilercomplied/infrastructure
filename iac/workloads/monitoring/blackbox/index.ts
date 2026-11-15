@@ -35,6 +35,7 @@ export function configureBlackboxExporter(
       template: {
         metadata: { labels: { app: name } },
         spec: {
+          automountServiceAccountToken: false,
           containers: [{
             name,
             image: "quay.io/prometheus/blackbox-exporter:v0.27.0",

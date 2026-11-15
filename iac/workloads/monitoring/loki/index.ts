@@ -14,6 +14,12 @@ export function configureLoki(
   const loki = new k8s.helm.v3.Chart("loki", {
     namespace: namespace,
     ...cachedHelmChart(monitoringCharts["loki"]),
+    // Canary sends test logs over HTTP; the Loki rule sidecar still needs API access.
+    transformations: [(resource: any) => {
+      if (resource.kind === "DaemonSet" && resource.metadata?.name === "loki-canary") {
+        resource.spec.template.spec.automountServiceAccountToken = false;
+      }
+    }],
     values: {
       deploymentMode: "SingleBinary",
       loki: {

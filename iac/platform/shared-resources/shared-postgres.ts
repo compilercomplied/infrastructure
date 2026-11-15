@@ -79,6 +79,7 @@ export function configureSharedPostgres(
           labels: { app: name },
         },
         spec: {
+          automountServiceAccountToken: false,
           terminationGracePeriodSeconds: 120,
           containers: [{
             name: "shared-postgres",

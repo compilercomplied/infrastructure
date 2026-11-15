@@ -41,6 +41,7 @@ export function configureCloudflared(
                     },
                 },
                 spec: {
+                    automountServiceAccountToken: false,
                     securityContext: workloadPodSecurityContext(),
                     containers: [
                         secureWorkloadContainer({

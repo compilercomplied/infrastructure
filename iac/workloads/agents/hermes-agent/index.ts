@@ -13,14 +13,11 @@ export function configureHermesAgent(
   const users = getAuthorizedUsers();
   const settings = new HermesAgentSettings(users.map(user => user.telegramId));
 
-  // Pulumi previews authorize server-side dry runs using the same Kubernetes verbs as an
-  // update, so Hermes needs cluster-wide access even though it does not apply changes.
   return new HermesAgent("hermes-agent", {
     namespace,
     dependencies,
     serviceAccount: {
       name: "hermes-agent-sa",
-      clusterRoleName: "cluster-admin",
     },
     app: {
       image: androidImage,
@@ -101,25 +98,7 @@ export function configureHermesAgent(
         env: [{ name: "DOCKER_TLS_CERTDIR", value: "" }],
         volumeMounts: [{ name: "docker-graph-storage", mountPath: "/var/lib/docker" }],
       }],
-      additionalVolumes: [
-        { name: "docker-graph-storage", emptyDir: {} },
-        {
-          name: "kube-api-access",
-          projected: {
-            defaultMode: 0o644,
-            sources: [
-              { serviceAccountToken: { path: "token", expirationSeconds: 3600 } },
-              { configMap: { name: "kube-root-ca.crt", items: [{ key: "ca.crt", path: "ca.crt" }] } },
-              { downwardAPI: { items: [{ path: "namespace", fieldRef: { fieldPath: "metadata.namespace" } }] } },
-            ],
-          },
-        },
-      ],
-      additionalVolumeMounts: [{
-        name: "kube-api-access",
-        mountPath: "/var/run/secrets/kubernetes.io/serviceaccount",
-        readOnly: true,
-      }],
+      additionalVolumes: [{ name: "docker-graph-storage", emptyDir: {} }],
     },
   });
 }
