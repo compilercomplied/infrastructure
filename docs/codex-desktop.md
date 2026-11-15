@@ -1,30 +1,21 @@
-# Codex desktop access and recovery
+# Codex desktop constraints
 
-Open `https://codex.gdario.dev` over Tailscale or
-`https://192.168.50.200:30443` on the LAN and sign in as `gdario`. The LAN IP
-produces a certificate hostname warning. Retrieve the desktop password with:
+OpenAI sign-in must happen in the remote desktop's browser because its localhost
+OAuth callback must reach the application in that same desktop. Android pairing
+has its own [remote-access requirements](https://learn.chatgpt.com/docs/remote-connections).
 
-```sh
-cd iac
-mise exec -- pulumi config get codexDesktop:desktopPassword --stack local
-```
+The [desktop session](../iac/workloads/selfhosted/codex-desktop/scripts/session.sh)
+uses the desktop password to unlock the persistent Secret Service keyring. Changing
+the Pulumi password cannot re-encrypt that keyring: recovery needs the previous
+password, or applications must be authenticated again. Agent identity credentials
+remain separate because application sign-in and desktop access have different owners.
 
-Complete OpenAI sign-in in the browser **inside the remote desktop** so the
-localhost callback reaches the app. For Android pairing, follow
-[OpenAI's remote-access guide](https://learn.chatgpt.com/docs/remote-connections).
+A single desktop must own the browser profile, keyring, and worktrees to avoid
+concurrent writers. The [workload](../iac/workloads/selfhosted/codex-desktop/)
+accepts loss of this local state if its underlying volume fails; pod persistence
+alone is not a recovery strategy. Cold starts depend on package repositories
+because the desktop installs vendor packages at startup.
 
-Changing the Pulumi desktop password does not change the persistent keyring's
-password. Use the previous password to unlock it and change it in Passwords and
-Keys. Losing that password can require signing in again.
-
-Pod replacement preserves local state, but **there are no backups** to recover
-from loss of the underlying volume. Cold starts also need working package
-repositories.
-
-App updates, pod restarts, and host maintenance can interrupt active Codex turns.
-Maintenance does not wait for Codex to become idle. Restarting Codex alone also
-leaves other desktop processes using their previously loaded libraries.
-
-The [workload](../iac/workloads/selfhosted/codex-desktop/) owns configuration,
-maintenance, and security exceptions. `mise run codex-desktop:check` checks desktop
-access and recovery without signing in to OpenAI or pairing a phone.
+Maintenance can interrupt active Codex turns because it does not wait for agent
+inactivity. Restarting Codex alone cannot refresh libraries already loaded by
+other desktop processes.

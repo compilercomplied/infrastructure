@@ -15,11 +15,13 @@ import { configureMinecraft } from "./workloads/games/minecraft";
 import { configureKvmDevicePlugin } from "./platform/core/kvm-device-plugin";
 import { configureCodexDesktop } from "./workloads/selfhosted/codex-desktop";
 import { configureKeycloakIdentities } from "./platform/core/keycloak/identities";
+import { createAgentIdentities } from "./library/agent-identity";
 
+const agentIdentities = createAgentIdentities();
 const tailscale = configureTailscale();
 const certManager = configureCertManager();
 const kvmDevicePlugin = configureKvmDevicePlugin();
-const codexDesktop = configureCodexDesktop(tailscale, certManager.letsEncryptProd, kvmDevicePlugin);
+const codexDesktop = configureCodexDesktop(tailscale, certManager.letsEncryptProd, kvmDevicePlugin, agentIdentities.codex);
 configurePrivateAccess(tailscale, codexDesktop ? [codexDesktop.dnsRecord] : []);
 configureMonitoring();
 
@@ -32,7 +34,7 @@ const infrastructure = configureInfrastructure([sharedResources.postgres]);
 export const keycloakUrl = infrastructure.keycloak.url;
 export const keycloakAutomationClientId = infrastructure.keycloak.automationClientId;
 export const keycloakAutomationClientSecret = pulumi.secret(infrastructure.keycloak.automationSecret);
-const identities = configureKeycloakIdentities(infrastructure.keycloak);
+const identities = configureKeycloakIdentities(infrastructure.keycloak, agentIdentities);
 export const keycloakIssuer = identities.issuer;
 export const keycloakGoogleCallback = identities.googleCallback;
 export const keycloakAccountUrl = identities.accountUrl;
@@ -61,4 +63,4 @@ if (directDnsRecords.length > 0) {
   });
 }
 
-configureAgentSidekicks(selfhosted, kvmDevicePlugin);
+configureAgentSidekicks(selfhosted, kvmDevicePlugin, agentIdentities.hermes);

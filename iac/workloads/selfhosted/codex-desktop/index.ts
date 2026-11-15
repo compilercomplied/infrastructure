@@ -1,3 +1,4 @@
+import { AgentIdentity, agentIdentitySettings } from "../../../library/agent-identity";
 import * as crypto from "crypto";
 import * as fs from "fs";
 import * as path from "path";
@@ -15,7 +16,8 @@ const desktopHealthCommand = [
   "pgrep -u abc -x xfwm4 >/dev/null",
 ].join(" && ");
 
-export function configureCodexDesktop(operator: ReturnType<typeof configureTailscale>, issuer: k8s.apiextensions.CustomResource, kvmDevicePlugin: k8s.apps.v1.DaemonSet) {
+export function configureCodexDesktop(operator: ReturnType<typeof configureTailscale>, issuer: k8s.apiextensions.CustomResource, kvmDevicePlugin: k8s.apps.v1.DaemonSet, identity: AgentIdentity) {
+  const agent = agentIdentitySettings(identity);
   const name = "codex-desktop";
   const config = new pulumi.Config("codexDesktop");
   if (!config.getBoolean("enabled")) return;
@@ -68,12 +70,13 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
     endpoints: [{ name: "https", containerPort: 3001 }],
     settings: {
       config: {
+        ...agent.config,
         PUID: "1000", PGID: "1000", TZ: "Europe/Madrid",
         CUSTOM_USER: "gdario", TITLE: "Codex desktop",
         // X11 avoids the preview app's experimental native Wayland path.
         PIXELFLUX_WAYLAND: "false",
       },
-      secrets: { PASSWORD: config.requireSecret("desktopPassword") },
+      secrets: { ...agent.secrets, PASSWORD: config.requireSecret("desktopPassword") },
     },
     volumes: [{ name: "home", mountPath: "/config", size: "30Gi", enableBackup: false }],
     additionalVolumes: [

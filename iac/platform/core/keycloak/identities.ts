@@ -1,5 +1,6 @@
 import * as keycloak from "@pulumi/keycloak";
 import * as pulumi from "@pulumi/pulumi";
+import { createAgentIdentities } from "../../../library/agent-identity";
 import { oidcApps } from "../oidc-apps";
 import { oidcClientSecret } from "../../../library/oidc-app";
 import { getAuthorizedUsers } from "../../../workloads/selfhosted/users";
@@ -7,7 +8,7 @@ import { configureKeycloak } from "./index";
 
 export const keycloakRealmName = "homelab";
 
-export function configureKeycloakIdentities(foundation: ReturnType<typeof configureKeycloak>) {
+export function configureKeycloakIdentities(foundation: ReturnType<typeof configureKeycloak>, agentIdentities: ReturnType<typeof createAgentIdentities>) {
   const config = new pulumi.Config("selfhosted");
   const identityConfig = new pulumi.Config("keycloakIdentity");
   const subjects = identityConfig.requireSecretObject<Record<string, string>>("googleSubjects");
@@ -83,6 +84,18 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     realmId: realm.id, userId: users[userIndex].id, exhaustive: true,
     groupIds: groups.filter((_, index) => groupDefinitions[index].members.includes(user.name)).map(group => group.id),
   }, opts));
+  const agentUsers = Object.values(agentIdentities).map(agent => {
+    const user = new keycloak.User(`homelab-${agent.username}`, {
+      realmId: realm.id, username: agent.username, firstName: agent.username,
+      email: agent.email, emailVerified: false, enabled: true, requiredActions: [],
+      initialPassword: { value: agent.password, temporary: false },
+    }, { ...opts, dependsOn: [profile] });
+    const membership = new keycloak.UserGroups(`homelab-${agent.username}-groups`, {
+      realmId: realm.id, userId: user.id, exhaustive: true,
+      groupIds: groups.filter((_, index) => groupDefinitions[index].name === "hermes-users").map(group => group.id),
+    }, opts);
+    return { user, membership };
+  });
   const groupsScope = new keycloak.openid.ClientScope("homelab-groups-scope", {
     realmId: realm.id, name: "homelab-groups", includeInTokenScope: true,
   }, opts);
@@ -112,8 +125,8 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     return client;
   });
   return {
-    realm, google, users, groups, clients,
-    resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...groups, ...memberships, groupsScope, groupMapping, ...clients, ...clientScopes],
+    realm, google, users, groups, clients, agentUsers,
+    resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...groups, ...memberships, ...agentUsers.flatMap(agent => [agent.user, agent.membership]), groupsScope, groupMapping, ...clients, ...clientScopes],
     issuer: pulumi.interpolate`${foundation.url}/realms/${realm.realm}`,
     googleCallback: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/broker/${google.alias}/endpoint`,
     accountUrl: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/account/`,

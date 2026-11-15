@@ -1,3 +1,4 @@
+import { AgentIdentity } from "../../../library/agent-identity";
 import { hermesIdentity } from "./identity";
 import * as pulumi from "@pulumi/pulumi";
 import { HermesAgent } from "../../../library/hermes-agent";
@@ -8,10 +9,11 @@ const androidImage = "git.gdario.dev/hermes/hermes-android@sha256:30298bc5b07f19
 
 export function configureHermesAgent(
   namespace: pulumi.Input<string>,
+  identity: AgentIdentity,
   dependencies: pulumi.Resource[] = [],
 ) {
   const users = getAuthorizedUsers();
-  const settings = new HermesAgentSettings(users.map(user => user.telegramId));
+  const settings = new HermesAgentSettings(users.map(user => user.telegramId), identity);
 
   return new HermesAgent("hermes-agent", {
     namespace,

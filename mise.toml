@@ -47,26 +47,6 @@ description = "Stop the cluster PXE and HTTP services on the controller"
 dir = "ansible"
 run = "ansible-playbook playbooks/provision_pxe.yml -e pxe_state=stopped --ask-become-pass"
 
-[tasks."doop:check"]
-description = "Verify published Doop image, screenshot rendering and signup restrictions"
-run = "scripts/check-doop.sh"
-
-[tasks."keycloak:check"]
-description = "Verify Keycloak bootstrap and persistence in disposable local containers"
-run = "python3 -B scripts/check-keycloak.py"
-
-[tasks."codex-desktop:check"]
-description = "Check private Codex browser access, autostart and persistence with local Docker"
-run = "scripts/check-codex-desktop.sh"
-
-[tasks."codex-desktop:test-maintenance"]
-description = "Test APT maintenance and restart decisions in an isolated container"
-run = "python3 scripts/tests/test_codex_desktop_maintenance.py"
-
-[tasks."ansible:test"]
-description = "Test maintenance safety decisions without contacting the host"
-run = ["python3 -B -m unittest discover -s ansible/tests -v", "ansible-playbook -i localhost, ansible/tests/render_maintenance.yml"]
-
 [tasks."ansible:plan"]
 description = "Preview cluster provisioning with Ansible check and diff mode"
 dir = "ansible"

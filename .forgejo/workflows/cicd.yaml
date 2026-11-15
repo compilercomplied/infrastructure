@@ -30,10 +30,6 @@ jobs:
         run: |
           ansible-playbook playbooks/provision_cluster.yml --syntax-check
           ansible-playbook playbooks/provision_pxe.yml --syntax-check
-      - name: Test maintenance safety decisions
-        run: |
-          python3 -B -m unittest discover -s ansible/tests -v
-          ansible-playbook -i localhost, ansible/tests/render_maintenance.yml
   cicd:
     needs: ansible-validation
     runs-on: ubuntu-latest

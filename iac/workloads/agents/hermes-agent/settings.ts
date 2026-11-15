@@ -1,3 +1,4 @@
+import { AgentIdentity, agentIdentitySettings } from "../../../library/agent-identity";
 import { hermesIdentity } from "./identity";
 import * as pulumi from "@pulumi/pulumi";
 import { AppConfig, AppSecrets, AppSettings } from "../../../library/app-settings";
@@ -7,9 +8,11 @@ export class HermesAgentSettings implements AppSettings {
   public readonly config: AppConfig;
   public readonly secrets: AppSecrets;
 
-  constructor(users: pulumi.Output<string>[], config = new pulumi.Config("selfhosted"), agentsConfig = new pulumi.Config("agents")) {
+  constructor(users: pulumi.Output<string>[], identity: AgentIdentity, config = new pulumi.Config("selfhosted"), agentsConfig = new pulumi.Config("agents")) {
+    const agent = agentIdentitySettings(identity);
     const clientSecret = oidcClientSecret(hermesIdentity, config);
     this.config = {
+      ...agent.config,
       "HERMES_DASHBOARD": "1",
       "HERMES_DASHBOARD_PUBLIC_URL": hermesIdentity.url,
       "HERMES_DASHBOARD_OIDC_ISSUER": keycloakIssuer,
@@ -22,6 +25,7 @@ export class HermesAgentSettings implements AppSettings {
       "DOCKER_HOST": "tcp://localhost:2375",
     };
     this.secrets = {
+      ...agent.secrets,
       "TELEGRAM_ALLOWED_USERS": pulumi.all(users).apply(chats => chats.join(",")),
       "TELEGRAM_BOT_TOKEN": config.requireSecret("telegramBotToken"),
       "API_SERVER_KEY": clientSecret,

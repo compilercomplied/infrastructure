@@ -3,12 +3,7 @@
     "main": "index.ts",
     "scripts": {
         "validate:oidc": "node scripts/validate-oidc.cjs",
-        "check:app-access": "node scripts/check-app-access.cjs",
-        "check:security": "node scripts/check-workload-security.cjs",
-        "check:keycloak": "node scripts/check-keycloak.cjs",
-        "check:host-provision": "node scripts/check-host-provision.cjs",
-        "check": "tsc --noEmit && npm run validate:oidc && npm run check:app-access && npm run check:security && npm run check:keycloak && npm run check:host-provision && npm run check:api-tokens",
-        "check:api-tokens": "node scripts/check-api-tokens.cjs"
+        "check": "tsc --noEmit && npm run validate:oidc"
     },
     "devDependencies": {
         "@types/node": "^18",

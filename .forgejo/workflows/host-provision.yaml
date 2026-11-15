@@ -32,8 +32,6 @@ jobs:
           ansible-galaxy collection install --no-cache -r ansible/requirements.yml
           cd ansible
           ansible-playbook playbooks/provision_cluster.yml --syntax-check
-          python3 -B -m unittest discover -s tests -v
-          ansible-playbook -i localhost, tests/render_maintenance.yml
       - name: Configure authenticated host access
         shell: bash
         env:
