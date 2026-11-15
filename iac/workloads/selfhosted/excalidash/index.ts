@@ -7,7 +7,7 @@ import { excalidashSettings } from "./settings";
 import { excalidashIdentity } from "./identity";
 
 const backendImage = "zimengxiong/excalidash-backend:0.6.7";
-const frontendImage = "zimengxiong/excalidash-frontend:0.6.5";
+const frontendImage = "zimengxiong/excalidash-frontend:0.6.9";
 
 
 export function configureExcaliDash(namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
