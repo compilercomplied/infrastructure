@@ -99,6 +99,7 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
       standardFlowEnabled: true, implicitFlowEnabled: false,
       directAccessGrantsEnabled: false, serviceAccountsEnabled: false,
       fullScopeAllowed: false, validRedirectUris: [app.url + app.callbackPath],
+      validPostLogoutRedirectUris: app.postLogoutRedirectPath ? [app.url + app.postLogoutRedirectPath] : undefined,
       // Client overrides are raw seconds; the realm accepts duration syntax.
       webOrigins: [app.url], accessTokenLifespan: "3600",
     }, opts);

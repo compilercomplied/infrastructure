@@ -14,6 +14,7 @@ require.extensions[".ts"] = (module, filename) => {
 };
 
 // Retain the configuration shape without decrypting or using production secrets.
+const { keycloakBaseUrl } = require("../library/oidc-app.ts");
 const stack = yaml.load(fs.readFileSync(path.join(__dirname, "../Pulumi.local.yaml"), "utf8")).config;
 pulumi.runtime.setAllConfig(Object.fromEntries(Object.entries(stack).map(([key, value]) => [
   key, value && typeof value === "object" && "secure" in value ? "test-secret" :
@@ -70,9 +71,9 @@ async function main() {
   assert.equal(memosConfig["memos-idp-authentik.json"], undefined);
   const endpoints = provider.config.oauth2Config;
   assert.equal(endpoints.fieldMapping.identifier, "sub");
-  assert.equal(endpoints.authUrl, "https://keycloak.gdario.dev/realms/homelab/protocol/openid-connect/auth");
-  assert.equal(endpoints.tokenUrl, "https://keycloak.gdario.dev/realms/homelab/protocol/openid-connect/token");
-  assert.equal(endpoints.userInfoUrl, "https://keycloak.gdario.dev/realms/homelab/protocol/openid-connect/userinfo");
+  assert.equal(endpoints.authUrl, `${keycloakBaseUrl}/realms/homelab/protocol/openid-connect/auth`);
+  assert.equal(endpoints.tokenUrl, `${keycloakBaseUrl}/realms/homelab/protocol/openid-connect/token`);
+  assert.equal(endpoints.userInfoUrl, `${keycloakBaseUrl}/realms/homelab/protocol/openid-connect/userinfo`);
   assert.deepEqual(endpoints.scopes, ["openid", "profile", "email"]);
   assert.deepEqual(JSON.parse(memosConfig["memos-instance-setting-general.json"]).generalSetting, {
     disallowUserRegistration: true, disallowPasswordAuth: true,

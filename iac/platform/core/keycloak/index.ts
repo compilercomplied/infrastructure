@@ -8,11 +8,12 @@ import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
 import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../library/workload-security";
 import { appAccess } from "../../../library/app-access";
+import { keycloakBaseUrl } from "../../../library/oidc-app";
 import { Labels } from "../../../workloads/selfhosted/labels";
 
 export const keycloakImage = "quay.io/keycloak/keycloak:26.8.2";
 const bootstrapImage = "python:3.15-alpine";
-const host = "keycloak.gdario.dev";
+const host = new URL(keycloakBaseUrl).hostname;
 const databaseHost = "shared-postgres.shared-resources.svc.cluster.local";
 
 export function configureKeycloak(namespace: pulumi.Input<string>, dependencies: pulumi.Resource[]) {
@@ -42,7 +43,7 @@ export function configureKeycloak(namespace: pulumi.Input<string>, dependencies:
     settings: {
       config: {
         KC_DB: "postgres", KC_DB_URL: `jdbc:postgresql://${databaseHost}:5432/keycloak`,
-        KC_DB_USERNAME: "keycloak", KC_HOSTNAME: `https://${host}`,
+        KC_DB_USERNAME: "keycloak", KC_HOSTNAME: keycloakBaseUrl,
         KC_HTTP_ENABLED: "true", KC_PROXY_HEADERS: "xforwarded",
         KC_HEALTH_ENABLED: "true", KC_METRICS_ENABLED: "true", KC_CACHE: "local",
         KC_BOOTSTRAP_ADMIN_CLIENT_ID: bootstrapClientId,
@@ -105,5 +106,5 @@ export function configureKeycloak(namespace: pulumi.Input<string>, dependencies:
     dependsOn: [app.service, ...app.internalPolicies, secret, scripts],
     replaceOnChanges: ["metadata.annotations"], deleteBeforeReplace: true,
   });
-  return { app, bootstrap, automationClientId, automationSecret, url: `https://${host}` };
+  return { app, bootstrap, automationClientId, automationSecret, url: keycloakBaseUrl };
 }

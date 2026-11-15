@@ -42,8 +42,10 @@ export function validateOidcApps(): void {
     if (!app.scopes.includes("openid") || new Set(app.scopes).size !== app.scopes.length) {
       throw new Error(`Invalid OIDC scopes: ${app.slug}`);
     }
-    if (!app.callbackPath.startsWith("/") || new URL(app.callbackPath, app.url).origin !== new URL(app.url).origin) {
-      throw new Error(`Invalid OIDC callback: ${app.slug}`);
+    for (const path of [app.callbackPath, app.postLogoutRedirectPath].filter((value): value is string => value !== undefined)) {
+      if (!path.startsWith("/") || new URL(path, app.url).origin !== new URL(app.url).origin) {
+        throw new Error(`Invalid OIDC callback: ${app.slug}`);
+      }
     }
   }
 }

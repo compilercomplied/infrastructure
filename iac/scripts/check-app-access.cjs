@@ -14,6 +14,7 @@ require.extensions[".ts"] = (module, filename) => {
   module._compile(compiled.outputText, filename);
 };
 
+const { keycloakBaseUrl } = require("../library/oidc-app.ts");
 const stack = yaml.load(fs.readFileSync(path.join(__dirname, "../Pulumi.local.yaml"), "utf8")).config;
 const stackApps = stack["privateAccess:apps"];
 const publicTarget = "traefik.kube-system.svc.cluster.local";
@@ -70,7 +71,7 @@ async function main() {
   assert.throws(loadAppAccess, /requires privateAccess:enabled/);
 
   assert.equal(stackApps["grafana.gdario.dev"], "private");
-  assert.equal(stackApps["keycloak.gdario.dev"], "private");
+  assert.equal(stackApps[new URL(keycloakBaseUrl).hostname], "private");
   assert.equal(stackApps["pulp.gdario.dev"], "private");
   assert.ok(Object.values(stackApps).every(mode => mode === "private"));
   for (const key of ["grafanaPrivate", "dualHosts", "publishDualDns", "approveRoutes", "publishDns"]) {
@@ -113,8 +114,8 @@ async function main() {
   ]), /unique hosts/);
 
   await pulumi.runtime.runInPulumiStack(async () => {
-    const ingresses = ["grafana", "keycloak", "public"].map(name => createLetsEncryptIngress({
-      name, namespace: "test", host: `${name}.gdario.dev`, serviceName: name,
+    const ingresses = ["grafana", "identity", "public"].map(name => createLetsEncryptIngress({
+      name, namespace: "test", host: name === "identity" ? new URL(keycloakBaseUrl).hostname : `${name}.gdario.dev`, serviceName: name,
       targetPort: 3000, podSelector: { app: name },
     }));
     const coreDns = configureCoreDnsCustom();
@@ -130,7 +131,7 @@ async function main() {
     assert.ok(match, `Missing ${type} ${name}`);
     return match.inputs;
   };
-  for (const [name, entrypoints] of [["grafana", "tailnet"], ["keycloak", "tailnet"], ["public", "websecure"]]) {
+  for (const [name, entrypoints] of [["grafana", "tailnet"], ["identity", "tailnet"], ["public", "websecure"]]) {
     const ingress = resource("kubernetes:networking.k8s.io/v1:Ingress", `${name}-ingress`);
     assert.equal(ingress.metadata.annotations["traefik.ingress.kubernetes.io/router.entrypoints"], entrypoints);
     assert.equal(ingress.spec.tls[0].secretName, `${name}-tls-cert`);

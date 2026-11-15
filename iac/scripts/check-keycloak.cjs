@@ -11,6 +11,7 @@ require.extensions[".ts"] = (module, filename) => {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
   }).outputText, filename);
 };
+const { keycloakBaseUrl } = require("../library/oidc-app.ts");
 const stack = yaml.load(fs.readFileSync(path.join(__dirname, "../Pulumi.local.yaml"), "utf8")).config;
 const googleSubjects = { gdario: "100000000000000000001", Andrea: "100000000000000000002" };
 pulumi.runtime.setAllConfig(Object.fromEntries(Object.entries(stack).map(([key, value]) => [
@@ -63,7 +64,7 @@ async function main() {
   assert.deepEqual(Object.keys(runtime).sort(), ["KC_BOOTSTRAP_ADMIN_CLIENT_SECRET", "KC_DB_PASSWORD"]);
   assert.ok(!Object.values(runtime).includes("keycloak-automation-secret-fixture-secret"));
   const config = get("kubernetes:core/v1:ConfigMap", "keycloak-config").data;
-  assert.equal(config.KC_HOSTNAME, "https://keycloak.gdario.dev");
+  assert.equal(config.KC_HOSTNAME, keycloakBaseUrl);
   assert.equal(config.KC_PROXY_HEADERS, "xforwarded");
   const server = get("kubernetes:apps/v1:Deployment", "keycloak").spec.template.spec;
   const bootstrap = get("kubernetes:batch/v1:Job", "keycloak-bootstrap").spec.template.spec;
@@ -79,7 +80,7 @@ async function main() {
   assert.deepEqual(service.spec.ports.map(p => p.targetPort), [8080]);
   const ingress = get("kubernetes:networking.k8s.io/v1:Ingress", "keycloak-ingress");
   assert.equal(ingress.metadata.annotations["traefik.ingress.kubernetes.io/router.entrypoints"], "tailnet");
-  assert.equal(ingress.spec.rules[0].host, "keycloak.gdario.dev");
+  assert.equal(ingress.spec.rules[0].host, new URL(keycloakBaseUrl).hostname);
   const policy = get("kubernetes:networking.k8s.io/v1:NetworkPolicy", "keycloak-allow-keycloak-bootstrap");
   assert.deepEqual(policy.spec.ingress[0].from, [{ podSelector: { matchLabels: { app: "keycloak-bootstrap" } } }]);
   assert.equal(policy.spec.ingress[0].ports[0].port, 8080);

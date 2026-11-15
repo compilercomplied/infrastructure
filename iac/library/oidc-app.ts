@@ -1,6 +1,7 @@
 import * as pulumi from "@pulumi/pulumi";
 
-export const keycloakIssuer = "https://keycloak.gdario.dev/realms/homelab";
+export const keycloakBaseUrl = "https://auth.gdario.dev";
+export const keycloakIssuer = `${keycloakBaseUrl}/realms/homelab`;
 export const keycloakDiscoveryUrl = `${keycloakIssuer}/.well-known/openid-configuration`;
 export const keycloakAuthorizeUrl = `${keycloakIssuer}/protocol/openid-connect/auth`;
 export const keycloakTokenUrl = `${keycloakIssuer}/protocol/openid-connect/token`;
@@ -12,6 +13,7 @@ export interface OidcAppDefinition {
   name: string;
   host: string;
   callbackPath: string;
+  postLogoutRedirectPath?: string;
   secretKey: string;
   slug?: string;
   scopes?: readonly OidcScope[];
