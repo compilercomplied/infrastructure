@@ -140,6 +140,7 @@ config:
     linkwarden.gdario.dev: private
     notes.gdario.dev: private
     notifications.gdario.dev: private
+    openclaw.gdario.dev: private
     outline.gdario.dev: private
     projects.gdario.dev: private
     recipes.gdario.dev: private
