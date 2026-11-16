@@ -23,8 +23,9 @@ export DEBIAN_FRONTEND=noninteractive
 # The desktop's browser PPA is unrelated to bootstrap and can stall startup with repeated HTTP 503s.
 apt_options=(-o Dir::Etc::sourcelist=/etc/apt/sources.list.d/ubuntu.sources -o Dir::Etc::sourceparts=-)
 apt-get "${apt_options[@]}" update
-apt-get "${apt_options[@]}" install -y --no-install-recommends "$package" gnome-keyring seahorse git openssh-client ripgrep nodejs python3
+apt-get "${apt_options[@]}" install -y --no-install-recommends "$package" gnome-keyring seahorse git openssh-client openssh-server ripgrep nodejs python3
 /opt/codex-desktop/upgrade.sh
+/opt/codex-desktop/rex-install.sh
 rm -rf /var/lib/apt/lists/*
 
 # Keep login in the visible desktop; its browser can receive the app's localhost OAuth callback.

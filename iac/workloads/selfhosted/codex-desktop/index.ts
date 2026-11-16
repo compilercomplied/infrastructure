@@ -41,7 +41,7 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
       issuerRef: { name: issuer.metadata.name, kind: "ClusterIssuer" },
     },
   }, { dependsOn: [namespace, issuer] });
-  const files = Object.fromEntries(["init.sh", "session.sh", "reload-cert.sh", "upgrade.sh", "maintenance.sh"].map(file => [
+  const files = Object.fromEntries(["init.sh", "session.sh", "reload-cert.sh", "upgrade.sh", "maintenance.sh", "rex-install.sh", "rex-sshd.sh", "rex-authorized-keys"].map(file => [
     file, fs.readFileSync(path.join(__dirname, "scripts", file), "utf8"),
   ]));
   const scripts = new k8s.core.v1.ConfigMap(`${name}-scripts`, {
@@ -87,6 +87,7 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
       { name: "services", configMap: { name: scripts.metadata.name, defaultMode: 0o755, items: [
         { key: "reload-cert.sh", path: "reload-cert" },
         { key: "maintenance.sh", path: "apt-maintenance" },
+        { key: "rex-sshd.sh", path: "rex-sshd" },
       ] } },
     ],
     additionalVolumeMounts: [
@@ -123,7 +124,7 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
     spec: {
       type: "LoadBalancer", loadBalancerClass: "tailscale", allocateLoadBalancerNodePorts: false,
       selector: { app: name },
-      ports: [{ name: "https", port: 443, targetPort: 3001 }],
+      ports: [{ name: "https", port: 443, targetPort: 3001 }, { name: "ssh", port: 22, targetPort: 2222 }],
     },
   }, { dependsOn: [app.service, operator.chart] });
   const tailnetPolicy = new k8s.networking.v1.NetworkPolicy(`${name}-allow-tailnet`, {
@@ -139,7 +140,7 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
             "tailscale.com/parent-resource-type": "svc",
           } },
         }],
-        ports: [{ port: 3001, protocol: "TCP" }],
+        ports: [{ port: 3001, protocol: "TCP" }, { port: 2222, protocol: "TCP" }],
       }],
     },
   }, { dependsOn: [security.defaultDeny] });
