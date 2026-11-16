@@ -56,7 +56,7 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
     podSecurityContext: { fsGroup: 65534, fsGroupChangePolicy: "OnRootMismatch" },
     readinessProbe: { httpGet: { path: "/readyz", port: 8080 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 },
     livenessProbe: { httpGet: { path: "/healthz", port: 8080 }, initialDelaySeconds: 30, periodSeconds: 30, failureThreshold: 3 },
-    resources: { requests: { cpu: "100m", memory: "512Mi" }, limits: { cpu: "1", memory: "768Mi" } },
+    resources: { requests: { cpu: "100m", memory: "192Mi" }, limits: { cpu: "1", memory: "384Mi" } },
     dependencies: [...dependencies, bootstrapSecret],
   });
 

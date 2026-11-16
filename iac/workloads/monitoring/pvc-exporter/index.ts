@@ -71,8 +71,8 @@ export function configurePvcExporter(
               },
             ],
             resources: {
-              limits: { memory: "128Mi", cpu: "500m" },
-              requests: { memory: "32Mi", cpu: "25m" },
+              limits: { memory: "256Mi", cpu: "1" },
+              requests: { memory: "160Mi", cpu: "100m" },
             },
             readinessProbe: {
               httpGet: { path: "/healthz", port: "metrics" },

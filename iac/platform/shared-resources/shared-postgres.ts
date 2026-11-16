@@ -84,6 +84,7 @@ export function configureSharedPostgres(
           containers: [{
             name: "shared-postgres",
             image: "postgres:16-alpine",
+            resources: { requests: { cpu: "100m", memory: "512Mi" }, limits: { memory: "1536Mi" } },
             ports: [{ containerPort: 5432, name: "postgres" }],
             env: [
               {

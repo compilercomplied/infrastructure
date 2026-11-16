@@ -15,6 +15,7 @@ export function configureLinkwarden(
   const app = new SelfhostedApp("linkwarden", {
     namespace,
     image: "ghcr.io/linkwarden/linkwarden:v2.17.0",
+    resources: { requests: { cpu: "25m", memory: "1Gi" }, limits: { memory: "1536Mi" } },
     endpoints: [{ name: "http", servicePort: 80, containerPort: 3000, ingress: { name: "linkwarden", host: linkwardenIdentity.host }, healthCheck: { protocol: "tcp" } }],
     labels: {
       [Labels.Network.AllowPostgres]: "true",

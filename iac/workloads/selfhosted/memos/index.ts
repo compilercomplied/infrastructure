@@ -144,8 +144,8 @@ export function configureMemos(
       failureThreshold: 3,
     },
     resources: {
-      requests: { cpu: "25m", memory: "128Mi" },
-      limits: { cpu: "500m", memory: "512Mi" },
+      requests: { cpu: "25m", memory: "96Mi" },
+      limits: { cpu: "500m", memory: "192Mi" },
     },
     dependencies: [...dependencies, deploymentConfigSecret, dbInitJob],
   });

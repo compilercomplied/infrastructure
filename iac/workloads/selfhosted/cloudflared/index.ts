@@ -68,11 +68,11 @@ export function configureCloudflared(
                             resources: {
                                 limits: {
                                     cpu: "500m",
-                                    memory: "256Mi",
+                                    memory: "192Mi",
                                 },
                                 requests: {
-                                    cpu: "100m",
-                                    memory: "128Mi",
+                                    cpu: "25m",
+                                    memory: "96Mi",
                                 },
                             },
                         }),

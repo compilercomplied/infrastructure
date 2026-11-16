@@ -45,7 +45,7 @@ export function configureDoop(namespace: pulumi.Input<string>, dependencies: pul
     }],
     readinessProbe: { httpGet: { path: "/healthz", port: 4400 }, initialDelaySeconds: 10, periodSeconds: 10 },
     livenessProbe: { httpGet: { path: "/healthz", port: 4400 }, initialDelaySeconds: 60, periodSeconds: 30 },
-    resources: { requests: { cpu: "100m", memory: "512Mi" }, limits: { cpu: "2", memory: "2Gi" } },
+    resources: { requests: { cpu: "100m", memory: "640Mi" }, limits: { cpu: "2", memory: "2Gi" } },
     automountServiceAccountToken: false,
     volumes: [{ name: "data", mountPath: "/app/data", size: "20Gi" }],
     databases: [{ type: "postgres", databaseName: name, username: name, host: "shared-postgres.shared-resources.svc.cluster.local", passwordSecret: settings.databasePassword }],

@@ -8,6 +8,7 @@ import { configurePvcExporter } from "./pvc-exporter";
 import { configureBlackboxExporter } from "./blackbox";
 import { configureHealthAlerts } from "./health-alerts";
 import { configureFail2banDashboard } from "./fail2ban";
+import { configureResourceDashboard } from "./resources";
 
 /**
  * Entry point for the modular Monitoring stack.
@@ -40,6 +41,7 @@ export function configureMonitoring() {
   const blackboxExporter = configureBlackboxExporter(namespaceName, prometheusCRDs);
   const healthAlerts = configureHealthAlerts(namespaceName, prometheusCRDs);
   const fail2banDashboard = configureFail2banDashboard(namespaceName);
+  const resourceDashboard = configureResourceDashboard(namespaceName);
 
   return {
     monitoringNamespace,
@@ -52,5 +54,6 @@ export function configureMonitoring() {
     blackboxExporter,
     healthAlerts,
     fail2banDashboard,
+    resourceDashboard,
   };
 }

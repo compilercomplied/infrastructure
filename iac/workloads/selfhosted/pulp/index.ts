@@ -123,7 +123,8 @@ export function configurePulp(namespace: pulumi.Input<string>, dependencies: pul
         readinessProbe: { exec: { command: ["python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:24817/pulp/api/v3/status/', timeout=3)"] }, periodSeconds: 10, failureThreshold: 6 },
       },
       {
-        name: "content", image, env, volumeMounts: mounts, resources,
+        name: "content", image, env, volumeMounts: mounts,
+        resources: { ...resources, requests: { cpu: "100m", memory: "384Mi" } },
         command: ["pulpcore-content", "--bind", "127.0.0.1:24816", "--workers", "1"],
         readinessProbe: { exec: { command: ["python", "-c", "import socket; socket.create_connection(('127.0.0.1', 24816), timeout=3).close()"] }, periodSeconds: 10 },
       },

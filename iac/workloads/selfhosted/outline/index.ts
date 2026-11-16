@@ -90,6 +90,7 @@ export function configureOutline(
   const outline = new SelfhostedApp(name, {
     namespace,
     image: "outlinewiki/outline:1.12.0",
+    resources: { requests: { cpu: "25m", memory: "384Mi" }, limits: { memory: "768Mi" } },
     endpoints: [{
       name: "http",
       servicePort: 80,

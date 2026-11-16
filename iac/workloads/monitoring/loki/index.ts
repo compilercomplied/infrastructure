@@ -54,6 +54,7 @@ export function configureLoki(
         },
       },
       singleBinary: {
+        resources: { requests: { cpu: "50m", memory: "448Mi" }, limits: { memory: "768Mi" } },
         replicas: 1,
         persistence: {
           enabled: true,

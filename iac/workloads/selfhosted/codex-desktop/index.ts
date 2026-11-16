@@ -109,7 +109,7 @@ export function configureCodexDesktop(operator: ReturnType<typeof configureTails
       initialDelaySeconds: 600, periodSeconds: 30, failureThreshold: 5,
     },
     resources: {
-      requests: { cpu: "500m", memory: "1Gi", "ephemeral-storage": "4Gi", "devic.es/kvm": "1" },
+      requests: { cpu: "750m", memory: "4Gi", "ephemeral-storage": "4Gi", "devic.es/kvm": "1" },
       limits: { cpu: "5", memory: "12Gi", "ephemeral-storage": "12Gi", "devic.es/kvm": "1" },
     },
     dependencies: [security.defaultDeny, scripts, certificate, kvmDevicePlugin],

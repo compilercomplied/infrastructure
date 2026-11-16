@@ -190,6 +190,7 @@ loki.write "local" {
     ...cachedHelmChart(monitoringCharts["alloy"]),
     values: {
       alloy: {
+        resources: { requests: { cpu: "25m", memory: "384Mi" }, limits: { memory: "640Mi" } },
         mounts: {
           extra: [{ name: "fail2ban-logs", mountPath: "/var/log/host-fail2ban", readOnly: true }],
         },

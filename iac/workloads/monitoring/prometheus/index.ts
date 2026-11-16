@@ -63,6 +63,7 @@ export function configurePrometheus(
 
       prometheus: {
         prometheusSpec: {
+          resources: { requests: { cpu: "100m", memory: "1280Mi" }, limits: { memory: "2560Mi" } },
           // Retention for enterprise-grade: Usually longer or using remote write
           retention: "30d",
           // Ensures any ServiceMonitor in any namespace is scraped

@@ -49,6 +49,7 @@ export interface GameServerStorage {
 
 export interface GameServerArgs {
   namespace: pulumi.Input<string>;
+  replicas?: 0 | 1;
   image: string;
   endpoints: [GameServerEndpoint, ...GameServerEndpoint[]];
   httpIngresses?: GameServerHttpIngress[];
@@ -179,7 +180,7 @@ export class GameServer extends pulumi.ComponentResource {
     this.deployment = new k8s.apps.v1.Deployment(name, {
       metadata: { name, namespace: args.namespace },
       spec: {
-        replicas: 1,
+        replicas: args.replicas ?? 1,
         strategy: { type: "Recreate" },
         selector: { matchLabels: { app: name } },
         template: {
@@ -299,7 +300,7 @@ export class GameServer extends pulumi.ComponentResource {
       parent: this,
     }, volumePlan);
 
-    if (args.healthCheck) {
+    if (args.healthCheck && args.replicas !== 0) {
       const endpoint = args.endpoints.find(candidate => candidate.name === args.healthCheck?.endpoint);
       if (!endpoint) {
         throw new Error(`Game server ${name} health check targets undeclared endpoint ${args.healthCheck.endpoint}.`);

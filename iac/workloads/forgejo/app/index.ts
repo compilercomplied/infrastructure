@@ -44,6 +44,7 @@ export function configureForgejo(
   const app = new SelfhostedApp(name, {
     namespace,
     image,
+    resources: { requests: { cpu: "100m", memory: "384Mi" }, limits: { memory: "1Gi" } },
     // s6, SSH sessions and the upstream ownership repair still require the
     // image's default capabilities. Narrow them separately from app hardening.
     containerSecurityContext: { capabilities: { drop: [] } },

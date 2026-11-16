@@ -26,6 +26,7 @@ export function configureGrimmory(
   const app = new SelfhostedApp("grimmory", {
     namespace,
     image: grimmoryImage,
+    resources: { requests: { cpu: "50m", memory: "640Mi" }, limits: { memory: "2560Mi" } },
     // The upstream entrypoint prepares the data owners and invokes su-exec.
     containerSecurityContext: { capabilities: { add: ["CHOWN", "SETUID", "SETGID"] } },
     endpoints: [{ name: "http", servicePort: 80, containerPort: 6060, ingress: { name: "grimmory", host: grimmoryIdentity.host }, healthCheck: { protocol: "tcp" } }],

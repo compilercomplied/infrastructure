@@ -58,7 +58,7 @@ export function configureRenovate(
                   { name: "RENOVATE_BASE_DIR", value: "/tmp/renovate" },
                   { name: "HOME", value: "/tmp" },
                 ],
-                resources: { requests: { cpu: "100m", memory: "256Mi" }, limits: { cpu: "500m", memory: "768Mi" } },
+                resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "1", memory: "1536Mi" } },
                 securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } },
                 volumeMounts: [{ name: "config", mountPath: "/config", readOnly: true }, { name: "tmp", mountPath: "/tmp" }],
               }],

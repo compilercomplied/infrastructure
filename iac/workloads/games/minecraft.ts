@@ -1,5 +1,6 @@
 import * as k8s from "@pulumi/kubernetes";
 import { GamePlatform } from "../../library/game-platform";
+import { minecraftResources } from "./minecraft-resources";
 
 const minecraftPort = 25565;
 // The image injects this into a Log4j XML attribute, so the JSON quotes need
@@ -10,6 +11,8 @@ export function configureMinecraft(platform: GamePlatform) {
   const clusterDns = k8s.core.v1.Service.get("minecraft-cluster-dns", "kube-system/kube-dns");
   const minecraft = platform.addServer("minecraft", {
     service: "minecraft",
+    // Retain the world, backups, and endpoints while the server is unused.
+    replicas: 0,
     // Java 25 is required by Minecraft 26.3; VERSION remains explicit so a
     // normal rollout cannot silently change the server or world format.
     image: "itzg/minecraft-server@sha256:46cfd0bcbd9bbd16900a765fcdd5d6f57bc0cf3471c383ad96f87e84998d93e8",
@@ -68,13 +71,7 @@ export function configureMinecraft(platform: GamePlatform) {
       volumeMounts: [{ name: "world", mountPath: "/data" }],
       resources: { requests: { cpu: "1m", memory: "4Mi" }, limits: { cpu: "10m", memory: "16Mi" } },
     }],
-		// Estimation for 3-5 players in a huge world with these settings:
-		// { name: "VIEW_DISTANCE", value: "10" },
-		// { name: "SIMULATION_DISTANCE", value: "6" },
-    resources: {
-      requests: { cpu: "1000m", memory: "7Gi" },
-      limits: { cpu: "2500m", memory: "9Gi" },
-    },
+    resources: minecraftResources,
     healthCheck: {
       protocol: "tcp",
       endpoint: "minecraft",

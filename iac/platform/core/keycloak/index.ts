@@ -59,7 +59,7 @@ export function configureKeycloak(namespace: pulumi.Input<string>, dependencies:
     podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000 },
     readinessProbe: { httpGet: { path: "/health/ready", port: 9000 }, periodSeconds: 10, failureThreshold: 6 },
     livenessProbe: { httpGet: { path: "/health/live", port: 9000 }, initialDelaySeconds: 180, periodSeconds: 15, failureThreshold: 6 },
-    resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "2", memory: "1Gi" } },
+    resources: { requests: { cpu: "250m", memory: "768Mi" }, limits: { cpu: "2", memory: "1Gi" } },
     databases: [{ type: "postgres", host: databaseHost, databaseName: "keycloak", username: "keycloak", passwordSecret: databasePassword }],
     dependencies: [...dependencies, dbInit],
   });

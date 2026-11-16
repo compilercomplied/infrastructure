@@ -25,6 +25,7 @@ export function configureGrafana(
     ...cachedHelmChart(monitoringCharts["grafana"]),
     values: {
       assertNoLeakedSecrets: false,
+      resources: { requests: { cpu: "25m", memory: "256Mi" }, limits: { memory: "512Mi" } },
       adminPassword: adminPassword,
       // Overlapping pods contend for the same SQLite database during rollouts.
       deploymentStrategy: { type: "Recreate" },

@@ -51,7 +51,7 @@ export function configureExcaliDash(namespace: pulumi.Input<string>, dependencie
     }],
     readinessProbe: { httpGet: { path: "/health", port: 8000 }, initialDelaySeconds: 10, periodSeconds: 10, failureThreshold: 6 },
     livenessProbe: { httpGet: { path: "/health", port: 8000 }, initialDelaySeconds: 30, periodSeconds: 30, failureThreshold: 3 },
-    resources: { requests: { cpu: "100m", memory: "256Mi" }, limits: { cpu: "1", memory: "512Mi" } },
+    resources: { requests: { cpu: "25m", memory: "192Mi" }, limits: { cpu: "1", memory: "384Mi" } },
     additionalContainers: [{
       name: "frontend",
       image: frontendImage,

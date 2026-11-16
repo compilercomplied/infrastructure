@@ -72,6 +72,7 @@ export function configureSharedMariaDb(
           containers: [{
             name: "mariadb",
             image: sharedMariaDbImage,
+            resources: { requests: { cpu: "25m", memory: "128Mi" }, limits: { memory: "384Mi" } },
             ports: [{ containerPort: 3306, name: "mysql" }],
             args: [
               "--performance-schema=OFF",
