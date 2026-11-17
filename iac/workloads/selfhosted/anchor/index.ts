@@ -3,7 +3,7 @@ import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 import { createPostgresBootstrap } from "../../../library/postgres-bootstrap";
-import { keycloakIssuer, oidcClientSecret } from "../../../library/oidc-app";
+import { keycloakIssuer } from "../../../library/oidc-app";
 import { Labels } from "../labels";
 import { anchorIdentity } from "./identity";
 
@@ -52,7 +52,6 @@ export function configureAnchor(namespace: pulumi.Input<string>, dependencies: p
       secrets: {
         PG_PASSWORD: databasePassword,
         JWT_SECRET: jwtSecret,
-        OIDC_CLIENT_SECRET: oidcClientSecret(anchorIdentity),
       },
     },
     labels: { [Labels.Network.AllowPostgres]: "true" },

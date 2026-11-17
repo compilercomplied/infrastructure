@@ -124,10 +124,12 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
   const clients = oidcApps.map(app => {
     const client = new keycloak.openid.Client(`homelab-oidc-${app.key}`, {
       realmId: realm.id, clientId: app.clientId, name: app.name, enabled: true,
-      accessType: "CONFIDENTIAL", clientSecret: oidcClientSecret(app, config),
+      accessType: app.publicClient ? "PUBLIC" : "CONFIDENTIAL",
+      clientSecret: app.publicClient ? undefined : oidcClientSecret(app, config),
+      pkceCodeChallengeMethod: app.publicClient ? "S256" : undefined,
       standardFlowEnabled: true, implicitFlowEnabled: false,
       directAccessGrantsEnabled: false, serviceAccountsEnabled: false,
-      fullScopeAllowed: false, validRedirectUris: [app.url + app.callbackPath],
+      fullScopeAllowed: false, validRedirectUris: [app.url + app.callbackPath, ...(app.nativeRedirectUris ?? [])],
       validPostLogoutRedirectUris: app.postLogoutRedirectPath ? [app.url + app.postLogoutRedirectPath] : undefined,
       // Client overrides are raw seconds; the realm accepts duration syntax.
       webOrigins: [app.url], accessTokenLifespan: "3600",

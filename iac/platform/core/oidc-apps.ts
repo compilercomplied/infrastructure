@@ -39,6 +39,19 @@ export function validateOidcApps(): void {
     keys.add(app.key);
     slugs.add(app.slug);
     clientIds.add(app.clientId);
+    if (app.publicClient ? app.secretKey !== undefined || app.generateSecret : !app.secretKey) {
+      throw new Error(`Invalid OIDC client authentication: ${app.slug}`);
+    }
+    const nativeRedirects = app.nativeRedirectUris ?? [];
+    if ((nativeRedirects.length > 0 && !app.publicClient) || new Set(nativeRedirects).size !== nativeRedirects.length) {
+      throw new Error(`Invalid native OIDC redirects: ${app.slug}`);
+    }
+    for (const uri of nativeRedirects) {
+      if (!/^[a-z][a-z0-9+.-]*:\/\/[a-z0-9.-]+\/[a-zA-Z0-9/_-]+$/.test(uri) ||
+          ["http:", "https:", "file:", "javascript:", "data:"].includes(new URL(uri).protocol)) {
+        throw new Error(`Invalid native OIDC redirect: ${app.slug}`);
+      }
+    }
     if (!app.scopes.includes("openid") || new Set(app.scopes).size !== app.scopes.length) {
       throw new Error(`Invalid OIDC scopes: ${app.slug}`);
     }

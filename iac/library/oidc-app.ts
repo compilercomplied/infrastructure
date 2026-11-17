@@ -15,8 +15,10 @@ export interface OidcAppDefinition {
   host: string;
   callbackPath: string;
   postLogoutRedirectPath?: string;
-  secretKey: string;
+  secretKey?: string;
   generateSecret?: boolean;
+  publicClient?: boolean;
+  nativeRedirectUris?: readonly string[];
   slug?: string;
   scopes?: readonly OidcScope[];
 }
@@ -46,6 +48,9 @@ export function defineOidcApp(key: string, definition: OidcAppDefinition): OidcA
 const generatedSecrets = new Map<string, pulumi.Output<string>>();
 
 export function oidcClientSecret(app: OidcAppRegistration, config = new pulumi.Config("selfhosted")): pulumi.Output<string> {
+  if (app.publicClient || !app.secretKey) {
+    throw new Error(`OIDC client ${app.slug} does not use a client secret`);
+  }
   if (!app.generateSecret) {
     return config.requireSecret(app.secretKey);
   }
