@@ -108,7 +108,7 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     }, { ...opts, dependsOn: [profile] });
     const membership = new keycloak.UserGroups(`homelab-${agent.username}-groups`, {
       realmId: realm.id, userId: user.id, exhaustive: true,
-      groupIds: groups.filter((_, index) => groupDefinitions[index].name === "hermes-users" && [agentIdentities.hermes.username, agentIdentities.codex.username].includes(agent.username)).map(group => group.id),
+      groupIds: groups.filter((_, index) => groupDefinitions[index].name === "hermes-users" && [agentIdentities.hermes.username, agentIdentities.codex.username, agentIdentities.openclaw.username].includes(agent.username)).map(group => group.id),
     }, opts);
     return { name: agent.username, user, membership };
   });

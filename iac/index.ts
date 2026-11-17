@@ -43,6 +43,7 @@ configureForgejo({
   dario: identities.humanSubjects.gdario,
   codex: identities.agentSubjects[agentIdentities.codex.username],
   hermes: identities.agentSubjects[agentIdentities.hermes.username],
+  openclaw: identities.agentSubjects[agentIdentities.openclaw.username],
   codingBot: identities.agentSubjects[agentIdentities.codingBot.username],
   reviewingBot: identities.agentSubjects[agentIdentities.reviewingBot.username],
   renovate: identities.agentSubjects[agentIdentities.renovate.username],
@@ -70,4 +71,4 @@ if (directDnsRecords.length > 0) {
   });
 }
 
-configureAgentSidekicks(selfhosted, kvmDevicePlugin, agentIdentities.hermes);
+configureAgentSidekicks(selfhosted, kvmDevicePlugin, agentIdentities);

@@ -18,7 +18,7 @@ export function createAgentIdentities() {
     }).result),
   });
   return {
-    hermes: create("hermes"), codex: create("codex"),
+    hermes: create("hermes"), codex: create("codex"), openclaw: create("openclaw"),
     codingBot: create("coding-bot", "coding-bot"),
     reviewingBot: create("reviewing-bot", "reviewing-bot"),
     renovate: create("renovate", "renovate"),

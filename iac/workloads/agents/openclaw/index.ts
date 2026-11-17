@@ -1,9 +1,11 @@
+import { AgentIdentity, agentIdentitySettings } from "../../../library/agent-identity";
 import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import * as random from "@pulumi/random";
 import { SelfhostedApp } from "../../../library/selfhosted-component";
 
-export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies: pulumi.Resource[] = []) {
+export function configureOpenClaw(namespace: pulumi.Input<string>, identity: AgentIdentity, dependencies: pulumi.Resource[] = []) {
+  const agent = agentIdentitySettings(identity);
   const image = "ghcr.io/openclaw/openclaw:2026.11.4";
   const token = new random.RandomPassword("openclaw-gateway-token", { length: 48, special: false });
   const seed = new k8s.core.v1.ConfigMap("openclaw-seed", {
@@ -50,6 +52,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
     }],
     settings: {
       config: {
+        ...agent.config,
         HOME: "/home/node",
         OPENCLAW_HOME: "/home/node",
         OPENCLAW_STATE_DIR: "/home/node/.openclaw",
@@ -60,7 +63,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
         NODE_ENV: "production",
         TZ: "UTC",
       },
-      secrets: { OPENCLAW_GATEWAY_TOKEN: token.result },
+      secrets: { ...agent.secrets, OPENCLAW_GATEWAY_TOKEN: token.result },
     },
     // Mount the whole home so OAuth refresh state and private recovery captures
     // survive alongside sessions, rather than spilling onto the container layer.

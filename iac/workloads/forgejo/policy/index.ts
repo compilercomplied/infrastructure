@@ -60,7 +60,7 @@ export function createRepositoryFactory(host: pulumi.Input<string>, users: Manag
     if (organization === "home") {
       for (const [login, user] of Object.entries({
         "coding-bot": users.codingBot, "reviewing-bot": users.reviewingBot,
-        "agent-codex": users.codex, "agent-hermes": users.hermes,
+        "agent-codex": users.codex, "agent-hermes": users.hermes, "agent-openclaw": users.openclaw,
       })) {
         new forgejo.TeamMember(`forgejo-${organization}-contributor-${login}`, {
           teamId: contributors.teamId,

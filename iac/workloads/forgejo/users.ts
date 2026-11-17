@@ -3,7 +3,7 @@ import { ForgejoOidcUser } from "./oidc-user";
 
 export const forgejoUserLogins = {
   dario: "dario", codingBot: "coding-bot", reviewingBot: "reviewing-bot",
-  codex: "agent-codex", hermes: "agent-hermes", renovate: "renovate",
+  codex: "agent-codex", hermes: "agent-hermes", openclaw: "agent-openclaw", renovate: "renovate",
 } as const;
 
 export type ManagedForgejoUsers = Record<keyof typeof forgejoUserLogins, ForgejoOidcUser>;

@@ -1,4 +1,4 @@
-import { AgentIdentity } from "../../library/agent-identity";
+import { createAgentIdentities } from "../../library/agent-identity";
 import * as k8s from "@pulumi/kubernetes";
 import { configureNamespaceSecurity } from "../selfhosted/security";
 import { configureTandoorMcp } from "./tandoor-mcp";
@@ -7,7 +7,7 @@ import { configureHermesAgent } from "./hermes-agent";
 import { configureNodeDiagnostics } from "./node-diagnostics";
 import { configureOpenClaw } from "./openclaw";
 
-export function configureAgentSidekicks(selfhosted: any, kvmDevicePlugin: k8s.apps.v1.DaemonSet, identity: AgentIdentity) {
+export function configureAgentSidekicks(selfhosted: any, kvmDevicePlugin: k8s.apps.v1.DaemonSet, identities: Pick<ReturnType<typeof createAgentIdentities>, "hermes" | "openclaw">) {
   const namespace = new k8s.core.v1.Namespace("agent-sidekicks", {
     metadata: { name: "agent-sidekicks" },
   });
@@ -18,13 +18,13 @@ export function configureAgentSidekicks(selfhosted: any, kvmDevicePlugin: k8s.ap
     namePrefix: "agent-sidekicks-",
   });
 
-  const openclaw = configureOpenClaw(namespaceName, [security.defaultDeny]);
+  const openclaw = configureOpenClaw(namespaceName, identities.openclaw, [security.defaultDeny]);
 
   const tandoorMcp = configureTandoorMcp(namespaceName, [selfhosted.postgres, selfhosted.tandoor.deployment]);
   const outlineMcp = configureOutlineMcp(namespaceName, [selfhosted.outline.outline.deployment]);
   const nodeDiagnostics = configureNodeDiagnostics(namespaceName, [kvmDevicePlugin]);
   
-  const hermes = configureHermesAgent(namespaceName, identity, [
+  const hermes = configureHermesAgent(namespaceName, identities.hermes, [
     selfhosted.postgres,
     tandoorMcp.service,
     outlineMcp.service,
