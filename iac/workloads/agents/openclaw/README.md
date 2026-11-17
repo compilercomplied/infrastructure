@@ -12,9 +12,10 @@ Configuration is seeded only when missing, following the upstream
 [Kubernetes pattern](https://docs.openclaw.ai/install/kubernetes#gateway-config).
 OpenClaw's subscription login writes configuration as well as credentials, so a
 read-only ConfigMap cannot serve as its live configuration. The persisted copy
-owns subsequent application settings; edits to the seed affect new installations
-only. The whole home is backed up because Codex state and recovery captures can
-live outside `.openclaw`.
+owns subsequent application settings except proxy trust, which the init container
+reconciles because it must match the infrastructure-managed ingress boundary.
+Other edits to the seed affect new installations only. The whole home is backed
+up because Codex state and recovery captures can live outside `.openclaw`.
 
 [Codex subscription authentication](https://docs.openclaw.ai/providers/openai/authentication)
 requires the owner's interactive sign-in after deployment. Credentials belong in

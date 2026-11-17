@@ -37,6 +37,9 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
   const app = new SelfhostedApp("openclaw", {
     namespace,
     image,
+    // The gateway's LAN bind listens on IPv4 only; IPv6 endpoints cause proxy 502s.
+    ipFamilyPolicy: "SingleStack",
+    ipFamilies: ["IPv4"],
     args: ["node", "dist/index.js", "gateway", "--bind", "lan", "--port", "18789"],
     strategy: { type: "Recreate" },
     endpoints: [{
@@ -86,6 +89,18 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
         } catch (error) {
           if (error.code !== 'EEXIST') throw error;
         }
+        // OpenClaw rejects forwarded requests with proxy_attribution_required
+        // unless it trusts the proxy source, even with token authentication.
+        // Traefik pod IPs change, so use the stable pod CIDR declared in
+        // ansible/roles/cluster/templates/k3s-config.yaml.j2. The existing ingress
+        // policy limits pod access to kube-system. Update the persisted config
+        // because reseeding it would overwrite OAuth-managed settings.
+        const configPath = '/home/node/.openclaw/openclaw.json';
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+        config.gateway ??= {};
+        config.gateway.trustedProxies = ['10.42.0.0/16'];
+        fs.writeFileSync(configPath + '.tmp', JSON.stringify(config, null, 2), { mode: 0o600 });
+        fs.renameSync(configPath + '.tmp', configPath);
       `],
       securityContext: { readOnlyRootFilesystem: true },
       volumeMounts: [
