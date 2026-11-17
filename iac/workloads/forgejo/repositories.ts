@@ -14,6 +14,7 @@ export function configureRepositories(host: pulumi.Input<string>, users: Managed
     createRepo({ name: "tandoor-mcp" }),
     createRepo({ name: "agent-dev-environment" }),
     createRepo({ name: "hitl-auth-server" }),
+    createRepo({ name: "kubernetes-executor" }),
     createRepo({ name: "dotnet-foundation" }),
   ];
 }
