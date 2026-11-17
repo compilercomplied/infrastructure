@@ -99,6 +99,10 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
         const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
         config.gateway ??= {};
         config.gateway.trustedProxies = ['10.42.0.0/16'];
+        // Tailscale SNAT leaves only trusted pod addresses in X-Forwarded-For.
+        // Traefik strips client-supplied X-Real-IP and rebuilds it from its peer,
+        // so this fallback preserves attribution when OpenClaw skips that chain.
+        config.gateway.allowRealIpFallback = true;
         fs.writeFileSync(configPath + '.tmp', JSON.stringify(config, null, 2), { mode: 0o600 });
         fs.renameSync(configPath + '.tmp', configPath);
       `],
