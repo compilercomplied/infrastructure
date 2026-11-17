@@ -47,3 +47,8 @@ application sessions and personal tokens, so offboarding must cover each applica
 Grimmory's upstream SSRF protection blocks private OIDC hosts. Its
 [scoped exception](../iac/workloads/selfhosted/grimmory/settings.ts) is needed for
 the configured identity provider without relaxing metadata or import protections.
+
+The `agent-operations` device-login client preserves the signed-in agent's subject.
+Its audience mapper lets HITL validate executor requests as the original lease
+owner. Scopes and token lifetimes follow the realm defaults; HITL separately
+controls approval and lease duration. See [identity configuration](../iac/platform/core/keycloak/identities.ts).

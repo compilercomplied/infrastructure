@@ -140,10 +140,21 @@ export function configureKeycloakIdentities(foundation: ReturnType<typeof config
     }, opts));
     return client;
   });
+  const operationsClient = new keycloak.openid.Client("homelab-agent-operations-client", {
+    realmId: realm.id, clientId: "agent-operations", name: "Agent operations", enabled: true,
+    accessType: "PUBLIC", standardFlowEnabled: false, implicitFlowEnabled: false,
+    directAccessGrantsEnabled: false, serviceAccountsEnabled: false,
+    oauth2DeviceAuthorizationGrantEnabled: true, fullScopeAllowed: false,
+  }, opts);
+  // HITL binds approval to the user's subject; executor calls retain that same identity.
+  const operationsAudience = new keycloak.openid.AudienceProtocolMapper("homelab-agent-operations-audience", {
+    realmId: realm.id, clientId: operationsClient.id, name: "hitl-audience",
+    includedCustomAudience: "hitl-auth-server", addToAccessToken: true, addToIdToken: false,
+  }, opts);
   return {
     realm, google, users, groups, clients, agentUsers, humanSubjects,
     agentSubjects: Object.fromEntries(agentUsers.map(agent => [agent.name, agent.user.id])),
-    resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...administratorRoles, ...groups, ...memberships, ...agentUsers.flatMap(agent => [agent.user, agent.membership]), groupsScope, groupMapping, ...clients, ...clientScopes],
+    resources: [realm, profile, enrollment, denyEnrollment, google, ...users, ...administratorRoles, ...groups, ...memberships, ...agentUsers.flatMap(agent => [agent.user, agent.membership]), groupsScope, groupMapping, ...clients, ...clientScopes, operationsClient, operationsAudience],
     issuer: pulumi.interpolate`${foundation.url}/realms/${realm.realm}`,
     googleCallback: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/broker/${google.alias}/endpoint`,
     accountUrl: pulumi.interpolate`${foundation.url}/realms/${realm.realm}/account/`,
