@@ -6,7 +6,6 @@ import { grafanaIdentity } from "../../workloads/monitoring/grafana/identity";
 import { grimmoryIdentity } from "../../workloads/selfhosted/grimmory/identity";
 import { hermesIdentity } from "../../workloads/agents/hermes-agent/identity";
 import { forgejoIdentity } from "../../workloads/forgejo/app/identity";
-import { memosIdentity } from "../../workloads/selfhosted/memos/identity";
 import { windshiftIdentity } from "../../workloads/selfhosted/windshift/identity";
 import { outlineIdentity } from "../../workloads/selfhosted/outline/identity";
 import { excalidashIdentity } from "../../workloads/selfhosted/excalidash/identity";
@@ -22,7 +21,6 @@ export const oidcApps: readonly OidcAppRegistration[] = [
   grimmoryIdentity,
   hermesIdentity,
   forgejoIdentity,
-  memosIdentity,
   windshiftIdentity,
   outlineIdentity,
   excalidashIdentity,

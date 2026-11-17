@@ -97,8 +97,6 @@ config:
     secure: v1:Xkmmgw+nUqie9WZc:ZCl+FgvhU0ggfwH5JfLyTsGzGt3WeFgAT2Q=
   selfhosted:memosDbPassword:
     secure: v1:zN0/g9ZvYV2EPxAB:GXCKSxGfVtjFSgMxbdcw9qbhrvyC5Nt4hjCf2qsRc4xNLWHtkzanwo5aVW9pkctS
-  selfhosted:memosOidcClientSecret:
-    secure: v1:GDt6KuKKJa+/nTqw:mYMktVBu5LSxqegeBv7ho9Lo9dH63pPGYtHf7lrElbcEdXSyb/hsERe0AnZHHRq1
   selfhosted:windshiftSecret:
     secure: v1:/6IDvwTFQ7rGUQ3d:6eO/o/8/+Sfy5kCvDWXE6DERfUjmeU5zvrUoHNITGJVv09LYzkccPMNdLoYWMyiGquHfTYtdhadvetDLPUj8qpyHR7O3IR2NNISAYE5/hlQ=
   selfhosted:windshiftOidcClientSecret:
@@ -129,7 +127,6 @@ config:
   privateAccess:dnsClientSecret:
     secure: v1:X8SqQ8nUXaHwUiQ8:vniBdTclLUn2SURb/Wwv9yNFnL6b62ZglRwFE3oc8Vg/qoFo23j4d7X/+ZDt4qfLtSIr/aq6xYSZNium9zlcdTyLCROb/9WR7N2E4SvQv1w=
   privateAccess:apps:
-    anchor.gdario.dev: private
     grafana.gdario.dev: private
     auth.gdario.dev: private
     design.gdario.dev: private

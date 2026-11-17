@@ -6,7 +6,6 @@ import { configureTandoorRecipes } from "./tandoor-recipes";
 import { configureLinkwarden } from "./linkwarden";
 import { configureOutline } from "./outline";
 import { configureGrimmory } from "./grimmory";
-import { configureMemos } from "./memos";
 import { configureAnchor } from "./anchor";
 import { configureWindshift } from "./windshift";
 import { configureExcaliDash } from "./excalidash";
@@ -33,12 +32,19 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
   const grimmory = configureGrimmory(namespaceName, mariadb, [postgres]);
   const outline = configureOutline(namespaceName, [postgres]);
   const ntfy = configureNtfy(namespaceName);
-  const memos = configureMemos(namespaceName, [postgres]);
   const anchor = configureAnchor(namespaceName, [postgres]);
   const windshift = configureWindshift(namespaceName);
   const excalidash = configureExcaliDash(namespaceName, [postgres]);
   const doop = configureDoop(namespaceName, [postgres]);
   const pulp = configurePulp(namespaceName, [postgres]);
+  // Keep retired Memos attachments available for recovery without a running application.
+  createPVC({
+    name: "memos-data-pvc",
+    namespace: namespaceName,
+    size: "5Gi",
+    protect: true,
+    aliases: [{ parent: pulumi.createUrn("memos", "custom:selfhosted:App") }],
+  });
   // Keep retired Syncthing data available for recovery without retaining a running sync service.
   createPVC({
     name: "syncthing-data-pvc",
@@ -50,7 +56,7 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, outline.outline.deployment, ntfy.deployment, memos.deployment, anchor.deployment, windshift.deployment, excalidash.deployment, doop.deployment, pulp.deployment],
+    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, outline.outline.deployment, ntfy.deployment, anchor.deployment, windshift.deployment, excalidash.deployment, doop.deployment, pulp.deployment],
     namePrefix: "selfhosted-",
     aliases: {
       defaultDeny: [{ name: "default-deny-ingress" }],
@@ -73,7 +79,6 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
     grimmory,
     outline,
     ntfy,
-    memos,
     anchor,
     windshift,
     excalidash,
