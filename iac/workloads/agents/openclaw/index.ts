@@ -52,7 +52,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
         OPENCLAW_STATE_DIR: "/home/node/.openclaw",
         OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw.json",
         OPENCLAW_WORKSPACE_DIR: "/home/node/.openclaw/workspace",
-        XDG_CACHE_HOME: "/home/node/.cache",
+        XDG_CACHE_HOME: "/tmp/cache",
         OPENCLAW_DISABLE_BONJOUR: "1",
         NODE_ENV: "production",
         TZ: "UTC",
@@ -66,7 +66,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
       { name: "seed", configMap: { name: seed.metadata.name } },
       { name: "tmp", emptyDir: { sizeLimit: "256Mi" } },
     ],
-    additionalVolumeMounts: [{ name: "tmp", mountPath: "/tmp" }],
+    additionalVolumeMounts: [{ name: "tmp", mountPath: "/tmp", subPath: "runtime" }],
     podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 },
     containerSecurityContext: { readOnlyRootFilesystem: true },
     initContainers: [{
@@ -74,6 +74,10 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
       image,
       command: ["node", "-e", `
         const fs = require('node:fs');
+        // fsGroup makes volume roots group-writable; OpenClaw rejects those as
+        // temp ancestors. Mount a private, app-owned child as the runtime /tmp.
+        fs.mkdirSync('/tmp/runtime', { recursive: true, mode: 0o700 });
+        fs.chmodSync('/tmp/runtime', 0o700);
         fs.mkdirSync('/home/node/.openclaw', { recursive: true, mode: 0o700 });
         // OAuth login updates this file; preserve it after the initial seed.
         try {
@@ -87,6 +91,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, dependencies:
       volumeMounts: [
         { name: "data", mountPath: "/home/node" },
         { name: "seed", mountPath: "/seed", readOnly: true },
+        { name: "tmp", mountPath: "/tmp" },
       ],
       resources: {
         requests: { cpu: "50m", memory: "32Mi" },
