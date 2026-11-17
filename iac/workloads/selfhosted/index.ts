@@ -7,6 +7,7 @@ import { configureLinkwarden } from "./linkwarden";
 import { configureOutline } from "./outline";
 import { configureGrimmory } from "./grimmory";
 import { configureMemos } from "./memos";
+import { configureAnchor } from "./anchor";
 import { configureWindshift } from "./windshift";
 import { configureExcaliDash } from "./excalidash";
 import { configureDoop } from "./doop";
@@ -33,6 +34,7 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
   const outline = configureOutline(namespaceName, [postgres]);
   const ntfy = configureNtfy(namespaceName);
   const memos = configureMemos(namespaceName, [postgres]);
+  const anchor = configureAnchor(namespaceName, [postgres]);
   const windshift = configureWindshift(namespaceName);
   const excalidash = configureExcaliDash(namespaceName, [postgres]);
   const doop = configureDoop(namespaceName, [postgres]);
@@ -48,7 +50,7 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,
-    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, outline.outline.deployment, ntfy.deployment, memos.deployment, windshift.deployment, excalidash.deployment, doop.deployment, pulp.deployment],
+    dependencies: [postgres, tandoor.deployment, linkwarden.deployment, grimmory.deployment, outline.outline.deployment, ntfy.deployment, memos.deployment, anchor.deployment, windshift.deployment, excalidash.deployment, doop.deployment, pulp.deployment],
     namePrefix: "selfhosted-",
     aliases: {
       defaultDeny: [{ name: "default-deny-ingress" }],
@@ -72,6 +74,7 @@ export function configureSelfhosted(postgres: k8s.core.v1.Service, mariadb: k8s.
     outline,
     ntfy,
     memos,
+    anchor,
     windshift,
     excalidash,
     doop,

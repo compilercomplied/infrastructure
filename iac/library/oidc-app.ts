@@ -1,4 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
+import * as random from "@pulumi/random";
 
 export const keycloakBaseUrl = "https://auth.gdario.dev";
 export const keycloakIssuer = `${keycloakBaseUrl}/realms/homelab`;
@@ -15,6 +16,7 @@ export interface OidcAppDefinition {
   callbackPath: string;
   postLogoutRedirectPath?: string;
   secretKey: string;
+  generateSecret?: boolean;
   slug?: string;
   scopes?: readonly OidcScope[];
 }
@@ -41,6 +43,17 @@ export function defineOidcApp(key: string, definition: OidcAppDefinition): OidcA
   };
 }
 
+const generatedSecrets = new Map<string, pulumi.Output<string>>();
+
 export function oidcClientSecret(app: OidcAppRegistration, config = new pulumi.Config("selfhosted")): pulumi.Output<string> {
-  return config.requireSecret(app.secretKey);
+  if (!app.generateSecret) {
+    return config.requireSecret(app.secretKey);
+  }
+  // The app and Keycloak must share one stable credential from Pulumi state.
+  if (!generatedSecrets.has(app.key)) {
+    generatedSecrets.set(app.key, pulumi.secret(new random.RandomPassword(`oidc-${app.key}-secret`, {
+      length: 48, special: false,
+    }).result));
+  }
+  return generatedSecrets.get(app.key)!;
 }

@@ -1,4 +1,5 @@
 import { OidcAppRegistration } from "../../library/oidc-app";
+import { anchorIdentity } from "../../workloads/selfhosted/anchor/identity";
 import { tandoorIdentity } from "../../workloads/selfhosted/tandoor-recipes/identity";
 import { linkwardenIdentity } from "../../workloads/selfhosted/linkwarden/identity";
 import { grafanaIdentity } from "../../workloads/monitoring/grafana/identity";
@@ -14,6 +15,7 @@ import { doopIdentity } from "../../workloads/selfhosted/doop/identity";
 import { pulpIdentity } from "../../workloads/selfhosted/pulp/identity";
 
 export const oidcApps: readonly OidcAppRegistration[] = [
+  anchorIdentity,
   tandoorIdentity,
   linkwardenIdentity,
   grafanaIdentity,
