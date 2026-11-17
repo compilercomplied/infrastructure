@@ -26,6 +26,9 @@ export function configureAnchor(namespace: pulumi.Input<string>, dependencies: p
   const app = new SelfhostedApp(name, {
     namespace,
     image: "ghcr.io/zhfahim/anchor:0.18.0",
+    // Upstream binds the web server to 0.0.0.0, so IPv6 endpoints cannot serve traffic.
+    ipFamilyPolicy: "SingleStack",
+    ipFamilies: ["IPv4"],
     // Local uploads and startup migrations require a single writer during updates.
     strategy: { type: "Recreate" },
     // Upstream supervisord explicitly switches to root even with external Postgres.
