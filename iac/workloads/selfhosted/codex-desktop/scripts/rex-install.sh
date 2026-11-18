@@ -1,20 +1,27 @@
 #!/bin/bash
 set -euo pipefail
 
-# Match the Mac client's preview and keep pod replacements independent of channel updates.
-commit=ad5a836cb95bf1685a2b2976762949c44f1d0828
 architecture=$(dpkg --print-architecture)
 case "$architecture" in
-  amd64) checksum=b3ace26ae0dc896f0a50bf7dd6a5ae7c6725c57be80af69b6ceff92a8e031968 ;;
-  arm64) checksum=964f7829373fcea28f14826f4f3ad1e7c49d910a6189a057eb3768d3eefb122f ;;
+  amd64|arm64) ;;
   *) echo "Unsupported Rex architecture: $architecture" >&2; exit 1 ;;
 esac
+metadata=$(curl --fail --silent --show-error --location --retry 3 \
+  https://blob.superlogical.com/api/releases/rex/preview | python3 -c '
+import json, sys
+release = json.load(sys.stdin)
+asset = next(a for a in release["artifacts"] if a["filename"] == f"rex-linux-{sys.argv[1]}.tar.gz")
+print(release["commit"], asset["sha256"], asset["downloadUrl"], sep="\n")
+' "$architecture")
+mapfile -t release <<< "$metadata"
+commit=${release[0]}
+checksum=${release[1]}
+url=${release[2]}
 cache=/config/.cache/rex-package
 mkdir -p "$cache"
 archive="$cache/rex-${commit}-${architecture}.tar.gz"
 if [ ! -f "$archive" ] || ! printf '%s  %s\n' "$checksum" "$archive" | sha256sum --check --status; then
-  curl --fail --silent --show-error --location --retry 3 --output "$archive.tmp" \
-    "https://blob.superlogical.com/download/rex/preview/$commit/rex-linux-${architecture}.tar.gz"
+  curl --fail --silent --show-error --location --retry 3 --output "$archive.tmp" "$url"
   printf '%s  %s\n' "$checksum" "$archive.tmp" | sha256sum --check --status
   mv "$archive.tmp" "$archive"
 fi
