@@ -146,7 +146,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
     // assistant without sizing for local model builds.
     resources: {
       requests: { cpu: "1", memory: "1Gi" },
-      limits: { cpu: "2", memory: "3Gi" },
+      limits: { cpu: "2", memory: "6Gi" },
     },
     dependencies: [...dependencies, seed],
   });
