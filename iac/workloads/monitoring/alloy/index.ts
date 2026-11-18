@@ -1,7 +1,10 @@
 import { monitoringCharts } from "../charts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import * as k8s from "@pulumi/kubernetes";
 import { cachedHelmChart } from "../../../library/cached-helm-chart";
 import * as pulumi from "@pulumi/pulumi";
+import { alloyLabel } from "../tempo";
 
 /**
  * Grafana Alloy Log Agent (Scraper/Collector)
@@ -24,6 +27,8 @@ export function configureAlloy(
   const lowercaseTemplate = "{{ `{{ ToLower .Value }}` }}";
 
   const alloyConfig = pulumi.interpolate`
+${readFileSync(join(__dirname, "opencode.alloy"), "utf8")}
+
 discovery.kubernetes "pods" {
   role = "pod"
 }
@@ -194,6 +199,7 @@ loki.write "local" {
         mounts: {
           extra: [{ name: "fail2ban-logs", mountPath: "/var/log/host-fail2ban", readOnly: true }],
         },
+        extraPorts: [{ name: "otlp-http", port: 4318, targetPort: 4318, protocol: "TCP" }],
         configMap: {
           content: alloyConfig,
         },
@@ -213,5 +219,22 @@ loki.write "local" {
       dependsOn: dependencies,
     });
 
+  new k8s.networking.v1.NetworkPolicy("alloy-opencode-ingress", {
+    metadata: { name: "alloy-opencode-ingress", namespace },
+    spec: {
+      podSelector: { matchLabels: alloyLabel },
+      policyTypes: ["Ingress"],
+      ingress: [
+        { from: [{ podSelector: {} }], ports: [{ protocol: "TCP", port: 12345 }] },
+        {
+          from: [{
+            namespaceSelector: { matchLabels: { "kubernetes.io/metadata.name": "agent-dev-environment" } },
+            podSelector: { matchLabels: { app: "opencode-review" } },
+          }],
+          ports: [{ protocol: "TCP", port: 4318 }],
+        },
+      ],
+    },
+  });
   return alloy;
 }

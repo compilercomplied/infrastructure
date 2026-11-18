@@ -9,6 +9,7 @@ import { configureBlackboxExporter } from "./blackbox";
 import { configureHealthAlerts } from "./health-alerts";
 import { configureFail2banDashboard } from "./fail2ban";
 import { configureResourceDashboard } from "./resources";
+import { configureTempo } from "./tempo";
 
 /**
  * Entry point for the modular Monitoring stack.
@@ -26,10 +27,11 @@ export function configureMonitoring() {
   // 2. Data Storage Engines (Prometheus & Loki)
   const prometheus = configurePrometheus(namespaceName, prometheusCRDs);
   const loki = configureLoki(namespaceName);
+  const tempo = configureTempo(namespaceName);
 
   // 3. Data Collection Layer (Alloy)
   // We point it to the 'loki' service created by the loki chart
-  const alloy = configureAlloy(namespaceName, "loki", [loki]);
+  const alloy = configureAlloy(namespaceName, "loki", [loki, tempo]);
 
   // 4. Visualization Layer (Grafana)
   // Depends on storage engines to ensure service endpoints are available

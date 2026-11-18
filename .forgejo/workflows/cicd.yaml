@@ -66,6 +66,9 @@ jobs:
         run: npm run check
         working-directory: ./iac
 
+      - name: Validate OpenCode trace redaction
+        run: python3 iac/scripts/validate-opencode-traces.py
+
       - name: Configure Kubeconfig
         run: |
           mkdir -p ~/.kube
