@@ -46,6 +46,9 @@ export function configureGrafana(
         server: {
           root_url: grafanaIdentity.url,
         },
+        users: {
+          auto_assign_org_role: "Editor",
+        },
         plugins: {
           enable_alpha: true,
           allow_loading_unsigned_plugins: "grafana-lokiexplore-app"
@@ -64,7 +67,7 @@ export function configureGrafana(
           auth_url: keycloakAuthorizeUrl,
           token_url: keycloakTokenUrl,
           api_url: keycloakUserInfoUrl,
-          role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || 'Viewer'",
+          role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin'",
         }
       },
 
