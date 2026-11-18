@@ -25,7 +25,7 @@ export function configureAnchor(namespace: pulumi.Input<string>, dependencies: p
   });
   const app = new SelfhostedApp(name, {
     namespace,
-    image: "ghcr.io/zhfahim/anchor:0.18.0",
+    image: "ghcr.io/zhfahim/anchor:0.18.1",
     // Upstream binds the web server to 0.0.0.0, so IPv6 endpoints cannot serve traffic.
     ipFamilyPolicy: "SingleStack",
     ipFamilies: ["IPv4"],
