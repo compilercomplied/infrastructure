@@ -6,7 +6,8 @@ import { SelfhostedApp } from "../../../library/selfhosted-component";
 
 export function configureOpenClaw(namespace: pulumi.Input<string>, identity: AgentIdentity, dependencies: pulumi.Resource[] = []) {
   const agent = agentIdentitySettings(identity);
-  const image = "ghcr.io/openclaw/openclaw:2026.11.4";
+  const image = "ghcr.io/openclaw/openclaw:2026.11.4-browser";
+  const browserCache = "/opt/openclaw-browser";
   const token = new random.RandomPassword("openclaw-gateway-token", { length: 48, special: false });
   const gogKeyringPassword = new random.RandomPassword("openclaw-gog-keyring-password", {
     length: 48,
@@ -33,7 +34,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
         },
         plugins: { entries: { codex: { enabled: true } } },
         memory: { search: { enabled: false } },
-        browser: { enabled: false },
+        browser: { enabled: true, noSandbox: true },
         session: { maintenance: { mode: "enforce", maxDiskBytes: "1gb", highWaterBytes: "800mb" } },
         update: { checkOnStart: false, auto: { enabled: false } },
       }, null, 2),
@@ -64,6 +65,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
         OPENCLAW_STATE_DIR: "/home/node/.openclaw",
         OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw.json",
         OPENCLAW_WORKSPACE_DIR: "/home/node/.openclaw/workspace",
+        PLAYWRIGHT_BROWSERS_PATH: browserCache,
         XDG_CACHE_HOME: "/tmp/cache",
         OPENCLAW_DISABLE_BONJOUR: "1",
         NODE_ENV: "production",
@@ -81,11 +83,26 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
     additionalVolumes: [
       { name: "seed", configMap: { name: seed.metadata.name } },
       { name: "tmp", emptyDir: { sizeLimit: "256Mi" } },
+      { name: "browser-cache", emptyDir: { sizeLimit: "1Gi" } },
     ],
-    additionalVolumeMounts: [{ name: "tmp", mountPath: "/tmp", subPath: "runtime" }],
+    additionalVolumeMounts: [
+      { name: "tmp", mountPath: "/tmp", subPath: "runtime" },
+      { name: "browser-cache", mountPath: browserCache, readOnly: true },
+    ],
     podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 },
     containerSecurityContext: { readOnlyRootFilesystem: true },
     initContainers: [{
+      // The home PVC hides the bundled browser; copy it before mounting home.
+      name: "stage-browser",
+      image,
+      command: ["sh", "-ec", 'cp -R "$PLAYWRIGHT_BROWSERS_PATH/." "$1"', "--", browserCache],
+      securityContext: { readOnlyRootFilesystem: true },
+      volumeMounts: [{ name: "browser-cache", mountPath: browserCache }],
+      resources: {
+        requests: { cpu: "50m", memory: "32Mi" },
+        limits: { cpu: "250m", memory: "128Mi" },
+      },
+    }, {
       name: "seed-config",
       image,
       command: ["node", "-e", `
@@ -116,6 +133,11 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
         // Traefik strips client-supplied X-Real-IP and rebuilds it from its peer,
         // so this fallback preserves attribution when OpenClaw skips that chain.
         config.gateway.allowRealIpFallback = true;
+        config.browser ??= {};
+        config.browser.enabled = true;
+        // RuntimeDefault blocks Chromium's namespace sandbox, and the pod
+        // disallows the setuid fallback.
+        config.browser.noSandbox = true;
         fs.writeFileSync(configPath + '.tmp', JSON.stringify(config, null, 2), { mode: 0o600 });
         fs.renameSync(configPath + '.tmp', configPath);
       `],
