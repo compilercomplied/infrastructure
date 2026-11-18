@@ -15,6 +15,8 @@ import { configureHostProvisionAccess } from "./host-provision";
 import { configureRegistryAccess } from "./registry-access";
 
 export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pulumi.Input<string>>, dependencies: pulumi.Resource[] = []) {
+  const config = new pulumi.Config("forgejo");
+  const renovateGithubComToken = config.requireSecret("renovateGithubComToken");
   const namespace = new k8s.core.v1.Namespace("forgejo", {
     metadata: { name: "forgejo" }
   }, { dependsOn: dependencies });
@@ -22,7 +24,6 @@ export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pul
   const namespaceName = namespace.metadata.name;
 
   const forgejoApp = configureForgejoApp(namespaceName, [...dependencies, namespace]);
-  const config = new pulumi.Config("forgejo");
   const provider = new forgejo.Provider("forgejo-renovate", {
     host: forgejoApp.apiUrl,
     apiToken: config.requireSecret("apiToken"),
@@ -40,7 +41,12 @@ export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pul
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
   const forgejoAndroidRunner = configureForgejoAndroidRunner(namespaceName, forgejoApp.androidRunnerSecret, [forgejoApp.deployment, namespace]);
   const reviewWebhook = configureReviewWebhook(config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
-  const renovate = configureRenovate(namespaceName, renovateAccess.token.token, [forgejoApp.deployment, namespace, renovateAccess.token]);
+  const renovate = configureRenovate(
+    namespaceName,
+    renovateAccess.token.token,
+    renovateGithubComToken,
+    [forgejoApp.deployment, namespace, renovateAccess.token],
+  );
 
   const security = configureNamespaceSecurity({
     namespace: namespaceName,

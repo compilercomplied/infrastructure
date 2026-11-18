@@ -3,16 +3,24 @@ import * as pulumi from "@pulumi/pulumi";
 import { renovateRuntimeConfig } from "./config";
 
 const renovateImage = "ghcr.io/renovatebot/renovate:41.173.1";
+const githubComTokenKey = "RENOVATE_GITHUB_COM_TOKEN";
 
 export function configureRenovate(
   namespace: pulumi.Input<string>,
   token: pulumi.Input<string>,
+  githubComToken: pulumi.Input<string>,
   dependencies: pulumi.Resource[] = [],
 ) {
   const name = "renovate";
   const secret = new k8s.core.v1.Secret(`${name}-credentials`, {
     metadata: { name: `${name}-credentials`, namespace },
     stringData: { RENOVATE_TOKEN: token },
+  }, { dependsOn: dependencies });
+
+  const githubCredentialsName = `${name}-github-credentials`;
+  const githubCredentials = new k8s.core.v1.Secret(githubCredentialsName, {
+    metadata: { name: githubCredentialsName, namespace },
+    stringData: { [githubComTokenKey]: githubComToken },
   }, { dependsOn: dependencies });
 
   const runtimeConfig = new k8s.core.v1.ConfigMap(`${name}-config`, {
@@ -57,6 +65,10 @@ export function configureRenovate(
                   { name: "RENOVATE_TOKEN", valueFrom: { secretKeyRef: { name: secret.metadata.name, key: "RENOVATE_TOKEN" } } },
                   { name: "RENOVATE_BASE_DIR", value: "/tmp/renovate" },
                   { name: "HOME", value: "/tmp" },
+                  {
+                    name: githubComTokenKey,
+                    valueFrom: { secretKeyRef: { name: githubCredentials.metadata.name, key: githubComTokenKey } },
+                  },
                 ],
                 resources: { requests: { cpu: "250m", memory: "512Mi" }, limits: { cpu: "1", memory: "1536Mi" } },
                 securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: ["ALL"] } },
