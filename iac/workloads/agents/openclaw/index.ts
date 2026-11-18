@@ -8,6 +8,10 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
   const agent = agentIdentitySettings(identity);
   const image = "ghcr.io/openclaw/openclaw:2026.11.4";
   const token = new random.RandomPassword("openclaw-gateway-token", { length: 48, special: false });
+  const gogKeyringPassword = new random.RandomPassword("openclaw-gog-keyring-password", {
+    length: 48,
+    special: false,
+  });
   const seed = new k8s.core.v1.ConfigMap("openclaw-seed", {
     metadata: { name: "openclaw-seed", namespace },
     data: {
@@ -54,6 +58,8 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
       config: {
         ...agent.config,
         HOME: "/home/node",
+        PATH: "/home/node/.local/bin:/home/node/.linuxbrew/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+        GOG_KEYRING_BACKEND: "file",
         OPENCLAW_HOME: "/home/node",
         OPENCLAW_STATE_DIR: "/home/node/.openclaw",
         OPENCLAW_CONFIG_PATH: "/home/node/.openclaw/openclaw.json",
@@ -63,7 +69,11 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
         NODE_ENV: "production",
         TZ: "UTC",
       },
-      secrets: { ...agent.secrets, OPENCLAW_GATEWAY_TOKEN: token.result },
+      secrets: {
+        ...agent.secrets,
+        OPENCLAW_GATEWAY_TOKEN: token.result,
+        GOG_KEYRING_PASSWORD: gogKeyringPassword.result,
+      },
     },
     // Mount the whole home so OAuth refresh state and private recovery captures
     // survive alongside sessions, rather than spilling onto the container layer.
