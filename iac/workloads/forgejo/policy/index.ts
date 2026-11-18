@@ -115,7 +115,7 @@ export function createRepositoryFactory(host: pulumi.Input<string>, users: Manag
       allowManualMerge: false,
       autodetectManualMerge: false,
       defaultMergeStyle: "squash",
-      defaultDeleteBranchAfterMerge: false,
+      defaultDeleteBranchAfterMerge: true,
       allowRebaseUpdate: true,
       defaultAllowMaintainerEdit: false,
       defaultUpdateStyle: "merge",
