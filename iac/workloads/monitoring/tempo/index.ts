@@ -45,7 +45,7 @@ export function configureTempo(namespace: pulumi.Input<string>) {
           securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001 },
           containers: [{
             name: "tempo",
-            image: "docker.io/grafana/tempo:2.8.4",
+            image: "docker.io/grafana/tempo:2.10.10",
             args: ["-config.file=/etc/tempo/tempo.yaml"],
             ports: [{ name: "http", containerPort: 3200 }, { name: "otlp-http", containerPort: 4318 }],
             readinessProbe: { httpGet: { path: "/ready", port: "http" } },
