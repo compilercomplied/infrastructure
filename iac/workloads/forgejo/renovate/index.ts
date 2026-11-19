@@ -36,7 +36,7 @@ export function configureRenovate(
   const cronJob = new k8s.batch.v1.CronJob(name, {
     metadata: { name, namespace },
     spec: {
-      schedule: "0 * * * *",
+      schedule: "0 6 * * *",
       timeZone: "Europe/Madrid",
       concurrencyPolicy: "Forbid",
       successfulJobsHistoryLimit: 3,
