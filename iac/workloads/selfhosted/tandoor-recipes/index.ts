@@ -11,7 +11,7 @@ export function configureTandoorRecipes(
 
   const app = new SelfhostedApp("tandoor-recipes", {
     namespace,
-    image: "ghcr.io/tandoorrecipes/recipes:2.7.4",
+    image: "ghcr.io/tandoorrecipes/recipes:2.7.6",
     resources: { requests: { cpu: "25m", memory: "1Gi" }, limits: { memory: "1536Mi" } },
     // Upstream boot.sh starts a root Nginx master which owns its temp paths,
     // switches worker identity, and signals those workers during shutdown.
