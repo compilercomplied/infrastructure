@@ -38,7 +38,7 @@ export function configureBlackboxExporter(
           automountServiceAccountToken: false,
           containers: [{
             name,
-            image: "quay.io/prometheus/blackbox-exporter:v0.27.0",
+            image: "quay.io/prometheus/blackbox-exporter:v0.29.1",
             args: ["--config.file=/config/blackbox.yml"],
             ports: [{ name: "http", containerPort: 9115 }],
             readinessProbe: {
