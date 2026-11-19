@@ -75,7 +75,10 @@ def reconcile_sso():
         "is_default": True, "issuer_url": os.environ["OIDC_ISSUER"],
         "client_id": os.environ["OIDC_CLIENT_ID"], "client_secret": os.environ["OIDC_CLIENT_SECRET"],
         "scopes": os.environ["OIDC_SCOPES"], "auto_provision_users": True,
-        "require_verified_email": True,
+        # Windshift 0.8.9 interprets this flag as implicit trust in the provider.
+        # Disable that trust so an existing email match requires a verified claim.
+        # https://github.com/Windshiftapp/core/blob/9a2d6ee71bace0fe077bfb1b7807cb264892c969/internal/sso/users.go#L244-L279
+        "require_verified_email": False,
         "attribute_mapping": json.dumps({"email": "email", "name": "name", "given_name": "given_name", "family_name": "family_name", "username": "preferred_username", "email_verified": "email_verified"}),
     }
     existing = next((item for item in request("GET", "/api/sso/providers") if item["slug"] == "keycloak"), None)
