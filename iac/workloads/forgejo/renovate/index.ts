@@ -2,7 +2,7 @@ import * as k8s from "@pulumi/kubernetes";
 import * as pulumi from "@pulumi/pulumi";
 import { renovateRuntimeConfig } from "./config";
 
-const renovateImage = "ghcr.io/renovatebot/renovate:41.173.1";
+const renovateImage = "ghcr.io/renovatebot/renovate:44.23.0";
 const githubComTokenKey = "RENOVATE_GITHUB_COM_TOKEN";
 
 export function configureRenovate(
