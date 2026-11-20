@@ -9,7 +9,7 @@ import { secureWorkloadContainer, workloadPodSecurityContext } from "../../../li
 import { windshiftSettings } from "./settings";
 import { oidcClientSecret, keycloakIssuer } from "../../../library/oidc-app";
 
-const windshiftImage = "ghcr.io/windshiftapp/windshift:0.8.9";
+const windshiftImage = "ghcr.io/windshiftapp/windshift:0.9.5";
 const bootstrapImage = "python:3.15-alpine";
 
 const bootstrapScript = fs.readFileSync(path.join(__dirname, "scripts", "bootstrap.py"), "utf8");
