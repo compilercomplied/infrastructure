@@ -51,6 +51,14 @@ export function configureWindshift(namespace: pulumi.Input<string>, dependencies
     }],
     settings: windshiftSettings,
     volumes: [{ name: "data", mountPath: "/data", size: "5Gi" }],
+    // The PVC hides the image's attachment directory, which /readyz requires.
+    initContainers: [{
+      name: "prepare-attachments",
+      image: bootstrapImage,
+      command: ["mkdir", "-p", "/data/attachments"],
+      securityContext: { runAsNonRoot: true, runAsUser: 65534, runAsGroup: 65534 },
+      volumeMounts: [{ name: "data", mountPath: "/data" }],
+    }],
     additionalVolumes: [{ name: "tmp", emptyDir: { medium: "Memory", sizeLimit: "64Mi" } }],
     additionalVolumeMounts: [{ name: "tmp", mountPath: "/tmp" }],
     podSecurityContext: { fsGroup: 65534, fsGroupChangePolicy: "OnRootMismatch" },
