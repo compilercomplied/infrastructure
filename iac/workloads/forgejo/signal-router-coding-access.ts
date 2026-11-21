@@ -22,6 +22,21 @@ export function configureSignalRouterCodingAccess(
     repositories: [repository],
   }, { protect: true, dependsOn: [codingBot, ...repositories] });
 
+  // The coding bot inherits the Home Contributors role. Keep its API token in
+  // the publisher sidecar so the model cannot use it to write to another repo.
+  const homeToken = new ForgejoAdminToken("home-coding-bot-token", {
+    host: forgejoIdentity.url,
+    adminToken,
+    user: codingBot.login,
+    name: "home-coding-automation",
+    scopes: ["write:repository", "read:user"],
+  }, { protect: true, dependsOn: [codingBot, ...repositories] });
+
+  new k8s.core.v1.Secret("home-coding-credential", {
+    metadata: { name: "home-coding-credential", namespace: namespace.metadata.name },
+    stringData: { token: homeToken.token },
+  }, { protect: true });
+
   return new k8s.core.v1.Secret("signal-router-coding-automation", {
     metadata: { name: "coding-automation", namespace: namespace.metadata.name },
     stringData: {
