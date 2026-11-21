@@ -9,6 +9,7 @@ import { configureBlackboxExporter } from "./blackbox";
 import { configureHealthAlerts } from "./health-alerts";
 import { configureFail2banDashboard } from "./fail2ban";
 import { configureResourceDashboard } from "./resources";
+import { configureTrafficSecurityDashboard } from "./traffic-security";
 import { configureTempo } from "./tempo";
 
 /**
@@ -44,6 +45,7 @@ export function configureMonitoring() {
   const healthAlerts = configureHealthAlerts(namespaceName, prometheusCRDs);
   const fail2banDashboard = configureFail2banDashboard(namespaceName);
   const resourceDashboard = configureResourceDashboard(namespaceName);
+  const trafficSecurityDashboard = configureTrafficSecurityDashboard(namespaceName);
 
   return {
     monitoringNamespace,
@@ -57,5 +59,6 @@ export function configureMonitoring() {
     healthAlerts,
     fail2banDashboard,
     resourceDashboard,
+    trafficSecurityDashboard,
   };
 }
