@@ -13,6 +13,7 @@ import { reconcileManagedForgejoUsers, ManagedForgejoUsers } from "./users";
 import { configureRepositories } from "./repositories";
 import { configureHostProvisionAccess } from "./host-provision";
 import { configureRegistryAccess } from "./registry-access";
+import { configureSignalRouterCodingAccess } from "./signal-router-coding-access";
 
 export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pulumi.Input<string>>, dependencies: pulumi.Resource[] = []) {
   const config = new pulumi.Config("forgejo");
@@ -36,6 +37,9 @@ export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pul
   );
   const repositories = configureRepositories(forgejoApp.apiUrl, users, [forgejoApp.deployment]);
   const registryAccess = configureRegistryAccess(provider, users.codingBot, config.requireSecret("apiToken"), repositories.map(repository => repository.repo));
+  const signalRouterCodingAccess = configureSignalRouterCodingAccess(
+    users.codingBot, config.requireSecret("apiToken"), repositories.map(repository => repository.repo),
+  );
   const hostProvisionAccess = configureHostProvisionAccess(provider, [forgejoApp.deployment, namespace, ...dependencies]);
   const renovateAccess = provisionRenovateAccess(provider, users.renovate, config.requireSecret("apiToken"), [forgejoApp.deployment, namespace, ...dependencies]);
   const forgejoRunner = configureForgejoRunner(namespaceName, forgejoApp.runnerSecret, [forgejoApp.deployment, namespace]);
@@ -64,6 +68,7 @@ export function configureForgejo(subjects: Record<keyof ManagedForgejoUsers, pul
     repositories,
     hostProvisionAccess,
     registryAccess,
+    signalRouterCodingAccess,
     renovateAccess,
     reviewWebhook,
     renovate,

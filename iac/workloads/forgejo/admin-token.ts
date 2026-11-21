@@ -6,6 +6,7 @@ interface AdminTokenInputs {
   user: string;
   name: string;
   scopes: string[];
+  repositories?: { owner: string; name: string }[];
 }
 
 // Forgejo's user-token API requires password Basic authentication, which is disabled here.
@@ -34,11 +35,16 @@ class AdminTokenProvider implements pulumi.dynamic.ResourceProvider {
   }
 
   async create(inputs: AdminTokenInputs): Promise<pulumi.dynamic.CreateResult> {
+    if (inputs.repositories && inputs.repositories.length === 0) {
+      throw new Error("A repository-restricted token must specify at least one repository");
+    }
     const existing = await this.list(inputs);
     if (existing.some((token: { name: string }) => token.name === inputs.name)) {
       throw new Error("A token with this name already exists; its secret cannot be recovered automatically");
     }
-    const token = await this.request(inputs, "POST", "", { name: inputs.name, scopes: inputs.scopes });
+    const token = await this.request(inputs, "POST", "", {
+      name: inputs.name, scopes: inputs.scopes, repositories: inputs.repositories,
+    });
     if (!token?.id || !token?.sha1) throw new Error("Forgejo token creation did not return an ID and secret");
     return { id: String(token.id), outs: { ...inputs, token: token.sha1 } };
   }
@@ -51,7 +57,7 @@ class AdminTokenProvider implements pulumi.dynamic.ResourceProvider {
   }
 
   async diff(_id: string, old: AdminTokenInputs, news: AdminTokenInputs): Promise<pulumi.dynamic.DiffResult> {
-    const replaces = (["host", "user", "name", "scopes"] as const).filter(key => JSON.stringify(old[key]) !== JSON.stringify(news[key]));
+    const replaces = (["host", "user", "name", "scopes", "repositories"] as const).filter(key => JSON.stringify(old[key]) !== JSON.stringify(news[key]));
     return { changes: replaces.length > 0 || old.adminToken !== news.adminToken, replaces };
   }
 
