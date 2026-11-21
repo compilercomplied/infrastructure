@@ -16,5 +16,6 @@ export function configureRepositories(host: pulumi.Input<string>, users: Managed
     createRepo({ name: "hitl-auth-server" }),
     createRepo({ name: "kubernetes-executor" }),
     createRepo({ name: "dotnet-foundation" }),
+    createRepo({ name: "signal-router", isPublic: true }),
   ];
 }
