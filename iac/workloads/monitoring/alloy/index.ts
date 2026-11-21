@@ -25,6 +25,7 @@ export function configureAlloy(
   const bracketTemplate = "{{ `{{ default .bracket_level .level }}` }}";
 
   const lowercaseTemplate = "{{ `{{ ToLower .Value }}` }}";
+  const storagePath = "/var/lib/grafana-alloy";
 
   const alloyConfig = pulumi.interpolate`
 ${readFileSync(join(__dirname, "opencode.alloy"), "utf8")}
@@ -195,9 +196,13 @@ loki.write "local" {
     ...cachedHelmChart(monitoringCharts["alloy"]),
     values: {
       alloy: {
+        storagePath,
         resources: { requests: { cpu: "25m", memory: "384Mi" }, limits: { memory: "640Mi" } },
         mounts: {
-          extra: [{ name: "fail2ban-logs", mountPath: "/var/log/host-fail2ban", readOnly: true }],
+          extra: [
+            { name: "fail2ban-logs", mountPath: "/var/log/host-fail2ban", readOnly: true },
+            { name: "alloy-storage", mountPath: storagePath },
+          ],
         },
         extraPorts: [{ name: "otlp-http", port: 4318, targetPort: 4318, protocol: "TCP" }],
         configMap: {
@@ -210,7 +215,11 @@ loki.write "local" {
       controller: {
         type: "daemonset",
         volumes: {
-          extra: [{ name: "fail2ban-logs", hostPath: { path: "/var/log/fail2ban", type: "Directory" } }],
+          extra: [
+            { name: "fail2ban-logs", hostPath: { path: "/var/log/fail2ban", type: "Directory" } },
+            // A file offset belongs to the node that owns the log and must survive pod replacement.
+            { name: "alloy-storage", hostPath: { path: storagePath, type: "DirectoryOrCreate" } },
+          ],
         },
       },
     },
