@@ -10,7 +10,7 @@ import { Labels } from "../labels";
 import { GrimmorySettings } from "./settings";
 import { keycloakIssuer } from "../../../library/oidc-app";
 
-export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.5.0";
+export const grimmoryImage = "ghcr.io/grimmory-tools/grimmory:v3.5.1";
 export const grimmoryMariaDbImage = "mariadb:11.8";
 
 export function configureGrimmory(
