@@ -90,7 +90,7 @@ export function configureOpenClaw(namespace: pulumi.Input<string>, identity: Age
       { name: "browser-cache", mountPath: browserCache, readOnly: true },
     ],
     podSecurityContext: { runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000 },
-    containerSecurityContext: { readOnlyRootFilesystem: true },
+    containerSecurityContext: { readOnlyRootFilesystem: false },
     initContainers: [{
       // The home PVC hides the bundled browser; copy it before mounting home.
       name: "stage-browser",
