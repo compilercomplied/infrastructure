@@ -2,7 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
   "prConcurrentLimit": 3,
+  "timezone": "Europe/Madrid",
+  "schedule": ["* 6 * * *"],
   "rebaseWhen": "behind-base-branch",
+  "updateNotScheduled": true,
   "gitIgnoredAuthors": ["*"],
   "customManagers": [
     {
