@@ -8,7 +8,7 @@ export function configureNtfy(
 ) {
   const app = new SelfhostedApp("ntfy", {
     namespace,
-    image: "binwiederhier/ntfy:v2.38.1",
+    image: "binwiederhier/ntfy:v2.38.2",
     args: ["serve"],
     endpoints: [{
       name: "http",
